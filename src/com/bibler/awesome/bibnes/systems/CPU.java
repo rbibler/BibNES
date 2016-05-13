@@ -44,6 +44,11 @@ public class CPU {
 	
 	public void powerOn() {
 		programCounter = memorySpace.read(0xFFFC) | memorySpace.read(0xFFFD) << 8;
+		statusRegister = 0;
+	}
+	
+	public void setAccumulator(int accumulator) {
+		this.accumulator = accumulator;
 	}
 	
 	public void setIndexX(int x) {
@@ -58,12 +63,28 @@ public class CPU {
 		return accumulator;
 	}
 	
+	public int getDataCounter() {
+		return dataCounter;
+	}
+	
+	public int getDataRegister() {
+		return dataRegister;
+	}
+	
+	public int getStatusRegister() {
+		return statusRegister;
+	}
+	
 	public int getTotalCycles() {
 		return totalCycles;
 	}
 	
 	private void execute() {
 		switch(instruction) {
+			case 0x69:									// ADC Immediate
+				immediate();
+				ADC();
+				break;
 			case 0xA1:
 				indexedIndirect();
 				LDA();
@@ -108,6 +129,18 @@ public class CPU {
 	
 	//Instructions
 	
+	private void ADC() {
+		if(cycles == 1) {
+			final int addResult = (accumulator + dataRegister) + (statusRegister & 1);
+			statusRegister ^= (-((addResult >> 8) & 1) ^ statusRegister) & 1;					// set carry flag
+			statusRegister ^= (-((addResult >> 7) & 1) ^ statusRegister) & (1 << 6);			// set sign flag
+			statusRegister ^= (-(addResult == 0 ? 1 : 0) ^ statusRegister) & (1 << 1);		// set zero flag
+			final int overflow = ((accumulator ^ addResult) & (dataRegister ^ addResult) & 0x80) == 0 ? 0 : 1;
+			statusRegister ^= (-overflow ^ statusRegister) & (1 << 5);
+			accumulator = (addResult & 0xFF);
+		}
+	}
+	
 	private void LDA() {
 		if(cycles == 1) {
 			accumulator = dataRegister;
@@ -123,7 +156,8 @@ public class CPU {
 	
 	private void immediate() {
 		if(cycles == 1) {
-			dataRegister = memorySpace.read(programCounter++);
+			dataCounter = programCounter++;
+			dataRegister = memorySpace.read(dataCounter);
 		}
 	}
 	
@@ -169,7 +203,8 @@ public class CPU {
 				pageBoundaryFlag = true;
 			} else {
 				pageBoundaryFlag = false;
-				dataRegister = memorySpace.read(dataCounter + indexX);
+				dataCounter = dataCounter + indexX;
+				dataRegister = memorySpace.read(dataCounter);
 			}
 		}
 		
@@ -186,7 +221,8 @@ public class CPU {
 				pageBoundaryFlag = true;
 			} else {
 				pageBoundaryFlag = false;
-				dataRegister = memorySpace.read(dataCounter + indexY);
+				dataCounter = dataCounter + indexY;
+				dataRegister = memorySpace.read(dataCounter);
 			}
 		}
 	}
@@ -228,7 +264,8 @@ public class CPU {
 				pageBoundaryFlag = true;
 			} else {
 				pageBoundaryFlag = false;
-				dataRegister = memorySpace.read(dataCounter + indexY);
+				dataCounter = dataCounter + indexY;
+				dataRegister = memorySpace.read(dataCounter);
 			}
 		}
 	}
@@ -240,7 +277,7 @@ public class CPU {
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//30-3F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//40-4F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//50-5F
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//60-6F
+			0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,											//60-6F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//70-7F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//80-8F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//90-9F
