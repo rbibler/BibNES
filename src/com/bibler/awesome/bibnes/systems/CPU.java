@@ -81,6 +81,39 @@ public class CPU {
 	
 	private void execute() {
 		switch(instruction) {
+			
+			case 0x21:									// AND Indexed Indirect
+				indexedIndirect();
+				AND();
+				break;
+			case 0x25:									
+				zeroPage();
+				AND();
+				break;
+			case 0x29:
+				immediate();
+				AND();
+				break;
+			case 0x2D:
+				absolute();
+				AND();
+				break;
+			case 0x31:
+				indirectIndexed();
+				AND();
+				break;
+			case 0x35:
+				zeroPageIndexed();
+				AND();
+				break;
+			case 0x39:
+				absoluteIndexedY();
+				AND();
+				break;
+			case 0x3D:
+				absoluteIndexedX();
+				AND();
+				break;
 			case 0x69:									// ADC Immediate
 				immediate();
 				ADC();
@@ -138,6 +171,14 @@ public class CPU {
 			final int overflow = ((accumulator ^ addResult) & (dataRegister ^ addResult) & 0x80) == 0 ? 0 : 1;
 			statusRegister ^= (-overflow ^ statusRegister) & (1 << 5);
 			accumulator = (addResult & 0xFF);
+		}
+	}
+	
+	private void AND() {
+		if(cycles == 1) {
+			accumulator &= dataRegister;
+			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << 6);			// set sign flag
+			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << 1);		// set zero flag
 		}
 	}
 	
@@ -273,8 +314,8 @@ public class CPU {
 	private int[] instructionCycles = new int[] {
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//0-F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//10-1F
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//20-2F
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//30-3F
+			0,6,0,0,0,3,0,0,0,2,0,0,0,4,0,0,											//20-2F
+			0,5,0,0,0,4,0,0,0,4,0,0,0,4,0,0,											//30-3F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//40-4F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//50-5F
 			0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,											//60-6F
