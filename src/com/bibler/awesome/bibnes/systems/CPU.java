@@ -21,7 +21,8 @@ public class CPU {
 	private Memory memorySpace;
 	
 	//Control variables
-	private int cycles;
+	private int cyclesRemaining;
+	private int instructionCycles;
 	private boolean pageBoundaryFlag;
 	
 	//Debug
@@ -32,14 +33,14 @@ public class CPU {
 	}
 	
 	public void cycle() {
-		if(cycles == 0) {
+		if(cyclesRemaining == 0) {
 			fetch();
 		} else {
 			execute();
 		}
-		cycles--;
+		cyclesRemaining--;
 		totalCycles++;
-		System.out.println("Cycles: " + cycles + " Accumulator: " + StringUtils.intToHexString(accumulator) + " Total Cycles: " + totalCycles);
+		System.out.println("Cycles: " + cyclesRemaining + " Accumulator: " + StringUtils.intToHexString(accumulator) + " Total Cycles: " + totalCycles);
 	}
 	
 	public void powerOn() {
@@ -81,7 +82,10 @@ public class CPU {
 	
 	private void execute() {
 		switch(instruction) {
-			
+			case 0x06:
+				zeroPage();
+				ASL();
+				break;
 			case 0x21:									// AND Indexed Indirect
 				indexedIndirect();
 				AND();
@@ -157,13 +161,14 @@ public class CPU {
 	
 	private void fetch() {
 		instruction = memorySpace.read(programCounter++);
-		cycles += instructionCycles[instruction];
+		instructionCycles = instructionTimes[instruction];
+		cyclesRemaining += instructionCycles;
 	}
 	
 	//Instructions
 	
 	private void ADC() {
-		if(cycles == 1) {
+		if(cyclesRemaining == 1) {
 			final int addResult = (accumulator + dataRegister) + (statusRegister & 1);
 			statusRegister ^= (-((addResult >> 8) & 1) ^ statusRegister) & 1;					// set carry flag
 			statusRegister ^= (-((addResult >> 7) & 1) ^ statusRegister) & (1 << 6);			// set sign flag
@@ -175,15 +180,27 @@ public class CPU {
 	}
 	
 	private void AND() {
-		if(cycles == 1) {
+		if(cyclesRemaining == 1) {
 			accumulator &= dataRegister;
 			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << 6);			// set sign flag
 			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << 1);		// set zero flag
 		}
 	}
 	
+	private void ASL() {
+		if(cyclesRemaining == (instructionCycles - 3)) {
+			dataRegister = dataRegister << 1;
+			statusRegister ^= (-((dataRegister >> 7) & 1) ^ statusRegister) & (1 << 6);			// set sign flag
+			statusRegister ^= (-(dataRegister == 0 ? 1 : 0) ^ statusRegister) & (1 << 1);		// set zero flag
+			statusRegister ^= (-((dataRegister >> 8) & 1) ^ statusRegister) & 1;					// set carry flag
+			
+		} else if(cyclesRemaining == (instructionCycles - 4)) {
+			memorySpace.write(dataCounter, dataRegister);
+		}
+	}
+	
 	private void LDA() {
-		if(cycles == 1) {
+		if(cyclesRemaining == 1) {
 			accumulator = dataRegister;
 		}
 	}
@@ -196,7 +213,7 @@ public class CPU {
 	}
 	
 	private void immediate() {
-		if(cycles == 1) {
+		if(cyclesRemaining == 1) {
 			dataCounter = programCounter++;
 			dataRegister = memorySpace.read(dataCounter);
 		}
@@ -211,20 +228,20 @@ public class CPU {
 	}
 	
 	private void absolute() {
-		if(cycles == 3) {
+		if(cyclesRemaining == 3) {
 			dataCounter = memorySpace.read(programCounter++);
-		} else if(cycles == 2) {
+		} else if(cyclesRemaining == 2) {
 			dataCounter |= memorySpace.read(programCounter++) << 8;
-		} else if(cycles == 1) {
+		} else if(cyclesRemaining == 1) {
 			dataRegister = memorySpace.read(dataCounter);
 		}
 		
 	}
 	
 	private void zeroPage() {
-		if(cycles == 2) {
+		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = memorySpace.read(programCounter++);
-		} else if(cycles == 1) {
+		} else if(cyclesRemaining == instructionCycles - 2) {
 			dataRegister = memorySpace.read(dataCounter);
 		}
 	}
@@ -234,13 +251,13 @@ public class CPU {
 	}
 	
 	private void absoluteIndexedX() {
-		if(cycles == 3) {
+		if(cyclesRemaining == 3) {
 			dataCounter = memorySpace.read(programCounter++);
-		} else if(cycles == 2) {
+		} else if(cyclesRemaining == 2) {
 			dataCounter |= memorySpace.read(programCounter++) << 8;
-		} else if(cycles == 1) {
+		} else if(cyclesRemaining == 1) {
 			if((dataCounter + indexX & 0xFF00) != (dataCounter & 0xFF00) && !pageBoundaryFlag) {
-				cycles++;
+				cyclesRemaining++;
 				pageBoundaryFlag = true;
 			} else {
 				pageBoundaryFlag = false;
@@ -252,13 +269,13 @@ public class CPU {
 	}
 	
 	private void absoluteIndexedY() {
-		if(cycles == 3) {
+		if(cyclesRemaining == 3) {
 			dataCounter = memorySpace.read(programCounter++);
-		} else if(cycles == 2) {
+		} else if(cyclesRemaining == 2) {
 			dataCounter |= memorySpace.read(programCounter++) << 8;
-		} else if(cycles == 1) {
+		} else if(cyclesRemaining == 1) {
 			if((dataCounter + indexY & 0xFF00) != (dataCounter & 0xFF00) && !pageBoundaryFlag) {
-				cycles++;
+				cyclesRemaining++;
 				pageBoundaryFlag = true;
 			} else {
 				pageBoundaryFlag = false;
@@ -269,39 +286,39 @@ public class CPU {
 	}
 	
 	private void zeroPageIndexed() {
-		if(cycles == 3) {
+		if(cyclesRemaining == 3) {
 			dataCounter = memorySpace.read(programCounter++);
-		} else if(cycles == 2) {
+		} else if(cyclesRemaining == 2) {
 			dataCounter = (dataCounter + indexX) & 0xFF;
-		} else if(cycles == 1) {
+		} else if(cyclesRemaining == 1) {
 			dataRegister = memorySpace.read(dataCounter);
 		}
 	}
 	
 	private void indexedIndirect() {
-		if(cycles == 5) {
+		if(cyclesRemaining == 5) {
 			dataCounter = memorySpace.read(programCounter++);
-		} else if(cycles == 4) {
+		} else if(cyclesRemaining == 4) {
 			dataRegister = (dataCounter + indexX) & 0xFF;
-		} else if(cycles == 3) {
+		} else if(cyclesRemaining == 3) {
 			dataCounter = memorySpace.read(dataRegister);
-		} else if(cycles == 2) {
+		} else if(cyclesRemaining == 2) {
 			dataCounter |= memorySpace.read(dataRegister + 1) << 8;
-		} else if(cycles == 1) {
+		} else if(cyclesRemaining == 1) {
 			dataRegister = memorySpace.read(dataCounter);
 		}
 	}
 	
 	private void indirectIndexed() {
-		if(cycles == 4) {
+		if(cyclesRemaining == 4) {
 			dataRegister = memorySpace.read(programCounter++);
-		} else if(cycles == 3) {
+		} else if(cyclesRemaining == 3) {
 			dataCounter = memorySpace.read(dataRegister);
-		} else if(cycles == 2) {
+		} else if(cyclesRemaining == 2) {
 			dataCounter |= memorySpace.read(dataRegister + 1) << 8;
-		} else if(cycles == 1) {
+		} else if(cyclesRemaining == 1) {
 			if((dataCounter + indexY & 0xFF00) != (dataCounter & 0xFF00) && !pageBoundaryFlag) {
-				cycles++;
+				cyclesRemaining++;
 				pageBoundaryFlag = true;
 			} else {
 				pageBoundaryFlag = false;
@@ -311,8 +328,8 @@ public class CPU {
 		}
 	}
 	
-	private int[] instructionCycles = new int[] {
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//0-F
+	private int[] instructionTimes = new int[] {
+			0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,											//0-F
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,											//10-1F
 			0,6,0,0,0,3,0,0,0,2,0,0,0,4,0,0,											//20-2F
 			0,5,0,0,0,4,0,0,0,4,0,0,0,4,0,0,											//30-3F
