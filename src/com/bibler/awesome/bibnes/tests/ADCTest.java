@@ -5,7 +5,7 @@ import com.bibler.awesome.bibnes.systems.Memory;
 
 import junit.framework.TestCase;
 
-public class ADCTest extends TestCase {
+public class ADCTest extends InstructionTest {
 	
 	private CPU cpu;
 	private Memory rom;
@@ -50,7 +50,7 @@ public class ADCTest extends TestCase {
 		assertEquals(0x36, cpu.getAccumulator());
 		final int statusRegister = cpu.getStatusRegister();
 		assertEquals(1, statusRegister & 1);								// Check Carry Flag
-		assertEquals(1, (statusRegister >> 5) & 1);							// Check Overflow
+		assertEquals(1, (statusRegister >> OVERFLOW_FLAG) & 1);							// Check Overflow
 	}
 	
 	public void testLDAImmediateNoOverflow() {
@@ -67,7 +67,7 @@ public class ADCTest extends TestCase {
 		assertEquals(0x31, cpu.getAccumulator());
 		final int statusRegister = cpu.getStatusRegister();
 		assertEquals(1, statusRegister & 1);								// Carry flag should be set
-		assertEquals(0, (statusRegister >> 5) & 1);							// Overflow should not
+		assertEquals(0, (statusRegister >> OVERFLOW_FLAG) & 1);							// Overflow should not
 	}
 	
 	public void testLDAImmediateZero() {
