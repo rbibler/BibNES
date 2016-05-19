@@ -1,10 +1,5 @@
 package com.bibler.awesome.bibnes.tests;
 
-import com.bibler.awesome.bibnes.systems.CPU;
-import com.bibler.awesome.bibnes.systems.Memory;
-
-import junit.framework.TestCase;
-
 public class ADCTest extends InstructionTest {
 	
 	

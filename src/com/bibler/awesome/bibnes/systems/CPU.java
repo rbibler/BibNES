@@ -185,6 +185,10 @@ public class CPU {
 				absoluteIndexedX();
 				ASL();
 				break;
+			case 0x20:
+				absolute();
+				JSR();
+				break;
 			case 0x21:									// AND Indexed Indirect
 				indexedIndirect();
 				AND();
@@ -255,6 +259,9 @@ public class CPU {
 				absoluteIndexedX();
 				ROL();
 				break;
+			case 0x40:
+				RTS();
+				break;
 			case 0x41:
 				indexedIndirect();
 				EOR();
@@ -277,6 +284,10 @@ public class CPU {
 			case 0x4A:
 				accumulator();
 				LSR();
+				break;
+			case 0x4C:
+				absolute();
+				JMP();
 				break;
 			case 0x4D:
 				absolute();
@@ -339,6 +350,10 @@ public class CPU {
 			case 0x6A:
 				accumulator();
 				ROR();
+				break;
+			case 0x6C:
+				indirect();
+				JMP();
 				break;
 			case 0x6D:
 				absolute();
@@ -1128,6 +1143,33 @@ public class CPU {
 		}
 	}
 	
+	private void JMP() {
+		if(cyclesRemaining == 1) {
+			programCounter = dataCounter;
+		}
+	}
+	
+	private void JSR() {
+		if(cyclesRemaining == 1) {
+			final int pcToPush = programCounter - 1;
+			memorySpace.write(0x100 | stackPointer, (pcToPush >> 8) & 0xFF);
+			stackPointer = (stackPointer - 1) & 0xFF;
+			memorySpace.write(0x100 | stackPointer, pcToPush & 0xFF);
+			stackPointer = (stackPointer - 1) & 0xFF;
+			programCounter = dataCounter;
+		}
+	}
+	
+	private void RTS() {
+		if(cyclesRemaining == 1) {
+			stackPointer = (stackPointer + 1) & 0xFF;
+			int newAddress = memorySpace.read(stackPointer);
+			stackPointer = (stackPointer + 1) & 0xFF;
+			newAddress |= memorySpace.read(stackPointer) << 8;
+			programCounter = newAddress + 1;
+		}
+	}
+	
 	private void TXS() {
 		if(cyclesRemaining == 1) {
 			stackPointer = indexX;
@@ -1205,7 +1247,6 @@ public class CPU {
 		} else if(cyclesRemaining == instructionCycles - 3) {
 			dataRegister = memorySpace.read(dataCounter);
 		}
-		
 	}
 	
 	private void zeroPage() {
@@ -1217,7 +1258,18 @@ public class CPU {
 	}
 	
 	private void indirect() {
-		
+		if(cyclesRemaining == instructionCycles - 1) {
+			dataCounter = memorySpace.read(programCounter++);
+		} else if(cyclesRemaining == instructionCycles - 2) {
+			dataCounter |= memorySpace.read(programCounter++) << 8;
+		} else if(cyclesRemaining == instructionCycles - 3) {
+			dataRegister = memorySpace.read(dataCounter);
+			int nextAddress = dataCounter + 1;
+			if((nextAddress & 0xFF00) != (dataCounter & 0xFF00)) {
+				nextAddress &= dataCounter;
+			}
+			dataCounter = dataRegister | (memorySpace.read(nextAddress) <<8);
+		}
 	}
 	
 	private void absoluteIndexedX() {
@@ -1312,11 +1364,11 @@ public class CPU {
 		//  0 1 2 3 4 5 6 7 8 9 A B C D E F	
 			0,6,0,0,0,3,5,0,3,2,0,0,0,4,6,0,	// 0
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 1
-			0,6,0,0,3,3,5,0,4,2,2,0,4,4,6,0,	// 2
+			6,6,0,0,3,3,5,0,4,2,2,0,4,4,6,0,	// 2
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 3
-			0,6,0,0,0,3,5,0,3,2,2,0,0,4,6,0,	// 4
+			6,6,0,0,0,3,5,0,3,2,2,0,3,4,6,0,	// 4
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 5
-			0,6,0,0,0,3,5,0,4,2,2,0,0,4,6,0,	// 6
+			0,6,0,0,0,3,5,0,4,2,2,0,5,4,6,0,	// 6
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 7
 			0,6,0,0,3,3,3,0,2,0,2,0,4,4,4,0,	// 8
 			4,5,0,0,4,4,4,0,2,4,2,0,0,4,0,0,	// 9
