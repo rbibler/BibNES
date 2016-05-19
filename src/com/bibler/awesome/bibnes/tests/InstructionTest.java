@@ -69,6 +69,30 @@ public class InstructionTest extends TestCase {
 		return cpu.getAccumulator();
 	}
 	
+	protected void setProgramCounter(int programCounter) {
+		cpu.setProgramCounter(programCounter);
+	}
+	
+	protected int getProgramCounter() {
+		return cpu.getProgramCounter();
+	}
+	
+	public int getStackPointer() {
+		return cpu.getStackPointer();
+	}
+	
+	public void setStackPointer(int stackPointer) {
+		cpu.setStackPointer(stackPointer);
+	}
+	
+	protected int getYIndex() {
+		return cpu.getYIndex();
+	}
+	
+	protected int getXIndex() {
+		return cpu.getXIndex();
+	}
+	
 	protected int getStatusRegister() {
 		return cpu.getStatusRegister();
 	}
@@ -79,6 +103,34 @@ public class InstructionTest extends TestCase {
 	
 	protected void fillStatusRegister() {
 		cpu.fillStatusRegister();
+	}
+	
+	protected boolean carryFlag() {
+		return (cpu.getStatusRegister() & 1) == 1;
+	}
+	
+	protected boolean zeroFlag() {
+		return ((cpu.getStatusRegister() >> ZERO_FLAG) & 1) == 1;
+	}
+	
+	protected boolean interruptFlag() {
+		return ((cpu.getStatusRegister() >> INTERRUPT_FLAG) & 1) == 1;
+	}
+	
+	protected boolean decimalFlag() {
+		return ((cpu.getStatusRegister() >> DECIMAL_FLAG) & 1) == 1;
+	}
+	
+	protected boolean breakFlag() {
+		return ((cpu.getStatusRegister() >> BREAK_FLAG) & 1) == 1;
+	}
+	
+	protected boolean overflowFlag() {
+		return ((cpu.getStatusRegister() >> OVERFLOW_FLAG) & 1) == 1;
+	}
+	
+	protected boolean signFlag() {
+		return ((cpu.getStatusRegister() >> SIGN_FLAG) & 1) == 1;
 	}
 
 }

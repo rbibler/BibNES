@@ -7,9 +7,6 @@ import junit.framework.TestCase;
 
 public class ADCTest extends InstructionTest {
 	
-	private CPU cpu;
-	private Memory rom;
-	
 	
 	private final int IMMEDIATE = 0x69;
 	private final int ZERO_PAGE = 0x65;
@@ -21,203 +18,149 @@ public class ADCTest extends InstructionTest {
 	private final int INDIRECT_Y = 0x71;
 
 	
-	public void testLDAImmediate() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);	
-		rom.write(0x40, IMMEDIATE);
-		rom.write(0x41, 0xC0);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.setAccumulator(0x60);
-		cpu.powerOn();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0x20, cpu.getAccumulator());
-		assertEquals(1, (cpu.getStatusRegister() & 1));
+	public void testImmediate() {
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, IMMEDIATE);
+		writeRom(0x41, 0xAA);
+		setAccumulator(0x55);
+		runNCycles(2);
+		assertEquals(0xFF, getAccumulator());
+		assertFalse(carryFlag());
+		assertFalse(zeroFlag());
+		assertTrue(signFlag());
+		assertFalse(overflowFlag());
 	}
 	
-	public void testLDAImmediateOverflow() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);	
-		rom.write(0x40, IMMEDIATE);
-		rom.write(0x41, 0x92);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.setAccumulator(0xA4);
-		cpu.powerOn();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0x36, cpu.getAccumulator());
-		final int statusRegister = cpu.getStatusRegister();
-		assertEquals(1, statusRegister & 1);								// Check Carry Flag
-		assertEquals(1, (statusRegister >> OVERFLOW_FLAG) & 1);							// Check Overflow
+	public void testImmediateOverflow() {
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, IMMEDIATE);
+		writeRom(0x41, 0x92);
+		setAccumulator(0xA4);
+		runNCycles(2);
+		assertEquals(0x36, getAccumulator());
+		assertTrue(carryFlag());
+		assertFalse(zeroFlag());
+		assertFalse(signFlag());
+		assertTrue(overflowFlag());
 	}
 	
-	public void testLDAImmediateNoOverflow() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);	
-		rom.write(0x40, IMMEDIATE);
-		rom.write(0x41, 0xD8);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.setAccumulator(0x59);
-		cpu.powerOn();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0x31, cpu.getAccumulator());
-		final int statusRegister = cpu.getStatusRegister();
-		assertEquals(1, statusRegister & 1);								// Carry flag should be set
-		assertEquals(0, (statusRegister >> OVERFLOW_FLAG) & 1);							// Overflow should not
+	public void testZeroPage() {
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, ZERO_PAGE);
+		writeRom(0x41, 0x23);
+		writeRom(0x23, 0xAA);
+		setAccumulator(0x55);
+		runNCycles(3);
+		assertEquals(0xFF, getAccumulator());
+		assertFalse(carryFlag());
+		assertFalse(zeroFlag());
+		assertTrue(signFlag());
+		assertFalse(overflowFlag());
 	}
 	
-	public void testLDAImmediateZero() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);	
-		rom.write(0x40, IMMEDIATE);
-		rom.write(0x41, 0);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.setAccumulator(0);
-		cpu.powerOn();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0, cpu.getAccumulator());
-		final int statusRegister = cpu.getStatusRegister();
-		assertEquals(1, statusRegister>>1 & 1);								// Carry flag should be set
+	public void testZeroPageX() {
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, ZERO_PAGE_X);
+		writeRom(0x41, 0x44);
+		writeRom(0x49, 0xAA);
+		setXIndex(5);
+		setAccumulator(0x55);
+		runNCycles(4);
+		assertEquals(0xFF, getAccumulator());
+		assertFalse(carryFlag());
+		assertFalse(zeroFlag());
+		assertTrue(signFlag());
+		assertFalse(overflowFlag());
 	}
 	
-	/*public void testLDAZeroPage() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);	
-		rom.write(0x40, ZERO_PAGE);
-		rom.write(0x41, 0x23);
-		rom.write(0x23, 0xFA);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.powerOn();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0xFA, cpu.getAccumulator());
+	public void testAbsolute() {
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, ABSOLUTE);
+		writeRom(0x41, 0x00);
+		writeRom(0x42, 0x44);
+		writeRom(0x4400, 0xAA);
+		setAccumulator(0x55);
+		runNCycles(4);
+		assertEquals(0xFF, getAccumulator());
+		assertFalse(carryFlag());
+		assertFalse(zeroFlag());
+		assertTrue(signFlag());
+		assertFalse(overflowFlag());
 	}
 	
-	public void testLDAZeroPageX() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);	
-		rom.write(0x40,  ZERO_PAGE_X);
-		rom.write(0x41, 0xC0);
-		rom.write(0x20, 0xFA);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.powerOn();
-		cpu.setIndexX(0x60);											//Set high to test wrap around
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0xFA, cpu.getAccumulator());
-	}
-	
-	public void testLDAAbsolute() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);
-		rom.write(0x40, ABSOLUTE);
-		rom.write(0x41, 0x00);
-		rom.write(0x42, 0x44);
-		rom.write(0x4400, 0xFA);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.powerOn();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0xFA, cpu.getAccumulator());
-	}
-	
-	public void testLDAAbsoluteX() {
-		System.out.println("ABSX");
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);
-		rom.write(0x40, ABSOLUTE_X);
-		rom.write(0x41, 0xC0);
-		rom.write(0x42, 0x44);
-		rom.write(0x4520, 0xFA);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.powerOn();
-		cpu.setIndexX(0x60);
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0xFA, cpu.getAccumulator());
-		assertEquals(5, cpu.getTotalCycles());
+	public void testAbsoluteX() {
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, ABSOLUTE_X);
+		writeRom(0x41, 0x00);
+		writeRom(0x42, 0x44);
+		writeRom(0x4405, 0xAA);
+		setAccumulator(0x55);
+		setXIndex(5);
+		runNCycles(4);
+		assertEquals(0xFF, getAccumulator());
+		assertFalse(carryFlag());
+		assertFalse(zeroFlag());
+		assertTrue(signFlag());
+		assertFalse(overflowFlag());
 	}
 	
 	public void testLDAAbsoluteY() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);
-		rom.write(0x40, ABSOLUTE_Y);
-		rom.write(0x41, 0xC0);
-		rom.write(0x42, 0x44);
-		rom.write(0x4520, 0xFA);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.powerOn();
-		cpu.setIndexY(0x60);
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0xFA, cpu.getAccumulator());
-		assertEquals(5, cpu.getTotalCycles());
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, ABSOLUTE_Y);
+		writeRom(0x41, 0x00);
+		writeRom(0x42, 0x44);
+		writeRom(0x4405, 0xAA);
+		setAccumulator(0x55);
+		setYIndex(5);
+		runNCycles(4);
+		assertEquals(0xFF, getAccumulator());
+		assertFalse(carryFlag());
+		assertFalse(zeroFlag());
+		assertTrue(signFlag());
+		assertFalse(overflowFlag());
 	}
 	
 	public void testLDAIndirectX() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);
-		rom.write(0x40, INDIRECT_X);
-		rom.write(0x41, 0x44);
-		rom.write(0x48, 0x00);
-		rom.write(0x49,  0x44);
-		rom.write(0x4400, 0xFA);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.powerOn();
-		cpu.setIndexX(0x4);
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0xFA, cpu.getAccumulator());
-		assertEquals(6, cpu.getTotalCycles());
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, INDIRECT_X);
+		writeRom(0x41, 0x44);
+		writeRom(0x48, 0x00);
+		writeRom(0x49,  0x44);
+		writeRom(0x4400, 0xAA);
+		setXIndex(4);
+		setAccumulator(0x55);
+		runNCycles(6);
+		assertEquals(0xFF, getAccumulator());
+		assertFalse(carryFlag());
+		assertFalse(zeroFlag());
+		assertTrue(signFlag());
+		assertFalse(overflowFlag());
 	}
 	
 	public void testLDAIndirectY() {
-		rom = new Memory(0x8000);
-		cpu = new CPU(rom);
-		rom.write(0x40, INDIRECT_Y);
-		rom.write(0x41, 0x44);
-		rom.write(0x44, 0xC0);
-		rom.write(0x45,  0x44);
-		rom.write(0x4520, 0xFA);
-		rom.write(0xFFFC, 0x40);
-		rom.write(0xFFFD, 0);
-		cpu.powerOn();
-		cpu.setIndexY(0x60);
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		cpu.cycle();
-		assertEquals(0xFA, cpu.getAccumulator());
-		assertEquals(6, cpu.getTotalCycles());
-	}*/
+		initializeCPU();
+		resetCPU();
+		writeRom(0x40, INDIRECT_Y);
+		writeRom(0x41, 0x44);
+		writeRom(0x44, 0xC0);
+		writeRom(0x45,  0x44);
+		writeRom(0x4520, 0xAA);
+		setYIndex(0x60);
+		setAccumulator(0x55);
+		runNCycles(6);
+		assertEquals(0xFF, getAccumulator());
+		assertFalse(carryFlag());
+		assertFalse(zeroFlag());
+		assertTrue(signFlag());
+		assertFalse(overflowFlag());
+	}
 
 }

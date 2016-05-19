@@ -53,7 +53,12 @@ public class CPU {
 	
 	public void powerOn() {
 		programCounter = memorySpace.read(0xFFFC) | memorySpace.read(0xFFFD) << 8;
+		resetCPU();
+	}
+	
+	public void resetCPU() {
 		statusRegister = 0;
+		stackPointer = 0xFF;
 	}
 	
 	public void setAccumulator(int accumulator) {
@@ -70,6 +75,30 @@ public class CPU {
 	
 	public int getAccumulator() {
 		return accumulator;
+	}
+	
+	public void setProgramCounter(int programCounter) {
+		this.programCounter = programCounter;
+	}
+	
+	public int getProgramCounter() {
+		return programCounter;
+	}
+	
+	public int getStackPointer() {
+		return stackPointer;
+	}
+	
+	public void setStackPointer(int stackPointer) {
+		this.stackPointer = stackPointer;
+	}
+	
+	public int getYIndex() {
+		return indexY;
+	}
+	
+	public int getXIndex() {
+		return indexX;
 	}
 	
 	public int getDataCounter() {
@@ -110,6 +139,9 @@ public class CPU {
 				zeroPage();
 				ASL();
 				break;
+			case 0x08:
+				PHP();
+				break;
 			case 0x09:
 				immediate();
 				ORA();
@@ -121,6 +153,10 @@ public class CPU {
 			case 0x0E:
 				absolute();
 				ASL();
+				break;
+			case 0x10:
+				relative();
+				BPL();
 				break;
 			case 0x11:
 				indirectIndexed();
@@ -165,6 +201,9 @@ public class CPU {
 				zeroPage();
 				ROL();
 				break;
+			case 0x28:
+				PLP();
+				break;
 			case 0x29:
 				immediate();
 				AND();
@@ -184,6 +223,10 @@ public class CPU {
 			case 0x2E:
 				absolute();
 				ROL();
+				break;
+			case 0x30:
+				relative();
+				BMI();
 				break;
 			case 0x31:
 				indirectIndexed();
@@ -212,12 +255,82 @@ public class CPU {
 				absoluteIndexedX();
 				ROL();
 				break;
+			case 0x41:
+				indexedIndirect();
+				EOR();
+				break;
+			case 0x45:
+				zeroPage();
+				EOR();
+				break;
+			case 0x46:
+				zeroPage();
+				LSR();
+				break;
+			case 0x48:
+				PHA();
+				break;
+			case 0x49:
+				immediate();
+				EOR();
+				break;
+			case 0x4A:
+				accumulator();
+				LSR();
+				break;
+			case 0x4D:
+				absolute();
+				EOR();
+				break;
+			case 0x4E:
+				absolute();
+				LSR();
+				break;
+			case 0x50:
+				relative();
+				BVC();
+				break;
+			case 0x51:
+				indirectIndexed();
+				EOR();
+				break;
+			case 0x55:
+				zeroPageIndexed();
+				EOR();
+				break;
+			case 0x56:
+				zeroPageIndexed();
+				LSR();
+				break;
 			case 0x58:
 				CLI();
+				break;
+			case 0x59:
+				absoluteIndexedY();
+				EOR();
+				break;
+			case 0x5D:
+				absoluteIndexedX();
+				EOR();
+				break;
+			case 0x5E:
+				absoluteIndexedX();
+				LSR();
+				break;
+			case 0x61:
+				indexedIndirect();
+				ADC();
+				break;
+			case 0x65:
+				zeroPage();
+				ADC();
 				break;
 			case 0x66:
 				zeroPage();
 				ROR();
+				break;
+			case 0x68:
+				PLA();
 				break;
 			case 0x69:									// ADC Immediate
 				immediate();
@@ -227,9 +340,25 @@ public class CPU {
 				accumulator();
 				ROR();
 				break;
+			case 0x6D:
+				absolute();
+				ADC();
+				break;
 			case 0x6E:
 				absolute();
 				ROR();
+				break;
+			case 0x70:
+				relative();
+				BVS();
+				break;
+			case 0x71:
+				indirectIndexed();
+				ADC();
+				break;
+			case 0x75:
+				zeroPageIndexed();
+				ADC();
 				break;
 			case 0x76:
 				zeroPageIndexed();
@@ -238,33 +367,151 @@ public class CPU {
 			case 0x78:
 				SEI();
 				break;
+			case 0x79:
+				absoluteIndexedY();
+				ADC();
+				break;
+			case 0x7D:
+				absoluteIndexedX();
+				ADC();
+				break;
 			case 0x7E:
 				absoluteIndexedX();
 				ROR();
+				break;
+			case 0x81:
+				indexedIndirect();
+				STA();
+				break;
+			case 0x84:
+				zeroPage();
+				STY();
+				break;
+			case 0x85:
+				zeroPage();
+				STA();
+				break;
+			case 0x86:
+				zeroPage();
+				STX();
+				break;
+			case 0x88:
+				DEY();
+				break;
+			case 0x8A:
+				TXA();
+				break;
+			case 0x8C:
+				absolute();
+				STY();
+				break;
+			case 0x8D:
+				absolute();
+				STA();
+				break;
+			case 0x8E:
+				absolute();
+				STX();
+				break;
+			case 0x90:
+				relative();
+				BCC();
+				break;
+			case 0x91:
+				indirectIndexed();
+				STA();
+				break;
+			case 0x94:
+				zeroPageIndexed();
+				STY();
+				break;
+			case 0x95:
+				zeroPageIndexed();
+				STA();
+				break;
+			case 0x96:
+				zeroPageIndexedY();
+				STX();
+				break;
+			case 0x98:
+				TYA();
+				break;
+			case 0x99:
+				absoluteIndexedY();
+				STA();
+				break;
+			case 0x9A:
+				TXS();
+				break;
+			case 0x9D:
+				absoluteIndexedX();
+				STA();
+				break;
+			case 0xA0:
+				immediate();
+				LDY();
 				break;
 			case 0xA1:
 				indexedIndirect();
 				LDA();
 				break;
+			case 0xA2:
+				immediate();
+				LDX();
+				break;
+			case 0xA4:
+				zeroPage();
+				LDY();
+				break;
 			case 0xA5:									// LDA Zero Page
 				zeroPage();
 				LDA();
+				break;
+			case 0xA6:
+				zeroPage();
+				LDX();
+				break;
+			case 0xA8:
+				TAY();
 				break;
 			case 0xA9:									// LDA Immediate
 				immediate();
 				LDA();
 				break;
+			case 0xAA:
+				TAX();
+				break;
+			case 0xAC:
+				absolute();
+				LDY();
+				break;
 			case 0xAD:									// LDA Absolute
 				absolute();
 				LDA();
+				break;
+			case 0xAE:
+				absolute();
+				LDX();
+				break;
+			case 0xB0:
+				relative();
+				BCS();
 				break;
 			case 0xB1:
 				indirectIndexed();
 				LDA();
 				break;
+			case 0xB4:
+				zeroPageIndexed();
+				LDY();
+				break;
 			case 0xB5:									// LDA Zero Page X
 				zeroPageIndexed();
 				LDA();
+				break;
+			case 0xB6:
+				zeroPageIndexedY();
+				LDX();
 				break;
 			case 0xB8:
 				CLV();
@@ -273,15 +520,163 @@ public class CPU {
 				absoluteIndexedY();
 				LDA();
 				break;
+			case 0xBA:
+				TSX();
+				break;
+			case 0xBC:
+				absoluteIndexedX();
+				LDY();
+				break;
 			case 0xBD:									// LDA Absolute X
 				absoluteIndexedX();
 				LDA();
 				break;
+			case 0xBE:
+				absoluteIndexedY();
+				LDX();
+				break;
+			case 0xC0:
+				immediate();
+				CPY();
+				break;
+			case 0xC1:
+				indexedIndirect();
+				CMP();
+				break;
+			case 0xC4:
+				zeroPage();
+				CPY();
+				break;
+			case 0xC5:
+				zeroPage();
+				CMP();
+				break;
+			case 0xC6:
+				zeroPage();
+				DEC();
+				break;
+			case 0xC8:
+				INY();
+				break;
+			case 0xC9:
+				immediate();
+				CMP();
+				break;
+			case 0xCA:
+				DEX();
+				break;
+			case 0xCC:
+				absolute();
+				CPY();
+				break;
+			case 0xCD:
+				absolute();
+				CMP();
+				break;
+			case 0xCE:
+				absolute();
+				DEC();
+				break;
+			case 0xD0:
+				relative();
+				BNE();
+				break;
+			case 0xD1:
+				indexedIndirect();
+				CMP();
+				break;
+			case 0xD5:
+				zeroPageIndexed();
+				CMP();
+				break;
+			case 0xD6:
+				zeroPageIndexed();
+				DEC();
+				break;
 			case 0xD8:
 				CLD();
 				break;
+			case 0xD9:
+				absoluteIndexedY();
+				CMP();
+				break;
+			case 0xDD:
+				absoluteIndexedX();
+				CMP();
+				break;
+			case 0xDE:
+				absoluteIndexedX();
+				DEC();
+				break;
+			case 0xE0:
+				immediate();
+				CPX();
+				break;
+			case 0xE1:
+				indexedIndirect();
+				SBC();
+				break;
+			case 0xE4:
+				zeroPage();
+				CPX();
+				break;
+			case 0xE5:
+				zeroPage();
+				SBC();
+				break;
+			case 0xE6:
+				zeroPage();
+				INC();
+				break;
+			case 0xE8:
+				INX();
+				break;
+			case 0xE9:
+				immediate();
+				SBC();
+				break;
+			case 0xEC:
+				absolute();
+				CPX();
+				break;
+			case 0xED:
+				absolute();
+				SBC();
+				break;
+			case 0xEE:
+				absolute();
+				INC();
+				break;
+			case 0xF0:
+				relative();
+				BEQ();
+				break;
+			case 0xF1:
+				indirectIndexed();
+				SBC();
+				break;
+			case 0xF5:
+				zeroPageIndexed();
+				SBC();
+				break;
+			case 0xF6:
+				zeroPageIndexed();
+				INC();
+				break;
 			case 0xF8:
 				SED();
+				break;
+			case 0xF9:
+				absoluteIndexedY();
+				SBC();
+				break;
+			case 0xFD:
+				absoluteIndexedX();
+				SBC();
+				break;
+			case 0xFE:
+				absoluteIndexedX();
+				INC();
 				break;
 		}	
 		
@@ -305,6 +700,81 @@ public class CPU {
 			final int overflow = ((accumulator ^ addResult) & (dataRegister ^ addResult) & 0x80) == 0 ? 0 : 1;
 			statusRegister ^= (-overflow ^ statusRegister) & (1 << OVERFLOW_FLAG);
 			accumulator = (addResult & 0xFF);
+		}
+	}
+	
+	private void SBC() {
+		if(cyclesRemaining == 1) {
+			final int subtractResult = (accumulator - dataRegister - (~statusRegister & 1));
+			statusRegister ^= (-((subtractResult >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(subtractResult == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+			int carryFlag = 0;
+			if(subtractResult >= 0 && subtractResult <= 0xFF) {
+				carryFlag = 1;
+			}
+			statusRegister ^= (-carryFlag ^ statusRegister) & 1;
+			final int overflow = ((accumulator ^ subtractResult) & (dataRegister ^ subtractResult) & 0x80) == 0 ? 0 : 1;
+			statusRegister ^= (-overflow ^ statusRegister) & (1 << OVERFLOW_FLAG);
+			accumulator = (subtractResult & 0xFF);
+		}
+	}
+	
+	private void CMP() {
+		if(cyclesRemaining == 1) {
+			final int result = accumulator - dataRegister - (~statusRegister & 1);
+			int carryFlag = 0;
+			if(result >= 0 && result <= 0xFF) {
+				carryFlag = 1;
+			}
+			statusRegister ^= (-carryFlag ^ statusRegister) & 1;
+			statusRegister ^= (-((result >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(result == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void CPX() {
+		if(cyclesRemaining == 1) {
+			final int result = indexX - dataRegister - (~statusRegister & 1);
+			int carryFlag = 0;
+			if(result >= 0 && result <= 0xFF) {
+				carryFlag = 1;
+			}
+			statusRegister ^= (-carryFlag ^ statusRegister) & 1;
+			statusRegister ^= (-((result >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(result == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void CPY() {
+		if(cyclesRemaining == 1) {
+			final int result = indexY - dataRegister - (~statusRegister & 1);
+			int carryFlag = 0;
+			if(result >= 0 && result <= 0xFF) {
+				carryFlag = 1;
+			}
+			statusRegister ^= (-carryFlag ^ statusRegister) & 1;
+			statusRegister ^= (-((result >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(result == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void DEC() {
+		if(cyclesRemaining == 2) {
+			dataRegister = (dataRegister - 1) & 0xFF;
+			statusRegister ^= (-((dataRegister >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(dataRegister == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		} else if(cyclesRemaining == 1) {
+			memorySpace.write(dataCounter, dataRegister);
+		}
+	}
+	
+	private void INC() {
+		if(cyclesRemaining == 2) {
+			dataRegister = (dataRegister + 1) & 0xFF;
+			statusRegister ^= (-((dataRegister >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(dataRegister == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		} else if(cyclesRemaining == 1) {
+			memorySpace.write(dataCounter, dataRegister);
 		}
 	}
 	
@@ -384,6 +854,114 @@ public class CPU {
 	private void LDA() {
 		if(cyclesRemaining == 1) {
 			accumulator = dataRegister;
+			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void LDX() {
+		if(cyclesRemaining == 1) {
+			indexX = dataRegister;
+			statusRegister ^= (-((indexX >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexX == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void LDY() {
+		if(cyclesRemaining == 1) {
+			indexY = dataRegister;
+			statusRegister ^= (-((indexY >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexY == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void STA() {
+		if(cyclesRemaining == 1) {
+			memorySpace.write(dataCounter, accumulator);
+		}
+	}
+	
+	private void STX() {
+		if(cyclesRemaining == 1) {
+			memorySpace.write(dataCounter, indexX);
+		}
+	}
+	
+	private void STY() {
+		if(cyclesRemaining == 1) {
+			memorySpace.write(dataCounter, indexY);
+		}
+	}
+	
+	private void TAX() {
+		if(cyclesRemaining == 1) {
+			indexX = accumulator;
+			statusRegister ^= (-((indexX >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexX == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void TXA() {
+		if(cyclesRemaining == 1) {
+			accumulator = indexX;
+			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void DEX() {
+		if(cyclesRemaining == 1) {
+			indexX = (indexX - 1) & 0xFF;
+			statusRegister ^= (-((indexX >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexX == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void INX() {
+		if(cyclesRemaining == 1) {
+			indexX = (indexX + 1) & 0xFF;
+			statusRegister ^= (-((indexX >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexX == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void TAY() {
+		if(cyclesRemaining == 1) {
+			indexY = accumulator;
+			statusRegister ^= (-((indexY >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexY == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void TYA() {
+		if(cyclesRemaining == 1) {
+			accumulator = indexY;
+			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void DEY() {
+		if(cyclesRemaining == 1) {
+			indexY = (indexY - 1) & 0xFF;
+			statusRegister ^= (-((indexY >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexY == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void INY() {
+		if(cyclesRemaining == 1) {
+			indexY = (indexY + 1) & 0xFF;
+			statusRegister ^= (-((indexY >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexY == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+		}
+	}
+	
+	private void EOR() {
+		if(cyclesRemaining == 1) {
+			accumulator ^= dataRegister;
+			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 		}
 	}
 	
@@ -425,6 +1003,179 @@ public class CPU {
 		}
 	}
 	
+	private void LSR() {
+		if(cyclesRemaining == 1) {
+			statusRegister ^= (-((dataRegister) & 1) ^ statusRegister) & 1;			// set carry flag
+			dataRegister = dataRegister >> 1;
+			dataRegister &= 0xFF;
+			if(instruction == 0x4A) {
+				accumulator = dataRegister;
+			} else {
+				memorySpace.write(dataCounter, dataRegister);
+			}
+		}
+	}
+	
+	private void BPL() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			int postBranchPC = programCounter;
+			if((statusRegister >> SIGN_FLAG & 1) == 0) {
+				programCounter += (byte) (dataRegister);
+				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
+					cyclesRemaining -= 1;
+				}
+			} else {
+				cyclesRemaining -= 2;
+			}
+		}
+	}
+	
+	private void BMI() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			int postBranchPC = programCounter;
+			if((statusRegister >> SIGN_FLAG & 1) == 1) {
+				programCounter += (byte) (dataRegister);
+				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
+					cyclesRemaining -= 1;
+				}
+			} else {
+				cyclesRemaining -= 2;
+			}
+		}
+	}
+	
+	private void BVC() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			int postBranchPC = programCounter;
+			if((statusRegister >> OVERFLOW_FLAG & 1) == 0) {
+				programCounter += (byte) (dataRegister);
+				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
+					cyclesRemaining -= 1;
+				}
+			} else {
+				cyclesRemaining -= 2;
+			}
+		}
+	}
+	
+	private void BVS() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			int postBranchPC = programCounter;
+			if((statusRegister >> OVERFLOW_FLAG & 1) == 1) {
+				programCounter += (byte) (dataRegister);
+				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
+					cyclesRemaining -= 1;
+				}
+			} else {
+				cyclesRemaining -= 2;
+			}
+		}
+	}
+	
+	private void BCC() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			int postBranchPC = programCounter;
+			if((statusRegister & 1) == 0) {
+				programCounter += (byte) (dataRegister);
+				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
+					cyclesRemaining -= 1;
+				}
+			} else {
+				cyclesRemaining -= 2;
+			}
+		}
+	}
+	
+	private void BCS() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			int postBranchPC = programCounter;
+			if((statusRegister & 1) == 1) {
+				programCounter += (byte) (dataRegister);
+				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
+					cyclesRemaining -= 1;
+				}
+			} else {
+				cyclesRemaining -= 2;
+			}
+		}
+	}
+	
+	private void BNE() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			int postBranchPC = programCounter;
+			if((statusRegister >> ZERO_FLAG & 1) == 1) {
+				programCounter += (byte) (dataRegister);
+				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
+					cyclesRemaining -= 1;
+				}
+			} else {
+				cyclesRemaining -= 2;
+			}
+		}
+	}
+	
+	private void BEQ() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			int postBranchPC = programCounter;
+			if((statusRegister >> ZERO_FLAG & 1) == 0) {
+				programCounter += (byte) (dataRegister);
+				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
+					cyclesRemaining -= 1;
+				}
+			} else {
+				cyclesRemaining -= 2;
+			}
+		}
+	}
+	
+	private void TXS() {
+		if(cyclesRemaining == 1) {
+			stackPointer = indexX;
+		}
+	}
+	
+	private void TSX() {
+		if(cyclesRemaining == 1) {
+			indexX = stackPointer;
+		}
+	}
+	
+	private void PHA() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			memorySpace.write(0x100 | stackPointer, accumulator);
+		} else if(cyclesRemaining == instructionCycles - 2) {
+			stackPointer = (stackPointer - 1) & 0xFF;
+		}
+	}
+	
+	private void PLA() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			stackPointer = (stackPointer + 1) & 0xFF;
+		} else if(cyclesRemaining == instructionCycles - 2) {
+			dataRegister = memorySpace.read(0x100 | stackPointer);
+		} else if(cyclesRemaining == instructionCycles - 3) {
+			accumulator = dataRegister;
+		}
+	}
+	
+	private void PHP() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			memorySpace.write(0x100 | stackPointer, statusRegister);
+		} else if(cyclesRemaining == instructionCycles - 2) {
+			stackPointer = (stackPointer - 1) & 0xFF;
+		}
+	}
+	
+	private void PLP() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			stackPointer = (stackPointer + 1) & 0xFF;
+		} else if(cyclesRemaining == instructionCycles - 2) {
+			dataRegister = memorySpace.read(0x100 | stackPointer);
+		} else if(cyclesRemaining == instructionCycles - 3) {
+			statusRegister = dataRegister;
+		}
+	}
+	
 	//Address modes
 	private void accumulator() {
 		if(cyclesRemaining == instructionCycles - 1) {
@@ -441,7 +1192,9 @@ public class CPU {
 
 	
 	private void relative() {
-		
+		if(cyclesRemaining == instructionCycles - 1) {
+			dataRegister = memorySpace.read(programCounter++);
+		}
 	}
 	
 	private void absolute() {
@@ -512,6 +1265,16 @@ public class CPU {
 		}
 	}
 	
+	private void zeroPageIndexedY() {
+		if(cyclesRemaining == instructionCycles - 1) {
+			dataCounter = memorySpace.read(programCounter++);
+		} else if(cyclesRemaining == instructionCycles - 2) {
+			dataCounter = (dataCounter + indexY) & 0xFF;
+		} else if(cyclesRemaining == instructionCycles - 3) {
+			dataRegister = memorySpace.read(dataCounter);
+		}
+	}
+	
 	private void indexedIndirect() {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = memorySpace.read(programCounter++);
@@ -547,22 +1310,22 @@ public class CPU {
 	
 	private int[] instructionTimes = new int[] {
 		//  0 1 2 3 4 5 6 7 8 9 A B C D E F	
-			0,6,0,0,0,3,5,0,0,2,0,0,0,4,6,0,	// 0
-			0,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 1
-			0,6,0,0,3,3,5,0,0,2,2,0,4,4,6,0,	// 2
-			0,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 3
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 4
-			0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,	// 5
-			0,0,0,0,0,0,5,0,0,2,2,0,0,0,6,0,	// 6
-			0,0,0,0,0,0,6,0,2,0,0,0,0,0,7,0,	// 7
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 8
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 9
-			0,6,0,0,0,3,0,0,0,2,0,0,0,4,0,0,	// A
-			0,5,0,0,0,4,0,0,2,4,0,0,0,4,0,0,	// B
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// C
-			0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,	// D
-			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// E
-			0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0		// F
+			0,6,0,0,0,3,5,0,3,2,0,0,0,4,6,0,	// 0
+			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 1
+			0,6,0,0,3,3,5,0,4,2,2,0,4,4,6,0,	// 2
+			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 3
+			0,6,0,0,0,3,5,0,3,2,2,0,0,4,6,0,	// 4
+			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 5
+			0,6,0,0,0,3,5,0,4,2,2,0,0,4,6,0,	// 6
+			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 7
+			0,6,0,0,3,3,3,0,2,0,2,0,4,4,4,0,	// 8
+			4,5,0,0,4,4,4,0,2,4,2,0,0,4,0,0,	// 9
+			2,6,2,0,3,3,3,0,2,2,2,0,4,4,4,0,	// A
+			4,5,0,0,4,4,4,0,2,4,2,0,4,4,4,0,	// B
+			2,6,0,0,3,3,5,0,2,2,2,0,4,4,6,0,	// C
+			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// D
+			2,6,0,0,3,3,5,0,2,2,0,0,4,4,6,0,	// E
+			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0		// F
 			
 	};
 
