@@ -23,5 +23,25 @@ public class StringUtils {
 		}
 		return s;
 	}
+	
+	public static int hexStringToInt(String hexString) {
+		int temp = 0;
+		int length = hexString.length() - 1;
+		for(int i = 0; i < hexString.length(); i++) {
+			temp |= findHexValue(hexString.substring(i, i + 1)) << ((length - i) * 4);
+		}
+		return temp;
+	}
+	
+	private static int findHexValue(String s) {
+		int value = 17;
+		for(int i = 0; i < hexValues.length; i++) {
+			if(s == hexValues[i]) {
+				value = i;
+				break;
+			}
+		}
+		return value;
+	}
 
 }

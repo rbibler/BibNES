@@ -12,9 +12,17 @@ public class Assembler {
 	char[][] secondSpaceChars = {{'D', 'N', 'S'}};
 	char[][][] thirdSpaceChars = {{{'C'},{'D'},{'L'}}};
 	
+	public final static int ACCUMULATOR = 0x00;
+	public final static int IMMEDIATE = 0x01;
+	public final static int ABSOLUTE = 0x02;
+	public final static int ABSOLUTE_X = 0x03;
+	public final static int ABSOLUTE_Y = 0x04;
+	
 	Pattern hexValues = Pattern.compile("[0-9[A-F]]");
 	Matcher m;
 	String instruction;
+	String address;
+	int addressingMode;
 	
 	// first space chars: A, B, C, D, E, I, J, L, O, P, R, S, T
 	
@@ -27,10 +35,10 @@ public class Assembler {
 		
 	}
 	
-	public int parseOpCode(String lineToParse) {
+	public boolean matchOpCode(String lineToParse) {
+		boolean match = false;
 		String tmp = lineToParse.replaceAll("\\s+", "");
 		StringBuilder b = new StringBuilder();
-		int returnInt = 0x100;
 		for(int i = 0; i < firstSpaceChars.length; i++) {
 			if(tmp.charAt(0) == firstSpaceChars[i]) {
 				for(int j = 0; j < secondSpaceChars[i].length; j++) {
@@ -42,27 +50,55 @@ public class Assembler {
 								b.append(thirdSpaceChars[i][j][k]);
 								instruction = b.toString();
 								System.out.println(instruction);
-								checkAddressingMode(tmp.substring(3));
-								return 0x29;
+								match = true;
 							}
 						}
 					}
 				}
 			}
 		}
-		return returnInt;
+		return match;
 	}
 	
-	private int checkAddressingMode(String lineToParse) {
-		boolean match = false;
-		System.out.println(lineToParse);
-		if(lineToParse.charAt(0) == '#') {
-			if(lineToParse.charAt(1) == '$') {
-				match = isHexDigit(lineToParse.substring(2));
+	public int parseOpCode(String lineToParse) {
+		int opCode = 0x100;
+		String tmp = trimWhiteSpace(lineToParse);
+		if(matchOpCode(tmp)) {
+			tmp = tmp.substring(3);
+			if(checkAddressingMode(tmp)) {
+				opCode = constructOpCode();
 			}
 		}
-		System.out.println(match);
-		return 0;
+		return opCode;
+	}
+	
+	public String trimWhiteSpace(String lineToTrim) {
+		return lineToTrim.replaceAll("\\s+", "");
+	}
+	
+	public boolean checkAddressingMode(String lineToParse) {
+		boolean match = false;
+		if(checkImmediate(lineToParse)) {
+			match = true;
+			addressingMode = IMMEDIATE;
+			address = lineToParse.substring(2);
+		}
+		return match;
+	}
+	
+	private boolean checkImmediate(String addressToCheck) {
+		System.out.println(addressToCheck);
+		boolean match = false;
+		if(addressToCheck.charAt(0) == '#') {
+			if(addressToCheck.charAt(1) == '$') {
+				match = isHexDigit(addressToCheck.substring(2));
+			}
+		}
+		return match;
+	}
+	
+	private int constructOpCode() {
+		return ACCUMULATOR;
 	}
 	
 	private boolean isHexDigit(String s) {
@@ -74,6 +110,14 @@ public class Assembler {
 			}
 		}
 		return true;
+	}
+	
+	public int getAddressMode() {
+		return addressingMode;
+	}
+	
+	public String getAddress() {
+		return address;
 	}
 
 }

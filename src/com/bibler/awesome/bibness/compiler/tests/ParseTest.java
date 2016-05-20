@@ -9,8 +9,17 @@ public class ParseTest extends TestCase {
 	public void testInstructionParse() {
 		Assembler assembler = new Assembler();
 		String s = "AND #$F2";
-		int opCode = assembler.parseOpCode(s);
-		assertEquals(0x29, opCode);
+		assertTrue(assembler.matchOpCode(assembler.trimWhiteSpace(s)));
 	}
+	
+	public void testAddressParse() {
+		Assembler assembler = new Assembler();
+		String s = "#$F2";
+		assertTrue(assembler.checkAddressingMode(s));
+		assertEquals(Assembler.IMMEDIATE, assembler.getAddressMode());
+		assertEquals("F2", assembler.getAddress());
+	}
+	
+	
 
 }
