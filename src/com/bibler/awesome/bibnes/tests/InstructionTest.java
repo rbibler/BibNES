@@ -105,6 +105,10 @@ public class InstructionTest extends TestCase {
 		cpu.fillStatusRegister();
 	}
 	
+	protected void setNMI() {
+		cpu.setNMI();
+	}
+	
 	protected boolean carryFlag() {
 		return (cpu.getStatusRegister() & 1) == 1;
 	}

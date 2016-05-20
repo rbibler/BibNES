@@ -11,6 +11,7 @@ public class CPU {
 	final int BREAK_FLAG = 4;
 	final int OVERFLOW_FLAG = 6;
 	final int SIGN_FLAG = 7;
+	final int NMI = 0x4E4D49;
 	
 	
 	//Registers
@@ -32,6 +33,7 @@ public class CPU {
 	private int cyclesRemaining;
 	private int instructionCycles;
 	private boolean pageBoundaryFlag;
+	private boolean NMIFlag;
 	
 	//Debug
 	private int totalCycles;
@@ -42,7 +44,13 @@ public class CPU {
 	
 	public void cycle() {
 		if(cyclesRemaining == 0) {
-			fetch();
+			if(NMIFlag) {
+				NMIFlag = false;
+				cyclesRemaining = 6;
+				instruction = NMI;
+			} else {
+				fetch();
+			}
 		} else {
 			execute();
 		}
@@ -125,8 +133,15 @@ public class CPU {
 		statusRegister = 0xFF;
 	}
 	
+	public void setNMI() {
+		NMIFlag = true;
+	}
+	
 	private void execute() {
 		switch(instruction) {
+			case 0x00:
+				BRK();
+				break;
 			case 0x01:
 				indexedIndirect();
 				ORA();
@@ -260,7 +275,7 @@ public class CPU {
 				ROL();
 				break;
 			case 0x40:
-				RTS();
+				RTI();
 				break;
 			case 0x41:
 				indexedIndirect();
@@ -327,6 +342,9 @@ public class CPU {
 			case 0x5E:
 				absoluteIndexedX();
 				LSR();
+				break;
+			case 0x60:
+				RTS();
 				break;
 			case 0x61:
 				indexedIndirect();
@@ -692,6 +710,9 @@ public class CPU {
 			case 0xFE:
 				absoluteIndexedX();
 				INC();
+				break;
+			case NMI:
+				NMI();
 				break;
 		}	
 		
@@ -1163,10 +1184,42 @@ public class CPU {
 	private void RTS() {
 		if(cyclesRemaining == 1) {
 			stackPointer = (stackPointer + 1) & 0xFF;
-			int newAddress = memorySpace.read(stackPointer);
+			int newAddress = memorySpace.read(0x100 | stackPointer);
 			stackPointer = (stackPointer + 1) & 0xFF;
-			newAddress |= memorySpace.read(stackPointer) << 8;
+			newAddress |= memorySpace.read(0x100 | stackPointer) << 8;
 			programCounter = newAddress + 1;
+		}
+	}
+	
+	private void RTI() {
+		if(cyclesRemaining == 1) {
+			stackPointer = (stackPointer + 1) & 0xFF;
+			statusRegister = memorySpace.read(0x100 | stackPointer);
+			stackPointer = (stackPointer + 1) & 0xFF;
+			int newAddress = memorySpace.read(0x100 | stackPointer);
+			stackPointer = (stackPointer + 1) & 0xFF;
+			newAddress |= memorySpace.read(0x100 | stackPointer) << 8;
+			programCounter = newAddress;
+		}
+	}
+	
+	private void NMI() {
+		if(cyclesRemaining == 1) {
+			memorySpace.write(0x100 | stackPointer, (programCounter >> 8) & 0xFF);
+			stackPointer = (stackPointer - 1) & 0xFF;
+			memorySpace.write(0x100 | stackPointer, programCounter & 0xFF);
+			stackPointer = (stackPointer - 1) & 0xFF;
+			memorySpace.write(0x100 | stackPointer, statusRegister);
+			stackPointer = (stackPointer - 1) & 0xFF;
+			int lowByte = memorySpace.read(0xFFFA);
+			programCounter = lowByte | memorySpace.read(0xFFFB) << 8;
+		}
+	}
+	
+	private void BRK() {
+		if(cyclesRemaining == 1) {
+			NMIFlag = true;
+			programCounter++;
 		}
 	}
 	
@@ -1362,13 +1415,13 @@ public class CPU {
 	
 	private int[] instructionTimes = new int[] {
 		//  0 1 2 3 4 5 6 7 8 9 A B C D E F	
-			0,6,0,0,0,3,5,0,3,2,0,0,0,4,6,0,	// 0
+			7,6,0,0,0,3,5,0,3,2,0,0,0,4,6,0,	// 0
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 1
 			6,6,0,0,3,3,5,0,4,2,2,0,4,4,6,0,	// 2
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 3
 			6,6,0,0,0,3,5,0,3,2,2,0,3,4,6,0,	// 4
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 5
-			0,6,0,0,0,3,5,0,4,2,2,0,5,4,6,0,	// 6
+			6,6,0,0,0,3,5,0,4,2,2,0,5,4,6,0,	// 6
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 7
 			0,6,0,0,3,3,3,0,2,0,2,0,4,4,4,0,	// 8
 			4,5,0,0,4,4,4,0,2,4,2,0,0,4,0,0,	// 9
