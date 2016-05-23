@@ -18,5 +18,9 @@ public class Memory {
 	public void write(int addressToWrite, int data) {
 		memoryArray[addressToWrite % size] = data & 0xFF;
 	}
+	
+	public int size() {
+		return size;
+	}
 
 }
