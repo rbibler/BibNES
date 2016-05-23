@@ -12,6 +12,9 @@ public class AssemblyUtils {
 	public final static int ZERO_PAGE = 0x06;
 	public final static int ZERO_PAGE_X = 0x07;
 	public final static int ZERO_PAGE_Y = 0x08;
+	public final static int INDIRECT = 0x09;
+	public final static int INDIRECT_X = 0x0A;
+	public final static int INDIRECT_Y = 0x0B;
 	
 	private static HashMap<String, Integer> immediateOpCodes;
 	private static HashMap<String, Integer> accumulatorOpCodes;

@@ -142,5 +142,27 @@ public class AddressingModeTest extends TestCase {
 		s = "$DEDEE";
 		assertFalse(assembler.checkAbsolute(s));
 	}
+	
+	public void testIndirect() {
+		assembler = new Assembler();
+		String s;
+		s = "($4400)";
+		assertTrue(assembler.checkIndirect(s));
+		assertEquals(0x4400, assembler.getAddress());
+		s =("($4400");
+		assertFalse(assembler.checkIndirect(s));
+		s = "($44,X)";
+		assertTrue(assembler.checkIndirect(s));
+		assertEquals(0x44, assembler.getAddress());
+		assertEquals(AssemblyUtils.INDIRECT_X, assembler.getAddressMode());
+		s = ("($44),Y");
+		assertTrue(assembler.checkIndirect(s));
+		assertEquals(0x44, assembler.getAddress());
+		assertEquals(AssemblyUtils.INDIRECT_Y, assembler.getAddressMode());
+		s = "($4400,X)";
+		assertFalse(assembler.checkIndirect(s));
+		s = "($4400),Y";
+		assertFalse(assembler.checkIndirect(s));
+	}
 
 }

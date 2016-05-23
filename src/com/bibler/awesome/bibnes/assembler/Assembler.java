@@ -236,6 +236,109 @@ public class Assembler {
 		return match;
 	}
 	
+	/**
+	 * Validates whether an operand describes an Indirect addressing mode. 
+	 * First examines string for an index (i.e. 'X' or 'Y') and calls the 
+	 * appropriate helper function.
+	 * @param addressToCheck - The string containing the operand
+	 * @return True if operand describes an indirect addressing mode. False otherwise. 
+	 */
+	public boolean checkIndirect(String addressToCheck) {
+		boolean match = false;
+		int index = getIndex(addressToCheck);
+		if(index >= 0) {
+			match = checkIndirectIndex(addressToCheck, index);
+		} else {
+			match = checkIndirectNoIndex(addressToCheck);
+		}
+		return match;
+	}
+	
+	/**
+	 * Validates that the string represents either the Indexed Indirect or Indirect Indexed addressing  modes.
+	 * Function parses the string to check for disambiguating identifiers: [(),].
+	 * If appropriate identifiers are found, they are stripped and the remaining characters are checked for
+	 * digit status according to any radix included in the string. 
+	 * @param addressToCheck - String representing the operand to be checked.
+	 * @param index - Location within the string of the index character (i.e. "X", "x", "Y", "y").
+	 * @return True if the operand describes and indexed indirect address mode. False otherwise. 
+	 */
+	
+	public boolean checkIndirectIndex(String addressToCheck, int index) {
+		boolean match = false;
+		//Store the index character for later comparison.
+		char indexChar = addressToCheck.charAt(index);	
+		// Stores the potential address mode after index character is checked. Primed at -1 for later validation.
+		int potentialAddressMode = -1;
+		int radix = -1;
+		String tmp = "";
+		// Check if we have an "X" index
+		if(indexChar == 'X' || indexChar == 'x') {
+			// With whitespace trimmed, the ")" character must immediately follow the "X", and the "," character 
+			// must immediately precede the X
+			if(addressToCheck.charAt(index + 1) == ')' && addressToCheck.charAt(index - 1) == ',') {
+				//Trim everything but the (potential) address
+				tmp = addressToCheck.substring(1, index - 1);
+				// Set address mode now so we don't have to find it later.
+				potentialAddressMode = AssemblyUtils.INDIRECT_X;
+			} 
+		} else if(indexChar == 'Y' || indexChar == 'y') {
+			// With whitespace trimmed, the "," character must immediately precede the "Y", and the 
+			// ")" must immediately precede the ",". 
+			if(addressToCheck.charAt(index - 1) == ',' && addressToCheck.charAt(index - 2) == ')') {
+				// Trim everything but the (potential) address
+				tmp = addressToCheck.substring(1, index - 2);
+				// Set address mode now so we don't have to find it later.
+				potentialAddressMode = AssemblyUtils.INDIRECT_Y;
+			}
+		}
+		// If we found all our disambiguating identifiers, potential address will no longer be -1
+		if(potentialAddressMode > 0) {
+			// Check for a radix identifier to help with digit validation.
+			radix = tmp.charAt(0) == '$' ? DigitUtils.HEX : (tmp.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
+			// Trim radix identifier, if present
+			tmp = tmp.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
+			match = DigitUtils.checkDigits(tmp, radix);
+			if(match) {
+				// Convert string address to int
+				address = StringUtils.stringToInt(tmp, radix);
+				// Indexed indirect addresses can only be in Zero Page. 
+				if(address > 0xFF) {
+					match = false;
+				} else {
+					// Set addressing mode using the mode we found earlier
+					addressingMode = potentialAddressMode;
+					addressString = tmp;
+				}
+			}
+		}
+		return match;
+	}
+	
+	public boolean checkIndirectNoIndex(String addressToCheck) {
+		boolean match = false;
+		if(addressToCheck.charAt(0) != '(') {
+			return false;
+		}
+		if(!addressToCheck.contains(")")) {
+			return false;
+		}
+		String tmp = addressToCheck.substring(1, addressToCheck.indexOf(')'));
+		int radix = tmp.charAt(0) == '$' ? DigitUtils.HEX : (tmp.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
+		tmp = tmp.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
+		match = DigitUtils.checkDigits(tmp, radix);
+		if(match) {
+			address = StringUtils.stringToInt(tmp, radix);
+			if(address > 0xFFFF) {
+				match = false;
+			} else {
+				addressingMode = AssemblyUtils.INDIRECT;
+				addressString = tmp;
+			}
+		}
+		return match;
+	}
+	
 	private int getIndex(String addressToCheck) {
 		int index = addressToCheck.indexOf('X');
 		if(index >= 0) {
