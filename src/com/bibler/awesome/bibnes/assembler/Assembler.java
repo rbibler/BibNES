@@ -25,7 +25,7 @@ public class Assembler {
 	int bytes;
 	
 	public Assembler() {
-		setByteSize(0x100);
+		setByteSize(0x8000);
 	}
 	
 	public void setByteSize(int byteSize) {
@@ -99,8 +99,9 @@ public class Assembler {
 			match = true;
 		} else if(checkAbsolute(tmp)) {
 			match = true;
+		} else if(checkIndirect(tmp)) {
+			match = true;
 		}
-		checkImmediate("");
 		return match;
 	}
 	

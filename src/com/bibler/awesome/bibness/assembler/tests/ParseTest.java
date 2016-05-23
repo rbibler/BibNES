@@ -367,6 +367,36 @@ public class ParseTest extends TestCase {
 		assembler.printListing(new File("C:/users/ryan/desktop/absolute.bin"));
 	}
 	
+	public void testMixedBag() {
+		Assembler assembler = new Assembler();
+		String s;
+		s = "LDX #$01";
+		assembler.parseOpCode(s);
+		assertEquals(0xA2, assembler.getOpCode());
+		s = "LDA #$05";
+		assembler.parseOpCode(s);
+		assertEquals(0xA9, assembler.getOpCode());
+		s = "STA $01";
+		assembler.parseOpCode(s);
+		assertEquals(0x85, assembler.getOpCode());
+		s = "LDA #$06";
+		assembler.parseOpCode(s);
+		assertEquals(0xA9, assembler.getOpCode());
+		s = "STA $02";
+		assembler.parseOpCode(s);
+		assertEquals(0x85, assembler.getOpCode());
+		s = "LDY #$0A";
+		assembler.parseOpCode(s);
+		assertEquals(0xA0, assembler.getOpCode());
+		s = "STY $0605";
+		assembler.parseOpCode(s);
+		assertEquals(0x8C, assembler.getOpCode());
+		s = "LDA ($00,X)";
+		assembler.parseOpCode(s);
+		assertEquals(0xA1, assembler.getOpCode());
+		assembler.printListing(new File("C:/users/ryan/desktop/mix.bin"));
+	}
+	
 	
 
 }

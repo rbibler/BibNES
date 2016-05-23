@@ -23,5 +23,16 @@ public class UtilTest extends TestCase {
 		assertEquals(0xFF, resultInts[0]);
 		assertEquals(0xAA, resultInts[1]);
 	}
+	
+	public void testLineValidate() {
+		String s;
+		s = "0x34";
+		assertTrue(StringUtils.validateLine(s, s.indexOf('4')));
+		assertFalse(StringUtils.validateLine(s,  s.indexOf('3')));
+		s = "0x34			;";		
+		assertTrue(StringUtils.validateLine(s, s.indexOf('4')));
+		s = "0x34      The following is a comment;";
+		assertFalse(StringUtils.validateLine(s, s.indexOf('4')));
+	}
 
 }

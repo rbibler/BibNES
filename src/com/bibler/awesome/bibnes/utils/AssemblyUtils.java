@@ -25,6 +25,9 @@ public class AssemblyUtils {
 	private static HashMap<String, Integer> absoluteOpCodes;
 	private static HashMap<String, Integer> absoluteXOpCodes;
 	private static HashMap<String, Integer> absoluteYOpCodes;
+	private static HashMap<String, Integer> indirectOpCodes;
+	private static HashMap<String, Integer> indirectXOpCodes;
+	private static HashMap<String, Integer> indirectYOpCodes;
 	
 	public final static int firstSpaceLength = 13;
 	
@@ -103,6 +106,16 @@ public class AssemblyUtils {
 			break;
 		case ABSOLUTE_Y:
 			mapToCheck = absoluteYOpCodes;
+			break;
+		case INDIRECT:
+			mapToCheck = indirectOpCodes;
+			break;
+		case INDIRECT_X:
+			mapToCheck = indirectXOpCodes;
+			break;
+		case INDIRECT_Y:
+			mapToCheck = indirectYOpCodes;
+			break;
 		}
 		if(mapToCheck.containsKey(instruction)) {
 			opCode = mapToCheck.get(instruction);
@@ -259,6 +272,29 @@ public class AssemblyUtils {
 		absoluteYOpCodes.put("ORA", 0x19);
 		absoluteYOpCodes.put("SBC", 0xF9);
 		absoluteYOpCodes.put("STA", 0x99);
+		
+		indirectXOpCodes = new HashMap<String, Integer>();
+		indirectXOpCodes.put("ADC", 0x61);
+		indirectXOpCodes.put("AND", 0x21);
+		indirectXOpCodes.put("CMP", 0xC1);
+		indirectXOpCodes.put("EOR", 0x41);
+		indirectXOpCodes.put("LDA", 0xA1);
+		indirectXOpCodes.put("ORA", 0x01);
+		indirectXOpCodes.put("SBC", 0xE1);
+		indirectXOpCodes.put("STA", 0x81);
+		
+		indirectYOpCodes = new HashMap<String, Integer>();
+		indirectYOpCodes.put("ADC", 0x71);
+		indirectYOpCodes.put("AND", 0x31);
+		indirectYOpCodes.put("CMP", 0xD1);
+		indirectYOpCodes.put("EOR", 0x51);
+		indirectYOpCodes.put("LDA", 0xB1);
+		indirectYOpCodes.put("ORA", 0x11);
+		indirectYOpCodes.put("SBC", 0xF1);
+		indirectYOpCodes.put("STA", 0x91);
+		
+		indirectOpCodes = new HashMap<String, Integer>();
+		indirectOpCodes.put("JMP", 0x6C);
 		
 	}
 	

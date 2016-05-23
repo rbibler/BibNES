@@ -53,5 +53,16 @@ public class StringUtils {
 	public static String trimWhiteSpace(String lineToTrim) {
 		return lineToTrim.replaceAll("\\s+", "");
 	}
+	
+	public static boolean validateLine(String s, int lastLegitChar) {
+		boolean legit = false;
+		s = trimWhiteSpace(s);
+		if(s.length() - 1 == lastLegitChar) {
+			legit = true;
+		} else if(s.charAt(lastLegitChar + 1) == ';') {
+			legit = true;
+		}
+		return legit;
+	}
 
 }
