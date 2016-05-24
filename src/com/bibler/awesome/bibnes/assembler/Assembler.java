@@ -44,7 +44,7 @@ public class Assembler {
 		} else {
 			tmp = StringUtils.trimWhiteSpace(lineToParse);
 		}
-		if(matchOpCode(tmp)) {
+		if(tmp.length() > 0 && matchOpCode(tmp)) {
 			tmp = tmp.substring(3);
 			if(checkAddressingMode(tmp)) {
 				opCode = findOpCode();
@@ -97,7 +97,9 @@ public class Assembler {
 		boolean match = false;
 		//String tmp = lineToParse.substring(0, lineToParse.contains(";") ? lineToParse.indexOf(';') : lineToParse.length());
 		String tmp = lineToParse;
-		if(checkImmediate(tmp)) {
+		if(checkRelative(tmp) && AssemblyUtils.checkForBranchInstruction(instruction)) {
+			match = true;
+		} else if(checkImmediate(tmp)) {
 			match = true;
 			addressingMode = AssemblyUtils.IMMEDIATE;
 		} else if(checkAccumulator(tmp)) {
@@ -118,7 +120,7 @@ public class Assembler {
 	
 	/**
 	 * Checks the string for a valid immediate operand. Checks for disambiguating operators '$' for Hex 
-	 * and '%' for bin. If none found, assumes decimal mode
+	 * and '%' for bin. If none found, assumes decimal mode. No labels allowed!
 	 * @param addressToCheck - The string containing the presumed address;
 	 * @return true if valid immediate operand found. False otherwise. 
 	 */
@@ -182,6 +184,18 @@ public class Assembler {
 				addressingMode = AssemblyUtils.ZERO_PAGE;
 				addressString = tmp;
 			}
+		} else {
+			Label l = checkLabels(tmp);
+			if(l != null) {
+				address = l.getAddress();
+				if(address > 0xFF) {
+					match = false;
+				} else {
+					match = StringUtils.validateLine(addressToCheck, l.getLength() - 1);
+					addressingMode = AssemblyUtils.ZERO_PAGE;
+					addressString = StringUtils.intToHexString(address);
+				}
+			}
 		}
 		return match;
 	}
@@ -244,6 +258,18 @@ public class Assembler {
 				addressingMode = AssemblyUtils.ABSOLUTE;
 				addressString = tmp;
 			}
+		} else {
+			Label l = checkLabels(tmp);
+			if(l != null) {
+				address = l.getAddress();
+				if(address > 0xFFFF || address < 0x100) {
+					match = false;
+				} else {
+					match = StringUtils.validateLine(addressToCheck, l.getLength() - 1);
+					addressingMode = AssemblyUtils.ABSOLUTE;
+					addressString = StringUtils.intToHexString(address);
+				}
+			}
 		}
 		return match;
 	}
@@ -263,6 +289,18 @@ public class Assembler {
 					match = StringUtils.validateLine(addressToCheck, index);
 					addressingMode = (addressToCheck.charAt(index) == 'Y' || addressToCheck.charAt(index) == 'y') ? AssemblyUtils.ABSOLUTE_Y : AssemblyUtils.ABSOLUTE_X;
 					addressString = tmp;
+				}
+			} else {
+				Label l = checkLabels(tmp);
+				if(l != null) {
+					address = l.getAddress();
+					if(address > 0xFFFF || address < 0x100) {
+						match = false;
+					} else {
+						match = StringUtils.validateLine(addressToCheck, index);
+						addressingMode = (addressToCheck.charAt(index) == 'Y' || addressToCheck.charAt(index) == 'y') ? AssemblyUtils.ABSOLUTE_Y : AssemblyUtils.ABSOLUTE_X;
+						addressString = StringUtils.intToHexString(address);
+					}
 				}
 			}
 		}
@@ -310,7 +348,7 @@ public class Assembler {
 		if(indexChar == 'X' || indexChar == 'x') {
 			// With whitespace trimmed, the ")" character must immediately follow the "X", and the "," character 
 			// must immediately precede the X
-			if(addressToCheck.charAt(index + 1) == ')' && addressToCheck.charAt(index - 1) == ',') {
+			if(addressToCheck.length() > (index + 1) && addressToCheck.charAt(index + 1) == ')' && addressToCheck.charAt(index - 1) == ',') {
 				//Trim everything but the (potential) address
 				tmp = addressToCheck.substring(1, index - 1);
 				// Set address mode now so we don't have to find it later.
@@ -348,6 +386,18 @@ public class Assembler {
 					addressingMode = potentialAddressMode;
 					addressString = tmp;
 				}
+			} else {
+				Label l = checkLabels(tmp);
+				if(l != null && potentialAddressMode != AssemblyUtils.INDIRECT_X) {
+					address = l.getAddress();
+					if(address > 0xFF) {
+						match = false;
+					} else {
+						match = StringUtils.validateLine(addressToCheck, lastValidChar);
+						addressingMode = potentialAddressMode;
+						addressString = StringUtils.intToHexString(address);
+					}
+				}
 			}
 		}
 		return match;
@@ -374,6 +424,18 @@ public class Assembler {
 				addressingMode = AssemblyUtils.INDIRECT;
 				addressString = tmp;
 			}
+		} else {
+			Label l = checkLabels(tmp);
+			if(l != null) {
+				address = l.getAddress();
+				if(address > 0xFFFF) {
+					match = false;
+				} else {
+					match = StringUtils.validateLine(addressToCheck, addressToCheck.indexOf(')'));
+					addressingMode = AssemblyUtils.INDIRECT;
+					addressString = StringUtils.intToHexString(address);
+				}
+			}
 		}
 		return match;
 	}
@@ -398,6 +460,46 @@ public class Assembler {
 		return index;
 	}
 	
+	public boolean checkRelative(String addressToCheck) {
+		if(addressToCheck.length() <= 0) {
+			return false;
+		}
+		boolean match = false;
+		int radix = addressToCheck.charAt(0) == '$' ? DigitUtils.HEX : (addressToCheck.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
+		String tmp = addressToCheck.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
+		int lastIndex = DigitUtils.checkDigits(tmp, radix);
+		if(lastIndex >= 0) {
+			address = StringUtils.stringToInt(tmp.substring(0,  lastIndex + 1), radix);
+			if(address > 0xFF) {
+				match = false;
+			} else {
+				match = StringUtils.validateLine(tmp, lastIndex);
+				addressingMode = AssemblyUtils.RELATIVE;
+				addressString = tmp;
+			}
+		} else {
+			Label l = checkLabels(tmp);
+			if(l != null) {
+				address = l.getAddress();
+				address = address - (programCounter + 2);
+				if(address > 0xFF) {
+					match = false;
+				} else {
+					match = StringUtils.validateLine(addressToCheck, l.getLength() - 1);
+					addressingMode = AssemblyUtils.RELATIVE;
+					addressString = StringUtils.intToHexString(address);
+				}
+			}
+		}
+		return match;
+	}
+	
+	
+	/**
+	 * No Labels Allowed!
+	 * @param addressToCheck
+	 * @return
+	 */
 	public boolean checkAccumulator(String addressToCheck) {
 		boolean match = false;
 		if(addressToCheck.length() > 0 && addressToCheck.charAt(0) == 'A') {
@@ -410,6 +512,11 @@ public class Assembler {
 		return match;
 	}
 	
+	/**
+	 * No Labels Allowed!
+	 * @param addressToCheck
+	 * @return
+	 */
 	public boolean checkImplied(String addressToCheck) {
 		boolean match = false;
 		if(addressToCheck.length() == 0 || addressToCheck.charAt(0) == ';') {

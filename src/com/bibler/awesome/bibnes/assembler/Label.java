@@ -28,5 +28,9 @@ public class Label {
 	public int getAddress() {
 		return labelAddress;
 	}
+	
+	public int getLength() {
+		return labelName.length();
+	}
 
 }

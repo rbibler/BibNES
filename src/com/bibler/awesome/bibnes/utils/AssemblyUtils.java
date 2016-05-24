@@ -15,6 +15,7 @@ public class AssemblyUtils {
 	public final static int INDIRECT = 0x09;
 	public final static int INDIRECT_X = 0x0A;
 	public final static int INDIRECT_Y = 0x0B;
+	public final static int RELATIVE = 0x0C;
 	
 	private static HashMap<String, Integer> immediateOpCodes;
 	private static HashMap<String, Integer> accumulatorOpCodes;
@@ -28,6 +29,7 @@ public class AssemblyUtils {
 	private static HashMap<String, Integer> indirectOpCodes;
 	private static HashMap<String, Integer> indirectXOpCodes;
 	private static HashMap<String, Integer> indirectYOpCodes;
+	private static HashMap<String, Integer> relativeOpCodes;
 	
 	public final static int firstSpaceLength = 13;
 	
@@ -115,6 +117,9 @@ public class AssemblyUtils {
 			break;
 		case INDIRECT_Y:
 			mapToCheck = indirectYOpCodes;
+			break;
+		case RELATIVE:
+			mapToCheck = relativeOpCodes;
 			break;
 		}
 		if(mapToCheck.containsKey(instruction)) {
@@ -296,6 +301,20 @@ public class AssemblyUtils {
 		indirectOpCodes = new HashMap<String, Integer>();
 		indirectOpCodes.put("JMP", 0x6C);
 		
+		relativeOpCodes = new HashMap<String, Integer>();
+		relativeOpCodes.put("BPL", 0x10);
+		relativeOpCodes.put("BMI", 0x30);
+		relativeOpCodes.put("BVC", 0x50);
+		relativeOpCodes.put("BVS", 0x70);
+		relativeOpCodes.put("BCC", 0x90);
+		relativeOpCodes.put("BCS", 0xB0);
+		relativeOpCodes.put("BNE", 0xD0);
+		relativeOpCodes.put("BEQ", 0xF0);
+		
+	}
+	
+	public static boolean checkForBranchInstruction(String instructionToCheck) {
+		return relativeOpCodes.containsKey(instructionToCheck);
 	}
 	
 	

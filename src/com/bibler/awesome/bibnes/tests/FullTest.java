@@ -21,7 +21,7 @@ public class FullTest extends TestCase {
 			cpu.cycle();
 		}
 		
-		assertEquals(0x0A, memory.read(0x0605));
+		assertEquals(0x03, memory.read(0x0201));
 	}
 
 }

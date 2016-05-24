@@ -1139,7 +1139,7 @@ public class CPU {
 	private void BNE() {
 		if(cyclesRemaining == instructionCycles - 1) {
 			int postBranchPC = programCounter;
-			if((statusRegister >> ZERO_FLAG & 1) == 1) {
+			if((statusRegister >> ZERO_FLAG & 1) == 0) {
 				programCounter += (byte) (dataRegister);
 				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
 					cyclesRemaining -= 1;
@@ -1153,7 +1153,7 @@ public class CPU {
 	private void BEQ() {
 		if(cyclesRemaining == instructionCycles - 1) {
 			int postBranchPC = programCounter;
-			if((statusRegister >> ZERO_FLAG & 1) == 0) {
+			if((statusRegister >> ZERO_FLAG & 1) == 1) {
 				programCounter += (byte) (dataRegister);
 				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
 					cyclesRemaining -= 1;

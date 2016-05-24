@@ -3,6 +3,7 @@ package com.bibler.awesome.bibness.assembler.tests;
 import java.io.File;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
+import com.bibler.awesome.bibnes.assembler.Label;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
 import com.bibler.awesome.bibnes.utils.StringUtils;
 
@@ -370,39 +371,33 @@ public class ParseTest extends TestCase {
 	public void testMixedBag() {
 		Assembler assembler = new Assembler();
 		String s;
-		s = "  LDX #$01";
+		Label l = new Label("BIGLABEL", 0x2000);
+		assembler.addLabel(l);
+		s = "  LDX #$08";
 		assembler.parseOpCode(s);
 		assertEquals(0xA2, assembler.getOpCode());
-		s = "LABEL  LDX #$01         ; Comment goes here";
+		s = "decrement";
 		assembler.parseOpCode(s);
-		assertEquals(0xA2, assembler.getOpCode());
-		assertTrue(assembler.getLabels().get(0).checkLabelAgainstString("LABEL"));
-		s = "  ADC LABELk,X";
+		s = "  DEX         ; Comment goes here";
 		assembler.parseOpCode(s);
-		assertEquals(2, assembler.getAddress());
-		assertEquals(0x75, assembler.getOpCode());
-		s = "  LDA #$05; Comment goes here";
+		assertEquals(0xCA, assembler.getOpCode());
+		s = "  STX $0200";
 		assembler.parseOpCode(s);
-		assertEquals(0xA9, assembler.getOpCode());
-		s = "  STA $01; Comment goes here";
+		assertEquals(0x0200, assembler.getAddress());
+		assertEquals(0x8E, assembler.getOpCode());
+		s = "  CPX #$03";
 		assembler.parseOpCode(s);
-		assertEquals(0x85, assembler.getOpCode());
-		s = "  LDA #$06; Comment goes here";
+		assertEquals(3, assembler.getAddress());
+		assertEquals(0xE0, assembler.getOpCode());
+		s = "  BNE decrement";
 		assembler.parseOpCode(s);
-		assertEquals(0xA9, assembler.getOpCode());
-		s = "  STA $02; Comment goes here";
+		assertEquals(0xD0, assembler.getOpCode());
+		assertEquals(-8, assembler.getAddress());
+		s = "  STX $0201";
 		assembler.parseOpCode(s);
-		assertEquals(0x85, assembler.getOpCode());
-		s = "  LDY #$0A; Comment goes here";
-		assembler.parseOpCode(s);
-		assertEquals(0xA0, assembler.getOpCode());
-		s = "  STY $0605; Comment goes here";
-		assembler.parseOpCode(s);
-		assertEquals(0x8C, assembler.getOpCode());
-		s = "  LDA ($00,X); Comment goes here";
-		assembler.parseOpCode(s);
-		assertEquals(0xA1, assembler.getOpCode());
-		assembler.printListing(new File("C:/users/rbibl/desktop/mix.bin"));
+		assertEquals(0x0201, assembler.getAddress());
+		assertEquals(0x8E, assembler.getOpCode());
+		assembler.printListing(new File("C:/users/ryan/desktop/mix.bin"));
 	}
 	
 	
