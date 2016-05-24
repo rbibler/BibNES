@@ -3,6 +3,7 @@ package com.bibler.awesome.bibnes.assembler;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
@@ -11,9 +12,11 @@ import com.bibler.awesome.bibnes.utils.StringUtils;
 
 public class Assembler {
 	
+	public static final int MAX_LABEL_LENGTH = 12;
 	
 	private StringBuilder listing = new StringBuilder();
 	private Memory machineCode;
+	private ArrayList<Label> labels = new ArrayList<Label>();
 	private int programCounter;
 	
 	
@@ -33,7 +36,14 @@ public class Assembler {
 	}
 	
 	public void parseOpCode(String lineToParse) {
-		String tmp = StringUtils.trimWhiteSpace(lineToParse);
+		String tmp;
+		String label = StringUtils.checkLabel(lineToParse);
+		if(label != null) {
+			labels.add(new Label(label, programCounter));
+			tmp = StringUtils.trimWhiteSpace(lineToParse.substring(label.length()));
+		} else {
+			tmp = StringUtils.trimWhiteSpace(lineToParse);
+		}
 		if(matchOpCode(tmp)) {
 			tmp = tmp.substring(3);
 			if(checkAddressingMode(tmp)) {
@@ -397,6 +407,7 @@ public class Assembler {
 		}
 		return match;
 	}
+	
 	
 	private int findOpCode() {
 		return AssemblyUtils.getOpCode(instruction, addressingMode);

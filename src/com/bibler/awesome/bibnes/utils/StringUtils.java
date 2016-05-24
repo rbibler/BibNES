@@ -1,8 +1,15 @@
 package com.bibler.awesome.bibnes.utils;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.bibler.awesome.bibnes.assembler.Assembler;
+
 public class StringUtils {
 	
 	private static String[] hexValues = new String[] {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
+	private static Pattern alphabeticChars = Pattern.compile("[a-zA-Z]");
+	private static Pattern labelChars = Pattern.compile("[a-zA-Z[0-9][@_?:]]");
 	
 	public static int stringToInt(String s, int radix) {
 		return Integer.parseInt(s, radix);
@@ -63,6 +70,28 @@ public class StringUtils {
 			legit = true;
 		}
 		return legit;
+	}
+	
+	public static String checkLabel(String s) {
+		String label = null;
+		Matcher m = alphabeticChars.matcher(s.substring(0, 1));
+		final int maxLength = Assembler.MAX_LABEL_LENGTH < s.length() ? Assembler.MAX_LABEL_LENGTH : s.length();
+		if(m.matches()) {
+			for(int i = 1; i < s.length(); i++) {
+				m = labelChars.matcher(s.substring(i, i + 1));
+				if(!m.matches()) {
+					label = s.substring(0, i);
+					break;
+				} else {
+					label = s.substring(0, i + 1);
+				}
+				
+			}
+		}
+		if(label != null && label.length() > maxLength) {
+			label = label.substring(0, maxLength);
+		}
+		return label;
 	}
 
 }
