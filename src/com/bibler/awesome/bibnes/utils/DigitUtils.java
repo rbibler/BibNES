@@ -14,7 +14,7 @@ public class DigitUtils {
 	static Pattern decimalValues = Pattern.compile("[0-9]");
 	static Matcher m;
 	
-	public static boolean checkDigits(String s, int radix) {
+	public static int checkDigits(String s, int radix) {
 		Pattern p = decimalValues;
 		switch(radix) {
 			case DECIMAL:
@@ -27,13 +27,16 @@ public class DigitUtils {
 				p = binValues;
 				break;
 		}
+		int lastIndex = -1;
 		for(int i = 0; i < s.length(); i++) {
 			m = p.matcher(s.substring(i, i + 1));
 			if(!m.matches()) {
-				return false;
+				break;
+			} else {
+				lastIndex = i;
 			}
 		}
-		return true;
+		return lastIndex;
 	}
 	
 	public static boolean checkDigit(char c, int radix) {

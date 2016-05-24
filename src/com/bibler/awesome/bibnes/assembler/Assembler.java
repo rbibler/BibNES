@@ -85,7 +85,8 @@ public class Assembler {
 	
 	public boolean checkAddressingMode(String lineToParse) {
 		boolean match = false;
-		String tmp = lineToParse.substring(0, lineToParse.contains(";") ? lineToParse.indexOf(';') : lineToParse.length());
+		//String tmp = lineToParse.substring(0, lineToParse.contains(";") ? lineToParse.indexOf(';') : lineToParse.length());
+		String tmp = lineToParse;
 		if(checkImmediate(tmp)) {
 			match = true;
 			addressingMode = AssemblyUtils.IMMEDIATE;
@@ -115,28 +116,33 @@ public class Assembler {
 	private boolean checkImmediate(String addressToCheck) {
 		boolean match = false;
 		String tmp = ""; 
+		int lastIndex = -1;
 		if(addressToCheck.length() > 0 && addressToCheck.charAt(0) == '#') {
 			switch(addressToCheck.charAt(1)) {
 				case '$':
 					tmp = addressToCheck.substring(2);
-					match = DigitUtils.checkDigits(tmp, DigitUtils.HEX);
-					address = StringUtils.hexStringToInt(tmp);
+					lastIndex = DigitUtils.checkDigits(tmp, DigitUtils.HEX);
+					address = StringUtils.hexStringToInt(tmp.substring(0, lastIndex + 1));
 					addressString = tmp;
 					break;
 				case '%':
 					tmp = addressToCheck.substring(2);
-					match = DigitUtils.checkDigits(tmp, DigitUtils.BIN);
-					address = StringUtils.binStringToInt(tmp);
+					lastIndex = DigitUtils.checkDigits(tmp, DigitUtils.BIN);
+					address = StringUtils.binStringToInt(tmp.substring(0, lastIndex + 1));
 					addressString = StringUtils.intToHexString(address, 2);
 					break;
 				default:
 					tmp = addressToCheck.substring(1);
-					match = DigitUtils.checkDigits(tmp, DigitUtils.DECIMAL);
-					address = Integer.parseInt(tmp);
+					lastIndex = DigitUtils.checkDigits(tmp, DigitUtils.DECIMAL);
+					address = Integer.parseInt(tmp.substring(0, lastIndex + 1));
 					addressString = StringUtils.intToHexString(address, 2);
 					break;
 			}
-			
+		}
+		if(lastIndex >= 0) {
+			match = StringUtils.validateLine(tmp, lastIndex);
+		} else {
+			match = false;
 		}
 		return match;
 	}
@@ -145,7 +151,7 @@ public class Assembler {
 		boolean match = false;
 		int index = getIndex(addressToCheck);
 		if(index >= 0) {
-			match = checkZPIndex(addressToCheck.substring(0,index), addressToCheck.toLowerCase().contains("y"));
+			match = checkZPIndex(addressToCheck, index);
 		} else {
 			match = checkZeroPage(addressToCheck);
 		}
@@ -156,12 +162,13 @@ public class Assembler {
 		boolean match = false;
 		int radix = addressToCheck.charAt(0) == '$' ? DigitUtils.HEX : (addressToCheck.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
 		String tmp = addressToCheck.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
-		match = DigitUtils.checkDigits(tmp, radix);
-		if(match) {
-			address = StringUtils.stringToInt(tmp, radix);
+		int lastIndex = DigitUtils.checkDigits(tmp, radix);
+		if(lastIndex >= 0) {
+			address = StringUtils.stringToInt(tmp.substring(0,  lastIndex + 1), radix);
 			if(address > 0xFF) {
 				match = false;
 			} else {
+				match = StringUtils.validateLine(tmp, lastIndex);
 				addressingMode = AssemblyUtils.ZERO_PAGE;
 				addressString = tmp;
 			}
@@ -169,19 +176,20 @@ public class Assembler {
 		return match;
 	}
 	
-	public boolean checkZPIndex(String addressToCheck, boolean yIndex) {
+	public boolean checkZPIndex(String addressToCheck, int index) {
 		boolean match = false;
 		int radix;
-		if(addressToCheck.charAt(addressToCheck.length() - 1) == ',') {
+		if(addressToCheck.charAt(index - 1) == ',') {
 			radix = addressToCheck.charAt(0) == '$' ? DigitUtils.HEX : (addressToCheck.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
 			String tmp = addressToCheck.substring(radix == DigitUtils.DECIMAL ? 0 : 1, addressToCheck.indexOf(','));
-			match = DigitUtils.checkDigits(tmp, radix);
-			if(match) {
-				address = StringUtils.stringToInt(tmp, radix);
+			int lastIndex = DigitUtils.checkDigits(tmp, radix);
+			if(lastIndex >= 0) {
+				address = StringUtils.stringToInt(tmp.substring(0, lastIndex + 1), radix);
 				if(address > 0xFF) {
 					match = false;
 				} else {
-					addressingMode = yIndex ? AssemblyUtils.ZERO_PAGE_Y : AssemblyUtils.ZERO_PAGE_X;
+					match = StringUtils.validateLine(addressToCheck, index);
+					addressingMode = (addressToCheck.charAt(index) == 'Y' || addressToCheck.charAt(index) == 'y') ? AssemblyUtils.ZERO_PAGE_Y : AssemblyUtils.ZERO_PAGE_X;
 					addressString = tmp;
 				}
 			}
@@ -193,7 +201,7 @@ public class Assembler {
 		boolean match = false;
 		int index = getIndex(addressToCheck);
 		if(index >= 0) {
-			match = checkAbsoluteIndex(addressToCheck.substring(0,index), addressToCheck.toLowerCase().contains("y"));
+			match = checkAbsoluteIndex(addressToCheck, index);
 		} else {
 			match = checkAbsoluteNoIndex(addressToCheck);
 		}
@@ -204,12 +212,13 @@ public class Assembler {
 		boolean match = false;
 		int radix = addressToCheck.charAt(0) == '$' ? DigitUtils.HEX : (addressToCheck.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
 		String tmp = addressToCheck.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
-		match = DigitUtils.checkDigits(tmp, radix);
-		if(match) {
-			address = StringUtils.stringToInt(tmp, radix);
+		int lastIndex = DigitUtils.checkDigits(tmp, radix);
+		if(lastIndex >= 0) {
+			address = StringUtils.stringToInt(tmp.substring(0, lastIndex + 1), radix);
 			if(address > 0xFFFF || address < 0x100) {
 				match = false;
 			} else {
+				match = StringUtils.validateLine(tmp, lastIndex);
 				addressingMode = AssemblyUtils.ABSOLUTE;
 				addressString = tmp;
 			}
@@ -217,19 +226,20 @@ public class Assembler {
 		return match;
 	}
 	
-	public boolean checkAbsoluteIndex(String addressToCheck, boolean yIndex) {
+	public boolean checkAbsoluteIndex(String addressToCheck, int index) {
 		boolean match = false;
 		int radix;
-		if(addressToCheck.charAt(addressToCheck.length() - 1) == ',') {
+		if(addressToCheck.charAt(index - 1) == ',') {
 			radix = addressToCheck.charAt(0) == '$' ? DigitUtils.HEX : (addressToCheck.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
 			String tmp = addressToCheck.substring(radix == DigitUtils.DECIMAL ? 0 : 1, addressToCheck.indexOf(','));
-			match = DigitUtils.checkDigits(tmp, radix);
-			if(match) {
-				address = StringUtils.stringToInt(tmp, radix);
+			int lastIndex = DigitUtils.checkDigits(tmp, radix);
+			if(lastIndex >= 0) {
+				address = StringUtils.stringToInt(tmp.substring(0,  lastIndex + 1), radix);
 				if(address > 0xFFFF || address < 0x100) {
 					match = false;
 				} else {
-					addressingMode = yIndex ? AssemblyUtils.ABSOLUTE_Y : AssemblyUtils.ABSOLUTE_X;
+					match = StringUtils.validateLine(addressToCheck, index);
+					addressingMode = (addressToCheck.charAt(index) == 'Y' || addressToCheck.charAt(index) == 'y') ? AssemblyUtils.ABSOLUTE_Y : AssemblyUtils.ABSOLUTE_X;
 					addressString = tmp;
 				}
 			}
@@ -272,6 +282,7 @@ public class Assembler {
 		// Stores the potential address mode after index character is checked. Primed at -1 for later validation.
 		int potentialAddressMode = -1;
 		int radix = -1;
+		int lastValidChar = -1;
 		String tmp = "";
 		// Check if we have an "X" index
 		if(indexChar == 'X' || indexChar == 'x') {
@@ -282,6 +293,7 @@ public class Assembler {
 				tmp = addressToCheck.substring(1, index - 1);
 				// Set address mode now so we don't have to find it later.
 				potentialAddressMode = AssemblyUtils.INDIRECT_X;
+				lastValidChar = index + 1;
 			} 
 		} else if(indexChar == 'Y' || indexChar == 'y') {
 			// With whitespace trimmed, the "," character must immediately precede the "Y", and the 
@@ -291,6 +303,7 @@ public class Assembler {
 				tmp = addressToCheck.substring(1, index - 2);
 				// Set address mode now so we don't have to find it later.
 				potentialAddressMode = AssemblyUtils.INDIRECT_Y;
+				lastValidChar = index;
 			}
 		}
 		// If we found all our disambiguating identifiers, potential address will no longer be -1
@@ -299,14 +312,16 @@ public class Assembler {
 			radix = tmp.charAt(0) == '$' ? DigitUtils.HEX : (tmp.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
 			// Trim radix identifier, if present
 			tmp = tmp.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
-			match = DigitUtils.checkDigits(tmp, radix);
-			if(match) {
+			int lastValidDigit = DigitUtils.checkDigits(tmp, radix);
+			if(lastValidDigit >= 0) {
 				// Convert string address to int
-				address = StringUtils.stringToInt(tmp, radix);
+				address = StringUtils.stringToInt(tmp.substring(0, lastValidDigit + 1), radix);
 				// Indexed indirect addresses can only be in Zero Page. 
 				if(address > 0xFF) {
 					match = false;
 				} else {
+					// Validate the rest of the line
+					match = StringUtils.validateLine(addressToCheck, lastValidChar);
 					// Set addressing mode using the mode we found earlier
 					addressingMode = potentialAddressMode;
 					addressString = tmp;
@@ -327,12 +342,13 @@ public class Assembler {
 		String tmp = addressToCheck.substring(1, addressToCheck.indexOf(')'));
 		int radix = tmp.charAt(0) == '$' ? DigitUtils.HEX : (tmp.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
 		tmp = tmp.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
-		match = DigitUtils.checkDigits(tmp, radix);
-		if(match) {
-			address = StringUtils.stringToInt(tmp, radix);
+		int lastValidDigit = DigitUtils.checkDigits(tmp, radix);
+		if(lastValidDigit >= 0) {
+			address = StringUtils.stringToInt(tmp.substring(0,  lastValidDigit + 1), radix);
 			if(address > 0xFFFF) {
 				match = false;
 			} else {
+				match = StringUtils.validateLine(tmp, lastValidDigit + 1);
 				addressingMode = AssemblyUtils.INDIRECT;
 				addressString = tmp;
 			}
