@@ -370,9 +370,17 @@ public class ParseTest extends TestCase {
 	public void testMixedBag() {
 		Assembler assembler = new Assembler();
 		String s;
+		s = "  LDX #$01";
+		assembler.parseOpCode(s);
+		assertEquals(0xA2, assembler.getOpCode());
 		s = "LABEL  LDX #$01         ; Comment goes here";
 		assembler.parseOpCode(s);
 		assertEquals(0xA2, assembler.getOpCode());
+		assertTrue(assembler.getLabels().get(0).checkLabelAgainstString("LABEL"));
+		s = "  ADC LABELk,X";
+		assembler.parseOpCode(s);
+		assertEquals(2, assembler.getAddress());
+		assertEquals(0x75, assembler.getOpCode());
 		s = "  LDA #$05; Comment goes here";
 		assembler.parseOpCode(s);
 		assertEquals(0xA9, assembler.getOpCode());
@@ -394,7 +402,7 @@ public class ParseTest extends TestCase {
 		s = "  LDA ($00,X); Comment goes here";
 		assembler.parseOpCode(s);
 		assertEquals(0xA1, assembler.getOpCode());
-		assembler.printListing(new File("C:/users/ryan/desktop/mix.bin"));
+		assembler.printListing(new File("C:/users/rbibl/desktop/mix.bin"));
 	}
 	
 	

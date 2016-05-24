@@ -11,12 +11,22 @@ public class Label {
 	}
 	
 	public boolean checkLabelAgainstString(String s) {
-		for(int i = 0; i < s.length(); i++) {
+		for(int i = 0; i < labelName.length(); i++) {
 			if(s.charAt(i) != labelName.charAt(i)) {
 				return false;
 			}
 		}
+		if(s.length() > labelName.length()) {
+			char c = s.charAt(labelName.length());
+			if(c != ';' && c != ',') {
+				return false;
+			}
+		}
 		return true;
+	}
+	
+	public int getAddress() {
+		return labelAddress;
 	}
 
 }

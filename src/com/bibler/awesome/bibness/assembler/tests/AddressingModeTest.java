@@ -34,6 +34,7 @@ public class AddressingModeTest extends TestCase {
 	
 	public void testZeroPage() {
 		assembler = new Assembler();
+		assembler.addLabel(new Label("LABEL", 0));
 		String s = "$34";
 		assertTrue(assembler.checkZP(s));
 		s = ";FLOOOOGIE";
@@ -48,6 +49,8 @@ public class AddressingModeTest extends TestCase {
 		assertFalse(assembler.checkZP(s));
 		s = "%1111111111111111";
 		assertFalse(assembler.checkZP(s));
+		s = "LABEL";
+		assertTrue(assembler.checkZP(s));
 	}
 	
 	public void testCheckZeroPageIndex() {

@@ -202,6 +202,18 @@ public class Assembler {
 					addressingMode = (addressToCheck.charAt(index) == 'Y' || addressToCheck.charAt(index) == 'y') ? AssemblyUtils.ZERO_PAGE_Y : AssemblyUtils.ZERO_PAGE_X;
 					addressString = tmp;
 				}
+			} else {
+				Label l = checkLabels(tmp);
+				if(l != null) {
+					address = l.getAddress();
+					if(address > 0xFF) {
+						match = false;
+					} else {
+						match = StringUtils.validateLine(addressToCheck, index);
+						addressingMode = (addressToCheck.charAt(index) == 'Y' || addressToCheck.charAt(index) == 'y') ? AssemblyUtils.ZERO_PAGE_Y : AssemblyUtils.ZERO_PAGE_X;
+						addressString = StringUtils.intToHexString(address);
+					}
+				}
 			}
 		}
 		return match;
@@ -413,6 +425,15 @@ public class Assembler {
 		return AssemblyUtils.getOpCode(instruction, addressingMode);
 	}
 	
+	private Label checkLabels(String stringToCheck) {
+		for(Label l : labels) {
+			if(l.checkLabelAgainstString(stringToCheck)) {
+				return l;
+			}
+		}
+		return null;
+	}
+	
 	private void constructListing(int opCode, int bytes) {
 		if(programCounter % 16 == 0) {
 			if(programCounter != 0) {
@@ -450,6 +471,14 @@ public class Assembler {
 	
 	public int getOpCode() {
 		return opCode;
+	}
+	
+	public ArrayList<Label> getLabels() {
+		return labels;
+	}
+	
+	public void addLabel(Label l) {
+		labels.add(l);
 	}
 	
 	public void printListing(File f) {
