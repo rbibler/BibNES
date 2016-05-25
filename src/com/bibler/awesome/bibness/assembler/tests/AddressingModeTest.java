@@ -1,6 +1,7 @@
 package com.bibler.awesome.bibness.assembler.tests;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
+import com.bibler.awesome.bibnes.assembler.Label;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
 import junit.framework.TestCase;
 

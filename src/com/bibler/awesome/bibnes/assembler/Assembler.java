@@ -26,6 +26,7 @@ public class Assembler {
 	int opCode;
 	int address;
 	int bytes;
+	int lineCount;
 	
 	public Assembler() {
 		setByteSize(0x8000);
@@ -33,6 +34,14 @@ public class Assembler {
 	
 	public void setByteSize(int byteSize) {
 		machineCode = new Memory(byteSize);
+	}
+	
+	public void passOne(String[] lines) {
+		lineCount = 0;
+		for(String line : lines) {
+			parseOpCode(line);
+			lineCount++;
+		}
 	}
 	
 	public void parseOpCode(String lineToParse) {

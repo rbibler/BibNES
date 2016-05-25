@@ -4,6 +4,7 @@ import java.io.File;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.assembler.Label;
+import com.bibler.awesome.bibnes.io.TextReader;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
 import com.bibler.awesome.bibnes.utils.StringUtils;
 
@@ -398,6 +399,12 @@ public class ParseTest extends TestCase {
 		assertEquals(0x0201, assembler.getAddress());
 		assertEquals(0x8E, assembler.getOpCode());
 		assembler.printListing(new File("C:/users/ryan/desktop/mix.bin"));
+	}
+	
+	public void testFromFile() {
+		Assembler assembler = new Assembler();
+		assembler.passOne(TextReader.readTextFile(new File("C:/users/ryan/desktop/test.asm")));
+		assembler.printListing(new File("C:/users/ryan/desktop/textTest.bin"));
 	}
 	
 	

@@ -14,14 +14,16 @@ public class FullTest extends TestCase {
 	private Memory memory;
 	
 	public void testFull() {
-		memory = BinReader.readBin(new File("C:/users/ryan/desktop/mix.bin"));
+		memory = BinReader.readBin(new File("C:/users/ryan/desktop/textTest.bin"));
 		cpu = new CPU(memory);
 		cpu.powerOn();
 		for(int i = 0; i < 0x100; i++) {
 			cpu.cycle();
 		}
 		
-		assertEquals(0x03, memory.read(0x0201));
+		assertEquals(0x04, memory.read(0x0201));
 	}
+	
+	
 
 }
