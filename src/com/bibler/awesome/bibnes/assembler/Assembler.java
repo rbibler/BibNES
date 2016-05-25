@@ -17,7 +17,7 @@ public class Assembler {
 	private StringBuilder listing = new StringBuilder();
 	private Memory machineCode;
 	private ArrayList<Label> labels = new ArrayList<Label>();
-	private ArrayList<InstructionLine> parsedInstructions = new ArrayList<InstructionLine>();
+	private int[] lineAddresses;
 	private int programCounter;
 	
 	
@@ -28,6 +28,7 @@ public class Assembler {
 	int address;
 	int bytes;
 	int lineCount;
+	Label operandLabel;
 	
 	public Assembler() {
 		setByteSize(0x8000);
@@ -37,67 +38,73 @@ public class Assembler {
 		machineCode = new Memory(byteSize);
 	}
 	
-	public ArrayList<Integer> passOne(String[] lines) {
+	public ArrayList<Integer> passOne(ArrayList<InstructionLine> lines) {
 		lineCount = 0;
-		for(String line : lines) {
-			parsedInstructions.add(parseOpCode(line));
+		lineAddresses = new int[lines.size()];
+		for(InstructionLine line : lines) {
+			parseOpCode(line);
 			lineCount++;
 		}
 		return passTwo(lines);
 	}
 	
-	private ArrayList<Integer> passTwo(String[] lines) {
+	private ArrayList<Integer> passTwo(ArrayList<InstructionLine> lines) {
 		ArrayList<Integer> machineCode = new ArrayList<Integer>();
-		for(InstructionLine instruction : parsedInstructions) {
+		for(InstructionLine instruction : lines) {
 			if(instruction.getCheckOnSecondPass()) {
-				InstructionLine inst = parseOpCode(lines[instruction.getLineNumber()]);
-				if(inst.getCheckOnSecondPass() == false) {
-					instruction.update(inst);
-				}
+				parseOpCode(instruction);
 			}
 		}
-		for(InstructionLine instruction : parsedInstructions) {
-			instruction.writeInstruction(machineCode);
+		updateLineAddresses(lines);
+		for(InstructionLine instruction : lines) {
+			instruction.writeInstruction(machineCode, lineAddresses[instruction.getLineNumber()], this);
 		}
 		return machineCode;
 	}
 	
-	public InstructionLine parseOpCode(String lineToParse) {
+	private void updateLineAddresses(ArrayList<InstructionLine> lines) {
+		for(InstructionLine instruction : lines) {
+			lineAddresses[instruction.getLineNumber()] = programCounter; 
+			programCounter += instruction.getBytes();
+		}
+	}
+	
+	public int findLabelAddress(Label l) {
+		int labelLine = l.getLineNumber();
+		return lineAddresses[labelLine];
+	}
+	
+	public void parseOpCode(InstructionLine lineToParse) {
 		String tmp;
-		String label = StringUtils.checkLabel(lineToParse);
+		String lineText = lineToParse.getLine();
+		String label = StringUtils.checkLabel(lineText);
+		operandLabel = null;
 		if(label != null) {
-			labels.add(new Label(label, programCounter));
-			tmp = StringUtils.trimWhiteSpace(lineToParse.substring(label.length()));
+			Label l = new Label(label, lineCount);
+			labels.add(l);
+			lineToParse.setLineLabel(l);
+			tmp = StringUtils.trimWhiteSpace(lineText.substring(label.length()));
 		} else {
-			tmp = StringUtils.trimWhiteSpace(lineToParse);
+			tmp = StringUtils.trimWhiteSpace(lineText);
 		}
 		if(tmp.length() > 0 && matchOpCode(tmp)) {
 			tmp = tmp.substring(3);
-			/*if(checkAddressingMode(tmp)) {
-				opCode = findOpCode();
-				processOpCode();
-			}*/
-			return processOpCode(checkAddressingMode(tmp));
+			processOpCode(checkAddressingMode(tmp), lineToParse);
 		}
-		return null;
 	}
 	
-	private InstructionLine processOpCode(boolean noErrors) {
+	private void processOpCode(boolean noErrors, InstructionLine lineToParse) {
 		if(noErrors) {
 			opCode = findOpCode();
 		} else {
 			opCode = 0xFF;
 		}
-		InstructionLine inst = new InstructionLine(instruction, lineCount, opCode, address, AssemblyUtils.getBytes(opCode), !noErrors);
-		return inst;
-	}
-	
-	private void processOpCode() {
-		machineCode.write(programCounter++, opCode);
-		int[] operandBytes = DigitUtils.splitWord(address, AssemblyUtils.getBytes(opCode) - 1);
-		for(int i = operandBytes.length - 1; i >= 0; i--) {
-			machineCode.write(programCounter++, operandBytes[i]);
-		}
+		lineToParse.setOperandLabel(operandLabel);
+		lineToParse.setInstructionName(instruction);
+		lineToParse.setOpCode(opCode);
+		lineToParse.setOperand(address);
+		lineToParse.setBytes(AssemblyUtils.getBytes(opCode));
+		lineToParse.setCheckOnSecondPass(!noErrors);
 	}
 	
 	/**
@@ -230,6 +237,7 @@ public class Assembler {
 				if(address > 0xFF) {
 					match = false;
 				} else {
+					operandLabel = l;
 					match = StringUtils.validateLine(addressToCheck, l.getLength() - 1);
 					addressingMode = AssemblyUtils.ZERO_PAGE;
 					addressString = StringUtils.intToHexString(address);
@@ -262,6 +270,7 @@ public class Assembler {
 					if(address > 0xFF) {
 						match = false;
 					} else {
+						operandLabel = l;
 						match = StringUtils.validateLine(addressToCheck, index);
 						addressingMode = (addressToCheck.charAt(index) == 'Y' || addressToCheck.charAt(index) == 'y') ? AssemblyUtils.ZERO_PAGE_Y : AssemblyUtils.ZERO_PAGE_X;
 						addressString = StringUtils.intToHexString(address);
@@ -304,6 +313,7 @@ public class Assembler {
 				if(address > 0xFFFF || address < 0x100) {
 					match = false;
 				} else {
+					operandLabel = l;
 					match = StringUtils.validateLine(addressToCheck, l.getLength() - 1);
 					addressingMode = AssemblyUtils.ABSOLUTE;
 					addressString = StringUtils.intToHexString(address);
@@ -336,6 +346,7 @@ public class Assembler {
 					if(address > 0xFFFF || address < 0x100) {
 						match = false;
 					} else {
+						operandLabel = l;
 						match = StringUtils.validateLine(addressToCheck, index);
 						addressingMode = (addressToCheck.charAt(index) == 'Y' || addressToCheck.charAt(index) == 'y') ? AssemblyUtils.ABSOLUTE_Y : AssemblyUtils.ABSOLUTE_X;
 						addressString = StringUtils.intToHexString(address);
@@ -432,6 +443,7 @@ public class Assembler {
 					if(address > 0xFF) {
 						match = false;
 					} else {
+						operandLabel = l;
 						match = StringUtils.validateLine(addressToCheck, lastValidChar);
 						addressingMode = potentialAddressMode;
 						addressString = StringUtils.intToHexString(address);
@@ -470,6 +482,7 @@ public class Assembler {
 				if(address > 0xFFFF) {
 					match = false;
 				} else {
+					operandLabel = l;
 					match = StringUtils.validateLine(addressToCheck, addressToCheck.indexOf(')'));
 					addressingMode = AssemblyUtils.INDIRECT;
 					addressString = StringUtils.intToHexString(address);
@@ -524,6 +537,7 @@ public class Assembler {
 				if(address > 0xFF) {
 					match = false;
 				} else {
+					operandLabel = l;
 					match = StringUtils.validateLine(addressToCheck, l.getLength() - 1);
 					addressingMode = AssemblyUtils.RELATIVE;
 					addressString = StringUtils.intToHexString(address);
@@ -532,7 +546,6 @@ public class Assembler {
 		}
 		return match;
 	}
-	
 	
 	/**
 	 * No Labels Allowed!

@@ -3,11 +3,15 @@ package com.bibler.awesome.bibnes.assembler;
 public class Label {
 	
 	String labelName;
-	int labelAddress;
+	int labelLine;
 	
-	public Label(String labelName, int labelAddress) {
+	public Label(String labelName, int labelLine) {
 		this.labelName = labelName;
-		this.labelAddress = labelAddress;
+		this.labelLine = labelLine;
+	}
+	
+	public int getLineNumber() {
+		return labelLine;
 	}
 	
 	public boolean checkLabelAgainstString(String s) {
@@ -26,7 +30,7 @@ public class Label {
 	}
 	
 	public int getAddress() {
-		return labelAddress;
+		return labelLine;
 	}
 	
 	public int getLength() {

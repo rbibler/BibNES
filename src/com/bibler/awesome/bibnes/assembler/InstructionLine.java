@@ -14,7 +14,8 @@ public class InstructionLine {
 	private int opCode;
 	private int operand;
 	private int bytes;
-	private Label label;
+	private Label lineLabel;
+	private Label operandLabel;
 	private boolean checkOnSecondPass;
 	
 	
@@ -58,15 +59,27 @@ public class InstructionLine {
 		this.comment = comment;
 	}
 	
-	public void setLabel(Label label) {
-		this.label = label;
+	public void setLineLabel(Label lineLabel) {
+		this.lineLabel = lineLabel;
 	}
 	
-	public void writeInstruction(ArrayList<Integer> machineCode) {
+	public void setOperandLabel(Label operandLabel) {
+		this.operandLabel = operandLabel;
+	}
+	
+	public void writeInstruction(ArrayList<Integer> machineCode, int programCounter, Assembler assembler) {
 		machineCode.add(opCode);
-		int[] operandBytes = DigitUtils.splitWord(operand, bytes - 1);
-		for(int i = operandBytes.length - 1; i >= 0; i--) {
-			machineCode.add(operandBytes[i]);
+		if(operandLabel != null) {
+			operand = assembler.findLabelAddress(operandLabel);
+			if(AssemblyUtils.checkForBranchInstruction(instructionName)) {
+				operand = operand - (programCounter + 1);
+			}
+		}
+		if(operand >= 0) {
+			int[] operandBytes = DigitUtils.splitWord(operand, bytes - 1);
+			for(int i = operandBytes.length - 1; i >= 0; i--) {
+				machineCode.add(operandBytes[i]);
+			}
 		}
 	}
 	
@@ -77,7 +90,8 @@ public class InstructionLine {
 		this.lineNumber = inst.getLineNumber();
 		this.opCode = inst.getOpCode();
 		this.operand = inst.getOperand();
-		this.label = inst.getLabel();
+		this.lineLabel = inst.getLineLabel();
+		this.operandLabel = inst.getOperandLabel();
 		this.bytes = inst.getBytes();
 		this.checkOnSecondPass = inst.getCheckOnSecondPass();
 	}
@@ -110,8 +124,12 @@ public class InstructionLine {
 		return bytes;
 	}
 	
-	public Label getLabel() {
-		return label;
+	public Label getLineLabel() {
+		return lineLabel;
+	}
+	
+	public Label getOperandLabel() {
+		return operandLabel;
 	}
 	
 	public boolean getCheckOnSecondPass() {

@@ -402,8 +402,8 @@ public class ParseTest extends TestCase {
 	
 	public void testFromFile() {
 		Assembler assembler = new Assembler();
-		ArrayList<Integer> machineCode = assembler.passOne(TextReader.readTextFile(new File("C:/users/ryan/desktop/test.asm")));
-		assembler.writeMachineCodeToFile(new File("C:/users/ryan/desktop/textTest.bin"), machineCode);
+		ArrayList<Integer> machineCode = assembler.passOne(AssemblyUtils.processFile(new File("C:/users/rbibl/desktop/test.asm")));
+		assembler.writeMachineCodeToFile(new File("C:/users/rbibl/desktop/textTest.bin"), machineCode);
 	}
 	
 	

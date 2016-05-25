@@ -1,6 +1,11 @@
 package com.bibler.awesome.bibnes.utils;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+
+import com.bibler.awesome.bibnes.assembler.InstructionLine;
+import com.bibler.awesome.bibnes.io.TextReader;
 
 public class AssemblyUtils {
 	public final static int ACCUMULATOR = 0x00;
@@ -315,6 +320,15 @@ public class AssemblyUtils {
 	
 	public static boolean checkForBranchInstruction(String instructionToCheck) {
 		return relativeOpCodes.containsKey(instructionToCheck);
+	}
+	
+	public static ArrayList<InstructionLine> processFile(File f) {
+		String[] lines = TextReader.readTextFile(f);
+		ArrayList<InstructionLine> lineList = new ArrayList<InstructionLine>();
+		for(int i = 0; i < lines.length; i++) {
+			lineList.add(new InstructionLine(lines[i], i));
+		}
+		return lineList;
 	}
 	
 	
