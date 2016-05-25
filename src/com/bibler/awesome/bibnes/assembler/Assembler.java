@@ -17,8 +17,7 @@ public class Assembler {
 	private StringBuilder listing = new StringBuilder();
 	private Memory machineCode;
 	private ArrayList<Label> labels = new ArrayList<Label>();
-	private int[] linesToCheckOnSecondPass;
-	private int[] pcAtLineToCheck;
+	private ArrayList<InstructionLine> parsedInstructions = new ArrayList<InstructionLine>();
 	private int programCounter;
 	
 	
@@ -38,15 +37,32 @@ public class Assembler {
 		machineCode = new Memory(byteSize);
 	}
 	
-	public void passOne(String[] lines) {
+	public ArrayList<Integer> passOne(String[] lines) {
 		lineCount = 0;
 		for(String line : lines) {
-			parseOpCode(line);
+			parsedInstructions.add(parseOpCode(line));
 			lineCount++;
 		}
+		return passTwo(lines);
 	}
 	
-	public void parseOpCode(String lineToParse) {
+	private ArrayList<Integer> passTwo(String[] lines) {
+		ArrayList<Integer> machineCode = new ArrayList<Integer>();
+		for(InstructionLine instruction : parsedInstructions) {
+			if(instruction.getCheckOnSecondPass()) {
+				InstructionLine inst = parseOpCode(lines[instruction.getLineNumber()]);
+				if(inst.getCheckOnSecondPass() == false) {
+					instruction.update(inst);
+				}
+			}
+		}
+		for(InstructionLine instruction : parsedInstructions) {
+			instruction.writeInstruction(machineCode);
+		}
+		return machineCode;
+	}
+	
+	public InstructionLine parseOpCode(String lineToParse) {
 		String tmp;
 		String label = StringUtils.checkLabel(lineToParse);
 		if(label != null) {
@@ -57,11 +73,23 @@ public class Assembler {
 		}
 		if(tmp.length() > 0 && matchOpCode(tmp)) {
 			tmp = tmp.substring(3);
-			if(checkAddressingMode(tmp)) {
+			/*if(checkAddressingMode(tmp)) {
 				opCode = findOpCode();
 				processOpCode();
-			}
+			}*/
+			return processOpCode(checkAddressingMode(tmp));
 		}
+		return null;
+	}
+	
+	private InstructionLine processOpCode(boolean noErrors) {
+		if(noErrors) {
+			opCode = findOpCode();
+		} else {
+			opCode = 0xFF;
+		}
+		InstructionLine inst = new InstructionLine(instruction, lineCount, opCode, address, AssemblyUtils.getBytes(opCode), !noErrors);
+		return inst;
 	}
 	
 	private void processOpCode() {
@@ -599,17 +627,12 @@ public class Assembler {
 		labels.add(l);
 	}
 	
-	public void printListing(File f) {
-		System.out.println(listing.toString());
-		writeMachineCodeToFile(f);
-	}
-	
-	public void writeMachineCodeToFile(File f) {
+	public void writeMachineCodeToFile(File f, ArrayList<Integer> codeToWrite) {
 		FileOutputStream stream = null;
 		try {
 			stream = new FileOutputStream(f);
-			for(int i = 0; i < machineCode.size(); i++) {
-				stream.write(machineCode.read(i));
+			for(int i = 0; i < codeToWrite.size(); i++) {
+				stream.write(codeToWrite.get(i));
 			}
 		} catch(IOException e) {}
 		finally {

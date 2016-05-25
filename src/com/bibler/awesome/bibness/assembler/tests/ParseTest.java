@@ -1,6 +1,7 @@
 package com.bibler.awesome.bibness.assembler.tests;
 
 import java.io.File;
+import java.util.ArrayList;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.assembler.Label;
@@ -12,7 +13,7 @@ import junit.framework.TestCase;
 
 public class ParseTest extends TestCase {
 	
-	public void testInstructionParse() {
+	/*public void testInstructionParse() {
 		Assembler assembler = new Assembler();
 		String s = "ADC #$F2";
 		assertTrue(assembler.matchOpCode(StringUtils.trimWhiteSpace(s)));
@@ -184,8 +185,7 @@ public class ParseTest extends TestCase {
 		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
 		s = "AND #%10";
 		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		
-		assembler.printListing(new File("C:/users/ryan/desktop/immediate.bin"));
+
 	}
 	
 	public void testOpCodeParseAccumulator() {
@@ -207,7 +207,6 @@ public class ParseTest extends TestCase {
 		assertEquals(0x6A, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		
-		assembler.printListing(new File("C:/users/ryan/desktop/accumulator.bin"));
 	}
 	
 	public void testOpCodeParseImplied() {
@@ -399,12 +398,12 @@ public class ParseTest extends TestCase {
 		assertEquals(0x0201, assembler.getAddress());
 		assertEquals(0x8E, assembler.getOpCode());
 		assembler.printListing(new File("C:/users/ryan/desktop/mix.bin"));
-	}
+	}*/
 	
 	public void testFromFile() {
 		Assembler assembler = new Assembler();
-		assembler.passOne(TextReader.readTextFile(new File("C:/users/ryan/desktop/test.asm")));
-		assembler.printListing(new File("C:/users/ryan/desktop/textTest.bin"));
+		ArrayList<Integer> machineCode = assembler.passOne(TextReader.readTextFile(new File("C:/users/ryan/desktop/test.asm")));
+		assembler.writeMachineCodeToFile(new File("C:/users/ryan/desktop/textTest.bin"), machineCode);
 	}
 	
 	
