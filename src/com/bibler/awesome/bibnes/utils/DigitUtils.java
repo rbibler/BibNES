@@ -9,7 +9,7 @@ public class DigitUtils {
 	public final static int HEX = 0x10;
 	public final static int BIN = 2;
 	
-	static Pattern hexValues = Pattern.compile("[0-9[A-F]]");
+	static Pattern hexValues = Pattern.compile("[0-9[A-F][a-f]]");
 	static Pattern binValues = Pattern.compile("[10]");
 	static Pattern decimalValues = Pattern.compile("[0-9]");
 	static Matcher m;

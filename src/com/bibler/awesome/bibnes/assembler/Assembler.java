@@ -17,6 +17,8 @@ public class Assembler {
 	private StringBuilder listing = new StringBuilder();
 	private Memory machineCode;
 	private ArrayList<Label> labels = new ArrayList<Label>();
+	private int[] linesToCheckOnSecondPass;
+	private int[] pcAtLineToCheck;
 	private int programCounter;
 	
 	

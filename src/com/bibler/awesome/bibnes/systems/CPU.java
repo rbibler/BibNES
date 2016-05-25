@@ -1215,11 +1215,14 @@ public class CPU {
 			programCounter = lowByte | memorySpace.read(0xFFFB) << 8;
 		}
 	}
-	
+	/* 
+	 * To Do:
+	 * Must Fix the brk command. 
+	 */
 	private void BRK() {
 		if(cyclesRemaining == 1) {
-			NMIFlag = true;
-			programCounter++;
+			//NMIFlag = true;
+			//programCounter++;
 		}
 	}
 	
