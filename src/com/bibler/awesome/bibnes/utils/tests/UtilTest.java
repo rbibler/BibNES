@@ -7,6 +7,18 @@ import junit.framework.TestCase;
 
 public class UtilTest extends TestCase {
 	
+	public void testGetDigits() {
+		String s;
+		s = "$34";
+		assertEquals(0x34, DigitUtils.getDigits(s));
+		s = "34";
+		assertEquals(34, DigitUtils.getDigits(s));
+		s = "%1110001";
+		assertEquals(0b1110001, DigitUtils.getDigits(s));
+		s = "34FLERGE";
+		assertEquals(34, DigitUtils.getDigits(s));
+	}
+	
 	public void testStringToInt() {
 		String s = "FFFF5";
 		assertEquals(0xFFFF5, StringUtils.hexStringToInt(s));

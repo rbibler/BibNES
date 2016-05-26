@@ -89,8 +89,10 @@ public class Assembler {
 		}
 		int directive = checkDirectives(tmp);
 		if(directive >= 0) {
+			if(directive == AssemblyUtils.EQU) {
+				processEquate(lineText);
+			}
 			lineToParse.setDirective(directive);
-			handleDirective(directive);
 		} else {
 			if(tmp.length() > 0 && matchOpCode(tmp)) {
 				tmp = tmp.substring(3);
@@ -101,6 +103,14 @@ public class Assembler {
 	
 	private int checkDirectives(String lineToCheck) {
 		return AssemblyUtils.findDirective(lineToCheck);
+	}
+	
+	private void processEquate(String s) {
+		String tmp = StringUtils.trimWhiteSpace(s.substring(s.indexOf(".EQU") + 4));
+		
+		if(checkImmediate(tmp)) {
+			labels.get(labels.size() - 1).setAddress(address);
+		}
 	}
 	
 	/**

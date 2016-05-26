@@ -29,6 +29,10 @@ public class Label {
 		return true;
 	}
 	
+	public void setAddress(int address) {
+		this.labelLine = address;
+	}
+	
 	public int getAddress() {
 		return labelLine;
 	}
