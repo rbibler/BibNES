@@ -87,9 +87,56 @@ public class Assembler {
 		} else {
 			tmp = StringUtils.trimWhiteSpace(lineText);
 		}
-		if(tmp.length() > 0 && matchOpCode(tmp)) {
-			tmp = tmp.substring(3);
-			processOpCode(checkAddressingMode(tmp), lineToParse);
+		int directive = checkDirectives(tmp);
+		if(directive >= 0) {
+			lineToParse.setDirective(directive);
+			handleDirective(directive);
+		} else {
+			if(tmp.length() > 0 && matchOpCode(tmp)) {
+				tmp = tmp.substring(3);
+				processOpCode(checkAddressingMode(tmp), lineToParse);
+			}
+		}
+	}
+	
+	private int checkDirectives(String lineToCheck) {
+		return AssemblyUtils.findDirective(lineToCheck);
+	}
+	
+	/**
+	 * Processes the directive defined by the parameter. Directives are as follows:
+	 * ALIGN: Moves program counter to next power-of-two boundary
+	 * BYTE; DB: Places the byte defined in the operand in memory at the current location
+	 * WORD; DW: Places the word, or list of words, defined in the operand in memory at the current location
+	 * EQU: Assigns the value in the operand to the label
+	 * FILL: Fills specified number of bytes with the character specified
+	 * INC: Includes content of specified file into memory at location
+	 * ORG: Sets program counter to number specified
+	 * RS: Reserves specified amount of space (increments location counter by that number)
+	 * @param directive
+	 */
+	
+	private void handleDirective(int directive) {
+		switch(directive) {
+		case AssemblyUtils.ALIGN:
+			break;
+		case AssemblyUtils.BYTE:
+		case AssemblyUtils.DB:
+			break;
+		case AssemblyUtils.WORD:
+		case AssemblyUtils.DW:
+			break;
+		case AssemblyUtils.EQU:
+			break;
+		case AssemblyUtils.FILL:
+			break;
+		case AssemblyUtils.INC:
+			break;
+		case AssemblyUtils.ORG:
+			break;
+		case AssemblyUtils.RS:
+			break;
+			
 		}
 	}
 	

@@ -14,6 +14,7 @@ public class InstructionLine {
 	private int opCode;
 	private int operand;
 	private int bytes;
+	private int directive;
 	private Label lineLabel;
 	private Label operandLabel;
 	private boolean checkOnSecondPass;
@@ -51,10 +52,13 @@ public class InstructionLine {
 		this.bytes = bytes;
 	}
 	
+	public void setDirective(int directive) {
+		this.directive = directive;
+	}
+	
 	public void setCheckOnSecondPass(boolean checkOnSecondPass) {
 		this.checkOnSecondPass = checkOnSecondPass;
 	}
-	
 	
 	public void setComment(String comment) {
 		this.comment = comment;

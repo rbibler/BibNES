@@ -22,6 +22,17 @@ public class AssemblyUtils {
 	public final static int INDIRECT_Y = 0x0B;
 	public final static int RELATIVE = 0x0C;
 	
+	public final static int ALIGN = 0;
+	public final static int BYTE = 1;
+	public final static int DB = 2;
+	public final static int DW = 3;
+	public final static int EQU = 4;
+	public final static int FILL = 5;
+	public final static int INC = 6;
+	public final static int ORG = 7;
+	public final static int RS = 8;
+	public final static int WORD = 9;
+	
 	private static HashMap<String, Integer> immediateOpCodes;
 	private static HashMap<String, Integer> accumulatorOpCodes;
 	private static HashMap<String, Integer> impliedOpCodes;
@@ -330,6 +341,38 @@ public class AssemblyUtils {
 		}
 		return lineList;
 	}
+	
+	public static int findDirective(String s) {
+		if(s.length() == 0 || s.charAt(0) != '.') {
+			return -1;
+		}
+		String directive;
+		String testString = s.toUpperCase().substring(1);
+		int directiveIndex = -1;
+		for(int i = 0; i < directives.length; i++) {
+			directive = directives[i];
+			if(directive.length() > s.length()) {
+				continue;
+			}
+			boolean match = true;
+			for(int j = 0; j < directive.length(); j++) {
+				if(testString.charAt(j) != directive.charAt(j)) {
+					match = false;
+					break;
+				}
+			}
+			if(match) {
+				directiveIndex = i;
+				break;
+			}
+		}
+		return directiveIndex;
+	}
+	
+	private static String[] directives = new String[] {
+			"ALIGN", "BYTE", "DB", "DW", "EQU", "FILL", "INC",
+			"ORG", "RS", "WORD"
+	};
 	
 	
 	private static int[] opCodeLengths = new int[] {
