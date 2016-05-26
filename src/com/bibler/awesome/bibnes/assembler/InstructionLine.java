@@ -32,6 +32,7 @@ public class InstructionLine {
 		this.line = line;
 		this.lineNumber = lineNumber;
 		operand = -1;
+		opCode = -1;
 	}
 	
 	public void setInstructionName(String instructionName) {
@@ -68,17 +69,22 @@ public class InstructionLine {
 	}
 	
 	public void writeInstruction(ArrayList<Integer> machineCode, int programCounter, Assembler assembler) {
+		if(opCode == -1 || instructionName == null) {
+			return;
+		}
 		machineCode.add(opCode);
 		if(operandLabel != null) {
 			operand = assembler.findLabelAddress(operandLabel);
 			if(AssemblyUtils.checkForBranchInstruction(instructionName)) {
-				operand = operand - (programCounter + 1);
+				operand = operand - (programCounter + 2);
+				machineCode.add(operand);
 			}
-		}
-		if(operand >= 0) {
-			int[] operandBytes = DigitUtils.splitWord(operand, bytes - 1);
-			for(int i = operandBytes.length - 1; i >= 0; i--) {
-				machineCode.add(operandBytes[i]);
+		} else {
+			if(operand >= 0) {
+				int[] operandBytes = DigitUtils.splitWord(operand, bytes - 1);
+				for(int i = operandBytes.length - 1; i >= 0; i--) {
+					machineCode.add(operandBytes[i]);
+				}
 			}
 		}
 	}

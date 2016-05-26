@@ -56,7 +56,7 @@ public class CPU {
 		}
 		cyclesRemaining--;
 		totalCycles++;
-		System.out.println("Cycles: " + cyclesRemaining + " Accumulator: " + StringUtils.intToHexString(accumulator) + " Total Cycles: " + totalCycles);
+		System.out.println("OpCode: " + StringUtils.intToHexString(instruction) + " Cycles: " + cyclesRemaining + " Accumulator: " + StringUtils.intToHexString(accumulator) + " Total Cycles: " + totalCycles);
 	}
 	
 	public void powerOn() {

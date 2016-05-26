@@ -17,11 +17,12 @@ public class FullTest extends TestCase {
 		memory = BinReader.readBin(new File("C:/users/ryan/desktop/textTest.bin"));
 		cpu = new CPU(memory);
 		cpu.powerOn();
-		for(int i = 0; i < 0x100; i++) {
+		cpu.setProgramCounter(0);
+		for(int i = 0; i < 0x200; i++) {
 			cpu.cycle();
 		}
 		
-		assertEquals(0x0A, cpu.getAccumulator());
+		assertEquals(0x09, cpu.getXIndex());
 	}
 	
 	
