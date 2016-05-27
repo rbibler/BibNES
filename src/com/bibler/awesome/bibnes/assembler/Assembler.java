@@ -16,9 +16,19 @@ public class Assembler {
 	
 	private StringBuilder listing = new StringBuilder();
 	private Memory machineCode;
-	private ArrayList<Label> labels = new ArrayList<Label>();
-	private int[] lineAddresses;
-	private int programCounter;
+	
+	private int locationCounter;
+	
+	// Label Tabels
+	private ArrayList<String> labels = new ArrayList<String>();
+	private ArrayList<Integer> labelAddresses = new ArrayList<Integer>();
+	
+	//Equate Tables
+	private ArrayList<String> variables = new ArrayList<String>();
+	private ArrayList<Integer> variableValues = new ArrayList<Integer>();
+	
+	//Lines to check on Second Pass
+	private ArrayList<Integer> secondPassLines = new ArrayList<Integer>();
 	
 	
 	String instruction;
@@ -38,65 +48,38 @@ public class Assembler {
 		machineCode = new Memory(byteSize);
 	}
 	
-	public ArrayList<Integer> passOne(ArrayList<InstructionLine> lines) {
+	public Memory passOne(String[] lines) {
 		lineCount = 0;
-		lineAddresses = new int[lines.size()];
-		for(InstructionLine line : lines) {
+		for(String line : lines) {
 			parseOpCode(line);
 			lineCount++;
 		}
-		return passTwo(lines);
-	}
-	
-	private ArrayList<Integer> passTwo(ArrayList<InstructionLine> lines) {
-		ArrayList<Integer> machineCode = new ArrayList<Integer>();
-		for(InstructionLine instruction : lines) {
-			if(instruction.getCheckOnSecondPass()) {
-				parseOpCode(instruction);
-			}
-		}
-		updateLineAddresses(lines);
-		for(InstructionLine instruction : lines) {
-			instruction.writeInstruction(machineCode, lineAddresses[instruction.getLineNumber()], this);
-		}
+		passTwo(lines);
 		return machineCode;
 	}
 	
-	private void updateLineAddresses(ArrayList<InstructionLine> lines) {
-		for(InstructionLine instruction : lines) {
-			lineAddresses[instruction.getLineNumber()] = programCounter; 
-			programCounter += instruction.getBytes();
-		}
+	private void passTwo(String[] lines) {
+		
 	}
+
 	
-	public int findLabelAddress(Label l) {
-		int labelLine = l.getLineNumber();
-		return lineAddresses[labelLine];
-	}
-	
-	public void parseOpCode(InstructionLine lineToParse) {
-		String tmp;
-		String lineText = lineToParse.getLine();
-		String label = StringUtils.checkLabel(lineText);
+	public void parseOpCode(String lineToParse) {
+		String tmp = StringUtils.trimWhiteSpace(lineToParse);
+		String label = StringUtils.checkLabel(lineToParse);
 		operandLabel = null;
 		if(label != null) {
-			Label l = new Label(label, lineCount);
-			labels.add(l);
-			lineToParse.setLineLabel(l);
-			tmp = StringUtils.trimWhiteSpace(lineText.substring(label.length()));
-		} else {
-			tmp = StringUtils.trimWhiteSpace(lineText);
-		}
+			labels.add(label);
+			labelAddresses.add(locationCounter);
+			tmp = StringUtils.trimWhiteSpace(lineToParse.substring(label.length()));
+		} 
 		int directive = checkDirectives(tmp);
 		if(directive >= 0) {
-			if(directive == AssemblyUtils.EQU) {
-				processEquate(lineText);
-			}
-			lineToParse.setDirective(directive);
+			processDirective(directive, tmp);
 		} else {
 			if(tmp.length() > 0 && matchOpCode(tmp)) {
+				instruction = tmp.substring(0, 3);
 				tmp = tmp.substring(3);
-				processOpCode(checkAddressingMode(tmp), lineToParse);
+				processOpCode(instruction, tmp);
 			}
 		}
 	}
@@ -126,7 +109,7 @@ public class Assembler {
 	 * @param directive
 	 */
 	
-	private void handleDirective(int directive) {
+	private void processDirective(int directive, String line) {
 		switch(directive) {
 		case AssemblyUtils.ALIGN:
 			break;
@@ -150,18 +133,29 @@ public class Assembler {
 		}
 	}
 	
-	private void processOpCode(boolean noErrors, InstructionLine lineToParse) {
-		if(noErrors) {
-			opCode = findOpCode();
-		} else {
-			opCode = 0xFF;
+	private void processOpCode(String instruction, String operand) {
+		boolean match = false;
+		for(int i = 0; i < AssemblyUtils.ADDRESS_MODE_COUNT; i++) {
+			if(AssemblyUtils.checkForAddressMode(i, instruction)) {
+				if(checkAddressMode(i, operand)) {
+					match = true;
+					break;
+				}
+			}
 		}
-		lineToParse.setOperandLabel(operandLabel);
-		lineToParse.setInstructionName(instruction);
-		lineToParse.setOpCode(opCode);
-		lineToParse.setOperand(address);
-		lineToParse.setBytes(AssemblyUtils.getBytes(opCode));
-		lineToParse.setCheckOnSecondPass(!noErrors);
+		if(!match) {
+			secondPassLines.add(lineCount);
+			locationCounter += 3;
+		} else {
+			machineCode.write(locationCounter++, AssemblyUtils.getOpCode(instruction, addressingMode));
+			if(address >= 0) {
+				int[] operandBytes = DigitUtils.splitWord(address, bytes - 1);
+				for(int i = operandBytes.length - 1; i >= 0; i--) {
+					machineCode.write(locationCounter++, operandBytes[i]);
+				}
+			}
+			
+		}
 	}
 	
 	/**
@@ -182,44 +176,60 @@ public class Assembler {
 				thirdSpaceChar = AssemblyUtils.findThirdSpaceChar(tmp.charAt(2), firstSpaceChar, secondSpaceChar);
 				if(thirdSpaceChar >= 0) {
 					match = true;
-					instruction = AssemblyUtils.getInstruction(firstSpaceChar, secondSpaceChar, thirdSpaceChar);
 				}
 			}
 		}
 		return match;
 	}
 	
-	/**
-	 * Checks a string to see if it contains a valid addressing mode.
-	 * 
-	 * @param lineToParse
-	 * @return true if the string contains a valid address mode. False otherwise.
-	 */
 	
-	public boolean checkAddressingMode(String lineToParse) {
-		boolean match = false;
-		//String tmp = lineToParse.substring(0, lineToParse.contains(";") ? lineToParse.indexOf(';') : lineToParse.length());
-		String tmp = lineToParse;
-		if(checkRelative(tmp) && AssemblyUtils.checkForBranchInstruction(instruction)) {
-			match = true;
-		} else if(checkImmediate(tmp)) {
-			match = true;
-			addressingMode = AssemblyUtils.IMMEDIATE;
-		} else if(checkAccumulator(tmp)) {
-			match = true;
-			addressingMode = AssemblyUtils.ACCUMULATOR;
-		} else if(checkImplied(tmp)) {
-			match = true;
-			addressingMode = AssemblyUtils.IMPLIED;
-		} else if(checkZP(tmp)) {
-			match = true;
-		} else if(checkAbsolute(tmp)) {
-			match = true;
-		} else if(checkIndirect(tmp)) {
-			match = true;
+	private boolean checkAddressMode(int addressModeToCheck, String operand) {
+		boolean match;
+		switch(addressModeToCheck) {
+		case AssemblyUtils.ABSOLUTE:
+			match = checkAbsolute(operand);
+			break;
+		case AssemblyUtils.ABSOLUTE_X:
+			match = checkAbsoluteX(operand);
+			break;
+		case AssemblyUtils.ABSOLUTE_Y:
+			match = checkAbsoluteY(operand);
+			break;
+		case AssemblyUtils.ACCUMULATOR:
+			match = checkAccumulator(operand);
+			break;
+		case AssemblyUtils.IMMEDIATE:
+			match = checkImmediate(operand);
+			break;
+		case AssemblyUtils.IMPLIED:
+			match = checkImplied(operand);
+			break;
+		case AssemblyUtils.INDIRECT:
+			match = checkIndirect(operand);
+			break;
+		case AssemblyUtils.INDIRECT_X:
+			match = checkIndirectX(operand);
+			break;
+		case AssemblyUtils.INDIRECT_Y:
+			match = checkIndirectY(operand);
+			break;
+		case AssemblyUtils.RELATIVE:
+			match = checkRelative(operand);
+			break;
+		case AssemblyUtils.ZERO_PAGE:
+			match = checkZeroPage(operand);
+			break;
+		case AssemblyUtils.ZERO_PAGE_X:
+			match = checkZeroPageX(operand);
+			break;
+		case AssemblyUtils.ZERO_PAGE_Y:
+			match = checkZeroPageY(operand);
+			break;
 		}
 		return match;
 	}
+	
+	
 	
 	/**
 	 * Checks the string for a valid immediate operand. Checks for disambiguating operators '$' for Hex 
@@ -528,7 +538,7 @@ public class Assembler {
 			if(address > 0xFFFF) {
 				match = false;
 			} else {
-				match = StringUtils.validateLine(tmp, lastValidDigit + 1);
+				match = StringUtils.validateLine(addressToCheck, addressToCheck.indexOf(')'));
 				addressingMode = AssemblyUtils.INDIRECT;
 				addressString = tmp;
 			}
@@ -590,7 +600,7 @@ public class Assembler {
 			Label l = checkLabels(tmp);
 			if(l != null) {
 				address = l.getAddress();
-				address = address - (programCounter + 2);
+				address = address - (locationCounter + 2);
 				if(address > 0xFF) {
 					match = false;
 				} else {
@@ -651,25 +661,25 @@ public class Assembler {
 	}
 	
 	private void constructListing(int opCode, int bytes) {
-		if(programCounter % 16 == 0) {
-			if(programCounter != 0) {
+		if(locationCounter % 16 == 0) {
+			if(locationCounter != 0) {
 				listing.append("\n");
 			}
-			listing.append(StringUtils.intToHexString(programCounter, 4));
+			listing.append(StringUtils.intToHexString(locationCounter, 4));
 			listing.append(" ");
 		}
 		listing.append(StringUtils.intToHexString(opCode, 2));
 		listing.append(" ");
-		machineCode.write(programCounter, opCode);
-		programCounter++;
+		machineCode.write(locationCounter, opCode);
+		locationCounter++;
 		
 		final int endIndex = bytes - 1 <= addressString.length() ? bytes - 1 : addressString.length() - 1;
 		for(int i = 0; i < endIndex; i++) {
 			listing.append(addressString);
 			addressString = addressString.substring(addressString.length() - 2);
 			listing.append(" ");
-			machineCode.write(programCounter, (address >> ((bytes - 1) - i) * 8) & 0xFF);
-			programCounter++;
+			machineCode.write(locationCounter, (address >> ((bytes - 1) - i) * 8) & 0xFF);
+			locationCounter++;
 		}
 	}
 	

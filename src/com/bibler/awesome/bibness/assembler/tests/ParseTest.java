@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
+import com.bibler.awesome.bibnes.assembler.InstructionLine;
 import com.bibler.awesome.bibnes.assembler.Label;
 import com.bibler.awesome.bibnes.io.TextReader;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
@@ -13,7 +14,7 @@ import junit.framework.TestCase;
 
 public class ParseTest extends TestCase {
 	
-	/*public void testInstructionParse() {
+	public void testInstructionParse() {
 		Assembler assembler = new Assembler();
 		String s = "ADC #$F2";
 		assertTrue(assembler.matchOpCode(StringUtils.trimWhiteSpace(s)));
@@ -154,56 +155,29 @@ public class ParseTest extends TestCase {
 		assertFalse(assembler.matchOpCode(StringUtils.trimWhiteSpace(s)));
 		
 	}
-	
-	public void testAddressParse() {
-		Assembler assembler = new Assembler();
-		String s = "#$F2";
-		assertTrue(assembler.checkAddressingMode(s));
-		assertEquals(AssemblyUtils.IMMEDIATE, assembler.getAddressMode());
-		assertEquals("F2", assembler.getAddressString());
-	}
-	
-	public void testOpCodeParseImmediate() {
-		Assembler assembler = new Assembler();
-		String s = "AND #$32";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "ADC #32";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "CPX #$32";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "LDA #32";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "LDX #%01010101";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "LDY #32";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "CPX #%10101010";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "CPY #32";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "EOR #$32";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
-		s = "AND #%10";
-		assembler.parseOpCode(StringUtils.trimWhiteSpace(s));
 
-	}
+	
 	
 	public void testOpCodeParseAccumulator() {
 		Assembler assembler = new Assembler();
 		String s = "  ASL A";
-		assembler.parseOpCode(s);
+		InstructionLine line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x0A, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  LSR A";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x4A, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  ROL A";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x2A, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  ROR A";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x6A, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		
@@ -212,193 +186,191 @@ public class ParseTest extends TestCase {
 	public void testOpCodeParseImplied() {
 		Assembler assembler = new Assembler();
 		String s = "  BRK";
-		assembler.parseOpCode(s);
+		InstructionLine line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x00, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  CLC";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x18, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  SEC";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x38, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  CLI";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x58, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  SEI";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x78, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  CLV";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xB8, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  CLD";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xD8, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  SED";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xF8, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  NOP";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xEA, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  TAX";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xAA, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  TXA";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x8A, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  DEX";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xCA, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  INX";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xE8, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  TAY";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xA8, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  TYA";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x98, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  DEY";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x88, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  INY";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xC8, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  RTI";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x40, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  RTS";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x60, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  TXS";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x9A, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  TSX";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0xBA, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  PHA";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x48, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  PLA";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x68, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  PHP";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x08, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		s = "  PLP";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x28, assembler.getOpCode());
 		assertEquals(-1, assembler.getAddress());
 		
-
-		assembler.printListing(new File("C:/users/ryan/desktop/implied.bin"));
 	}
 	
 	public void testOpCodeParseZeroPage() {
 		Assembler assembler = new Assembler();
 		String s = "  ASL $45";
-		assembler.parseOpCode(s);
+		InstructionLine line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x06, assembler.getOpCode());
 		assertEquals(0x45, assembler.getAddress());
 		s = "  LSR $F2";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x46, assembler.getOpCode());
 		assertEquals(0xF2, assembler.getAddress());
 		s = "  LSR $F2,X";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x56, assembler.getOpCode());
 		assertEquals(0xF2, assembler.getAddress());
 		s = "  ROL 32";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x26, assembler.getOpCode());
 		assertEquals(32, assembler.getAddress());
 		s = "  ROR $ED";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x66, assembler.getOpCode());
 		assertEquals(0xED, assembler.getAddress());
-		
-		assembler.printListing(new File("C:/users/ryan/desktop/zeroPage.bin"));
 	}
 	
 	public void testOpCodeParseAbsolute() {
 		Assembler assembler = new Assembler();
 		String s = "  ASL $4400";
-		assembler.parseOpCode(s);
+		InstructionLine line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x0E, assembler.getOpCode());
 		assertEquals(0x4400, assembler.getAddress());
 		s = "  LSR $4200";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x4E, assembler.getOpCode());
 		assertEquals(0x4200, assembler.getAddress());
 		s = "  LSR $4400,X";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x5E, assembler.getOpCode());
 		assertEquals(0x4400, assembler.getAddress());
 		s = "  ROL 17408";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x2E, assembler.getOpCode());
 		assertEquals(0x4400, assembler.getAddress());
 		s = "  ROR $4400";
-		assembler.parseOpCode(s);
+		line = new InstructionLine(s, 0);
+		assembler.parseOpCode(line);
 		assertEquals(0x6E, assembler.getOpCode());
 		assertEquals(0x4400, assembler.getAddress());
 		
-		assembler.printListing(new File("C:/users/ryan/desktop/absolute.bin"));
 	}
-	
-	public void testMixedBag() {
-		Assembler assembler = new Assembler();
-		String s;
-		Label l = new Label("BIGLABEL", 0x2000);
-		assembler.addLabel(l);
-		s = "  LDX #$08";
-		assembler.parseOpCode(s);
-		assertEquals(0xA2, assembler.getOpCode());
-		s = "decrement";
-		assembler.parseOpCode(s);
-		s = "  DEX         ; Comment goes here";
-		assembler.parseOpCode(s);
-		assertEquals(0xCA, assembler.getOpCode());
-		s = "  STX $0200";
-		assembler.parseOpCode(s);
-		assertEquals(0x0200, assembler.getAddress());
-		assertEquals(0x8E, assembler.getOpCode());
-		s = "  CPX #$03";
-		assembler.parseOpCode(s);
-		assertEquals(3, assembler.getAddress());
-		assertEquals(0xE0, assembler.getOpCode());
-		s = "  BNE decrement";
-		assembler.parseOpCode(s);
-		assertEquals(0xD0, assembler.getOpCode());
-		assertEquals(-8, assembler.getAddress());
-		s = "  STX $0201";
-		assembler.parseOpCode(s);
-		assertEquals(0x0201, assembler.getAddress());
-		assertEquals(0x8E, assembler.getOpCode());
-		assembler.printListing(new File("C:/users/ryan/desktop/mix.bin"));
-	}*/
 	
 	public void testFromFile() {
 		Assembler assembler = new Assembler();

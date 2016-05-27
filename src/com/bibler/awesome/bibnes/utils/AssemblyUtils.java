@@ -8,19 +8,22 @@ import com.bibler.awesome.bibnes.assembler.InstructionLine;
 import com.bibler.awesome.bibnes.io.TextReader;
 
 public class AssemblyUtils {
-	public final static int ACCUMULATOR = 0x00;
-	public final static int IMMEDIATE = 0x01;
-	public final static int ABSOLUTE = 0x02;
-	public final static int ABSOLUTE_X = 0x03;
-	public final static int ABSOLUTE_Y = 0x04;
-	public final static int IMPLIED = 0x05;
-	public final static int ZERO_PAGE = 0x06;
-	public final static int ZERO_PAGE_X = 0x07;
-	public final static int ZERO_PAGE_Y = 0x08;
-	public final static int INDIRECT = 0x09;
-	public final static int INDIRECT_X = 0x0A;
-	public final static int INDIRECT_Y = 0x0B;
-	public final static int RELATIVE = 0x0C;
+	public final static int ADDRESS_MODE_COUNT = 13;
+	
+	public final static int ACCUMULATOR = 	0x00;
+	public final static int ABSOLUTE    = 	0x01;
+	public final static int ABSOLUTE_X  = 	0x02;
+	public final static int ABSOLUTE_Y  = 	0x03;
+	public final static int IMMEDIATE   = 	0x04;
+	public final static int IMPLIED     = 	0x05;
+	public final static int INDIRECT    = 	0x06;
+	public final static int INDIRECT_X  = 	0x07;
+	public final static int INDIRECT_Y  = 	0x08;
+	public final static int RELATIVE    = 	0x09;
+	public final static int ZERO_PAGE   = 	0x0A;
+	public final static int ZERO_PAGE_X = 	0x0B;
+	public final static int ZERO_PAGE_Y = 	0x0C;
+	
 	
 	public final static int ALIGN = 0;
 	public final static int BYTE = 1;
@@ -46,6 +49,8 @@ public class AssemblyUtils {
 	private static HashMap<String, Integer> indirectXOpCodes;
 	private static HashMap<String, Integer> indirectYOpCodes;
 	private static HashMap<String, Integer> relativeOpCodes;
+	
+	private static ArrayList<HashMap<String, Integer>> addressModes = new ArrayList<HashMap<String, Integer>>();
 	
 	public final static int firstSpaceLength = 13;
 	
@@ -96,52 +101,15 @@ public class AssemblyUtils {
 			fillMaps();
 		}
 		int opCode = -1;
-		HashMap<String, Integer> mapToCheck = null;
-		switch(addressingMode) {
-		case IMMEDIATE:
-			mapToCheck = immediateOpCodes;
-			break;
-		case ACCUMULATOR:
-			mapToCheck = accumulatorOpCodes;
-			break;
-		case IMPLIED:
-			mapToCheck = impliedOpCodes;
-			break;
-		case ZERO_PAGE:
-			mapToCheck = zeroPageOpCodes;
-			break;
-		case ZERO_PAGE_X:
-			mapToCheck = zeroPageXOpCodes;
-			break;
-		case ZERO_PAGE_Y:
-			mapToCheck = zeroPageYOpCodes;
-			break;
-		case ABSOLUTE:
-			mapToCheck = absoluteOpCodes;
-			break;
-		case ABSOLUTE_X:
-			mapToCheck = absoluteXOpCodes;
-			break;
-		case ABSOLUTE_Y:
-			mapToCheck = absoluteYOpCodes;
-			break;
-		case INDIRECT:
-			mapToCheck = indirectOpCodes;
-			break;
-		case INDIRECT_X:
-			mapToCheck = indirectXOpCodes;
-			break;
-		case INDIRECT_Y:
-			mapToCheck = indirectYOpCodes;
-			break;
-		case RELATIVE:
-			mapToCheck = relativeOpCodes;
-			break;
-		}
+		HashMap<String, Integer> mapToCheck = addressModes.get(addressingMode);
 		if(mapToCheck.containsKey(instruction)) {
 			opCode = mapToCheck.get(instruction);
 		}
 		return opCode;
+	}
+	
+	public static boolean checkForAddressMode(int addressMode, String instruction) {
+		return addressModes.get(addressMode).containsKey(instruction);
 	}
 	
 	public static int getBytes(int opCode) {
@@ -326,6 +294,20 @@ public class AssemblyUtils {
 		relativeOpCodes.put("BCS", 0xB0);
 		relativeOpCodes.put("BNE", 0xD0);
 		relativeOpCodes.put("BEQ", 0xF0);
+		
+		addressModes.add(accumulatorOpCodes);
+		addressModes.add(absoluteOpCodes);
+		addressModes.add(absoluteXOpCodes);
+		addressModes.add(absoluteYOpCodes);
+		addressModes.add(immediateOpCodes);
+		addressModes.add(impliedOpCodes);
+		addressModes.add(indirectOpCodes);
+		addressModes.add(indirectXOpCodes);
+		addressModes.add(indirectYOpCodes);
+		addressModes.add(relativeOpCodes);
+		addressModes.add(zeroPageOpCodes);
+		addressModes.add(zeroPageXOpCodes);
+		addressModes.add(zeroPageYOpCodes);
 		
 	}
 	
