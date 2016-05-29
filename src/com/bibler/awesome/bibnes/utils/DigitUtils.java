@@ -14,6 +14,16 @@ public class DigitUtils {
 	static Pattern decimalValues = Pattern.compile("[0-9]");
 	static Matcher m;
 	
+	public static String getDigitString(String s) {
+		int radix = s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
+		String tmp = s.substring(radix == 10 ? 0 : 1);
+		int lastDigit = checkDigits(tmp, radix) + (radix == 10 ? 1 : 2);
+		if(lastDigit > 0) {
+			return s.substring(0,  lastDigit);
+		}
+		return null;
+	}
+	
 	public static int getDigits(String s) {
 		int radix = s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
 		s = s.substring(radix == 10 ? 0 : 1);

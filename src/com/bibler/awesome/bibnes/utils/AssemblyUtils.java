@@ -50,9 +50,46 @@ public class AssemblyUtils {
 	private static HashMap<String, Integer> indirectYOpCodes;
 	private static HashMap<String, Integer> relativeOpCodes;
 	
-	private static ArrayList<HashMap<String, Integer>> addressModes = new ArrayList<HashMap<String, Integer>>();
+	private static ArrayList<String> addressModePatterns;
+	
+	private static ArrayList<HashMap<String, Integer>> addressModes;
 	
 	public final static int firstSpaceLength = 13;
+	
+	public static String getAddressModePattern(int addressMode) {
+		if(addressModePatterns == null) {
+			fillAddressModePatterns();
+		}
+		return addressModePatterns.get(addressMode);
+	}
+	
+	private static void fillAddressModePatterns() {
+		addressModePatterns = new ArrayList<String>();
+		addressModePatterns.add("~A");
+		addressModePatterns.add("" + StringUtils.digitChar);
+		addressModePatterns.add("" + StringUtils.digitChar + ",x");
+		addressModePatterns.add("" + StringUtils.digitChar + ",y");
+		addressModePatterns.add("#" + StringUtils.digitChar);
+		addressModePatterns.add("");
+		addressModePatterns.add("(" + StringUtils.digitChar + ")");
+		addressModePatterns.add("(" + StringUtils.digitChar + ",x)");
+		addressModePatterns.add("(" + StringUtils.digitChar + "),y");
+		addressModePatterns.add("" + StringUtils.digitChar);
+		addressModePatterns.add("" + StringUtils.digitChar);
+		addressModePatterns.add("" + StringUtils.digitChar + ",x");
+		addressModePatterns.add("" + StringUtils.digitChar + ",y");
+		
+	}
+	
+	public static boolean checkImplied(String s) {
+		if(s.length() == 0) {
+			return true;
+		}
+		if(s.charAt(0) == ';') {
+			return true;
+		}
+		return false;
+	}
 	
 	
 	public static int findFirstSpaceChar(char charToFind) {
@@ -109,6 +146,9 @@ public class AssemblyUtils {
 	}
 	
 	public static boolean checkForAddressMode(int addressMode, String instruction) {
+		if(addressModes == null) {
+			fillMaps();
+		}
 		return addressModes.get(addressMode).containsKey(instruction);
 	}
 	
@@ -295,6 +335,7 @@ public class AssemblyUtils {
 		relativeOpCodes.put("BNE", 0xD0);
 		relativeOpCodes.put("BEQ", 0xF0);
 		
+		addressModes = new ArrayList<HashMap<String, Integer>>();
 		addressModes.add(accumulatorOpCodes);
 		addressModes.add(absoluteOpCodes);
 		addressModes.add(absoluteXOpCodes);
@@ -315,13 +356,9 @@ public class AssemblyUtils {
 		return relativeOpCodes.containsKey(instructionToCheck);
 	}
 	
-	public static ArrayList<InstructionLine> processFile(File f) {
+	public static String[] processFile(File f) {
 		String[] lines = TextReader.readTextFile(f);
-		ArrayList<InstructionLine> lineList = new ArrayList<InstructionLine>();
-		for(int i = 0; i < lines.length; i++) {
-			lineList.add(new InstructionLine(lines[i], i));
-		}
-		return lineList;
+		return lines;
 	}
 	
 	public static int findDirective(String s) {

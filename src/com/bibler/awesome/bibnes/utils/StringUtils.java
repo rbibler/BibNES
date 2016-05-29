@@ -10,6 +10,49 @@ public class StringUtils {
 	private static String[] hexValues = new String[] {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
 	private static Pattern alphabeticChars = Pattern.compile("[a-zA-Z]");
 	private static Pattern labelChars = Pattern.compile("[a-zA-Z[0-9][@_?:]]");
+	public static char digitChar = '@';
+	public static char digitOrLabelChar = '!';
+	public static char charToSave = '~';
+	public static boolean saveNextMatch;
+	
+	public static String checkAddressPattern(String addressToCheck, String pattern) {
+		String operand = null;
+		int addressIndex = 0;
+		char charToCheck;
+		saveNextMatch = false;
+		for(int i = 0; i < pattern.length(); i++) {
+			charToCheck = pattern.charAt(i);
+			if(charToCheck == charToSave) {
+				saveNextMatch = true;
+				continue;
+			}
+			if(charToCheck == digitChar) {
+				operand = DigitUtils.getDigitString(addressToCheck.substring(addressIndex));
+				if(operand == null) {
+					break;
+				} else {
+					addressIndex += operand.length();
+				}
+			} else {
+				if(addressIndex < addressToCheck.length() && addressToCheck.charAt(addressIndex) == charToCheck) {
+					if(saveNextMatch) {
+						operand = "" + addressToCheck.charAt(addressIndex);
+					}
+					addressIndex++;
+				} else {
+					break;
+				}
+			}
+		}
+		if(operand != null) {
+			if(addressIndex < addressToCheck.length() - 1) {
+				if(addressToCheck.charAt(addressIndex) != ';') {
+					operand = null;
+				}
+			}
+		}
+		return operand;
+	}
 	
 	public static int stringToInt(String s, int radix) {
 		return Integer.parseInt(s, radix);

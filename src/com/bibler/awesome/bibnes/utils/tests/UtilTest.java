@@ -7,6 +7,12 @@ import junit.framework.TestCase;
 
 public class UtilTest extends TestCase {
 	
+	public void testGetDigitString() {
+		String s;
+		s = "$44";
+		assertEquals("$44", DigitUtils.getDigitString(s));
+	}
+	
 	public void testGetDigits() {
 		String s;
 		s = "$34";
@@ -45,6 +51,34 @@ public class UtilTest extends TestCase {
 		assertTrue(StringUtils.validateLine(s, s.indexOf('4')));
 		s = "0x34      The following is a comment;";
 		assertFalse(StringUtils.validateLine(s, s.indexOf('4')));
+	}
+	
+	public void testAddressPatternCheck() {
+		String pattern;
+		String addressToCheck;
+		pattern = "#" + StringUtils.digitChar;
+		addressToCheck = "#$44";
+		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
+		
+		pattern = "" + StringUtils.digitChar;
+		addressToCheck = "$44";
+		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
+		
+		pattern += ",x";
+		addressToCheck += ",x";
+		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
+		
+		pattern = "(" + StringUtils.digitChar + ")";
+		addressToCheck = "($4400)";
+		assertEquals("$4400", StringUtils.checkAddressPattern(addressToCheck, pattern));
+		
+		pattern = "(" + StringUtils.digitChar + ",x)";
+		addressToCheck = "($44,x)";
+		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
+		
+		pattern = "(" + StringUtils.digitChar + "),y";
+		addressToCheck = "($44),y";
+		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
 	}
 
 }
