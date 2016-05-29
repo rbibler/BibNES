@@ -60,6 +60,12 @@ public class DigitUtils {
 		return lastIndex;
 	}
 	
+	public static boolean checkFirstDigit(String s) {
+		int radix = s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
+		s = s.substring(radix == 10 ? 0 : 1);
+		return checkDigit(s.charAt(0), radix);
+	}
+	
 	public static boolean checkDigit(char c, int radix) {
 		Pattern p = decimalValues;
 		switch(radix) {

@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import com.bibler.awesome.bibnes.assembler.InstructionLine;
 import com.bibler.awesome.bibnes.io.TextReader;
 
 public class AssemblyUtils {
@@ -65,19 +64,19 @@ public class AssemblyUtils {
 	
 	private static void fillAddressModePatterns() {
 		addressModePatterns = new ArrayList<String>();
-		addressModePatterns.add("~A");
-		addressModePatterns.add("" + StringUtils.digitChar);
-		addressModePatterns.add("" + StringUtils.digitChar + ",x");
-		addressModePatterns.add("" + StringUtils.digitChar + ",y");
-		addressModePatterns.add("#" + StringUtils.digitChar);
-		addressModePatterns.add("");
-		addressModePatterns.add("(" + StringUtils.digitChar + ")");
-		addressModePatterns.add("(" + StringUtils.digitChar + ",x)");
-		addressModePatterns.add("(" + StringUtils.digitChar + "),y");
-		addressModePatterns.add("" + StringUtils.digitChar);
-		addressModePatterns.add("" + StringUtils.digitChar);
-		addressModePatterns.add("" + StringUtils.digitChar + ",x");
-		addressModePatterns.add("" + StringUtils.digitChar + ",y");
+		addressModePatterns.add("~A");														// Accumulator
+		addressModePatterns.add("" + StringUtils.digitChar);								// Absolute
+		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",x");					// Absolute X
+		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",y");					// Absolute Y
+		addressModePatterns.add("#" + StringUtils.digitOrLabelChar);						// Immediate
+		addressModePatterns.add("");														// Implied
+		addressModePatterns.add("(" + StringUtils.digitOrLabelChar + ")");					// Indirect
+		addressModePatterns.add("(" + StringUtils.digitChar + ",x)");						// Indirect, X
+		addressModePatterns.add("(" + StringUtils.digitOrLabelChar + "),y");				// Indirect, Y
+		addressModePatterns.add("" + StringUtils.digitOrLabelChar);							// Relative
+		addressModePatterns.add("" + StringUtils.digitOrLabelChar);							// ZeroPage
+		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",x");					// ZeroPage, X
+		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",y");					// ZeroPage, Y
 		
 	}
 	
@@ -361,9 +360,9 @@ public class AssemblyUtils {
 		return lines;
 	}
 	
-	public static int findDirective(String s) {
+	public static String findDirective(String s) {
 		if(s.length() == 0 || s.charAt(0) != '.') {
-			return -1;
+			return null;
 		}
 		String directive;
 		String testString = s.toUpperCase().substring(1);
@@ -385,7 +384,19 @@ public class AssemblyUtils {
 				break;
 			}
 		}
-		return directiveIndex;
+		return directives[directiveIndex];
+	}
+	
+	public static int getDirective(String directive) {
+		if(directive == null) {
+			return -1;
+		}
+		for(int i = 0; i < directives.length; i++) {
+			if(directive.equals(directives[i])) {
+				return i;
+			}
+		}
+		return -1;
 	}
 	
 	private static String[] directives = new String[] {
@@ -410,7 +421,7 @@ public class AssemblyUtils {
 				2,2,0,0,2,2,2,0,1,3,1,0,3,3,3,0,	// B
 				2,6,0,0,2,2,2,0,1,2,1,0,3,3,3,0,	// C
 				2,2,0,0,0,2,2,0,1,3,0,0,0,3,3,0,	// D
-				2,2,0,0,2,2,2,0,2,2,1,0,3,3,3,0,	// E
+				2,2,0,0,2,2,2,0,1,2,1,0,3,3,3,0,	// E
 				2,2,0,0,0,2,2,0,1,3,0,0,0,3,3,0		// F
 				
 		};

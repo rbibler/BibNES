@@ -80,5 +80,30 @@ public class UtilTest extends TestCase {
 		addressToCheck = "($44),y";
 		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
 	}
+	
+	public void testLabelCheck() {
+		String s;
+		s = "LABEL:";
+		assertTrue(s.equals(StringUtils.checkLabel(s)));
+		s = "L13  ;more";
+		assertTrue("L13".equals(StringUtils.checkLabel(s)));
+		s = "Label,x";
+		assertTrue("Label".equals(StringUtils.checkLabel(s)));
+	}
+	
+	public void testFirstDigitCheck() {
+		String s;
+		s = "0134";
+		assertTrue(DigitUtils.checkFirstDigit(s));
+		
+		s = "$FF";
+		assertTrue(DigitUtils.checkFirstDigit(s));
+		
+		s = "%110";
+		assertTrue(DigitUtils.checkFirstDigit(s));
+		
+		s = "Label";
+		assertFalse(DigitUtils.checkFirstDigit(s));
+	}
 
 }

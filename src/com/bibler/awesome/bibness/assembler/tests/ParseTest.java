@@ -4,8 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
-import com.bibler.awesome.bibnes.assembler.InstructionLine;
-import com.bibler.awesome.bibnes.assembler.Label;
 import com.bibler.awesome.bibnes.io.TextReader;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;

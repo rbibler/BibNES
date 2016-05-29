@@ -33,6 +33,23 @@ public class StringUtils {
 				} else {
 					addressIndex += operand.length();
 				}
+			} else if(charToCheck == digitOrLabelChar) {
+				if(DigitUtils.checkFirstDigit(addressToCheck.substring(addressIndex))) {
+					operand = DigitUtils.getDigitString(addressToCheck.substring(addressIndex));
+					if(operand == null) {
+						break;
+					} else {
+						addressIndex += operand.length();
+					}
+				} else {
+					operand = checkLabel(addressToCheck.substring(addressIndex));
+					if(operand == null) {
+						break;
+					} else {
+						addressIndex += operand.length();
+						operand = "L" + operand;
+					}
+				}
 			} else {
 				if(addressIndex < addressToCheck.length() && addressToCheck.charAt(addressIndex) == charToCheck) {
 					if(saveNextMatch) {

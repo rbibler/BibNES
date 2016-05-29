@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import com.bibler.awesome.bibnes.io.FileUtils;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
 import com.bibler.awesome.bibnes.utils.DigitUtils;
@@ -23,10 +24,6 @@ public class Assembler {
 	private ArrayList<String> labels = new ArrayList<String>();
 	private ArrayList<Integer> labelAddresses = new ArrayList<Integer>();
 	
-	//Equate Tables
-	private ArrayList<String> variables = new ArrayList<String>();
-	private ArrayList<Integer> variableValues = new ArrayList<Integer>();
-	
 	//Lines to check on Second Pass
 	private ArrayList<Integer> secondPassLines = new ArrayList<Integer>();
 	private ArrayList<Integer> secondPassAddress = new ArrayList<Integer>();
@@ -41,7 +38,6 @@ public class Assembler {
 	int address;
 	int bytes;
 	int lineCount;
-	Label operandLabel;
 	
 	public Assembler() {
 		setByteSize(0x8000);
@@ -75,15 +71,14 @@ public class Assembler {
 	public void parseOpCode(String lineToParse) {
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
 		String label = StringUtils.checkLabel(lineToParse);
-		operandLabel = null;
 		if(label != null) {
 			labels.add(label);
 			labelAddresses.add(locationCounter);
 			tmp = StringUtils.trimWhiteSpace(lineToParse.substring(label.length()));
 		} 
-		int directive = checkDirectives(tmp);
-		if(directive >= 0) {
-			processDirective(directive, tmp);
+		String directive = checkDirectives(tmp);
+		if(directive != null) {
+			processDirective(AssemblyUtils.getDirective(directive), tmp.substring(directive.length() + 1));
 		} else {
 			if(tmp.length() > 0 && matchOpCode(tmp)) {
 				instruction = tmp.substring(0, 3);
@@ -93,17 +88,10 @@ public class Assembler {
 		}
 	}
 	
-	private int checkDirectives(String lineToCheck) {
+	private String checkDirectives(String lineToCheck) {
 		return AssemblyUtils.findDirective(lineToCheck);
 	}
-	
-	private void processEquate(String s) {
-		String tmp = StringUtils.trimWhiteSpace(s.substring(s.indexOf(".EQU") + 4));
-		
-		if(checkImmediate(tmp)) {
-			labels.get(labels.size() - 1).setAddress(address);
-		}
-	}
+
 	
 	/**
 	 * Processes the directive defined by the parameter. Directives are as follows:
@@ -124,26 +112,82 @@ public class Assembler {
 			break;
 		case AssemblyUtils.BYTE:
 		case AssemblyUtils.DB:
+			int byteToWrite;
+			String[] bytesToCheck = StringUtils.trimWhiteSpace(line).split("[,]");
+			if(bytesToCheck.length > 0) {
+				for(String s : bytesToCheck) {
+					byteToWrite = DigitUtils.getDigits(s);
+					machineCode.write(locationCounter++, byteToWrite);
+				}
+			} else {
+				byteToWrite = DigitUtils.getDigits(line);
+				machineCode.write(locationCounter++, byteToWrite);
+			}
 			break;
 		case AssemblyUtils.WORD:
 		case AssemblyUtils.DW:
+			int wordToWrite;
+			String[] wordsToCheck = StringUtils.trimWhiteSpace(line).split("[,]");
+			if(wordsToCheck.length > 0) {
+				for(String s : wordsToCheck) {
+					wordToWrite = DigitUtils.getDigits(s);
+					machineCode.write(locationCounter++, wordToWrite & 0xFF);
+					machineCode.write(locationCounter++, wordToWrite >> 8 & 0xFF);
+				}
+			} else {
+				wordToWrite = DigitUtils.getDigits(line);
+				machineCode.write(locationCounter++, wordToWrite & 0xFF);
+				machineCode.write(locationCounter++,  wordToWrite >> 8 & 0xFF);
+			}
 			break;
 		case AssemblyUtils.EQU:
+			int value = processExpression(line);
+			labelAddresses.set(labelAddresses.size() - 1, value);
 			break;
 		case AssemblyUtils.FILL:
+			String[] params = StringUtils.trimWhiteSpace(line).split("[,]");
+			if(params.length > 0) {
+				int bytesToFill = DigitUtils.getDigits(params[0]);
+				int fillByte = DigitUtils.getDigits(params[1]);
+				if(fillByte <= 0xFF && bytesToFill + locationCounter < machineCode.size()) {
+					for(int i = 0; i < bytesToFill; i++) {
+						machineCode.write(locationCounter++, fillByte);
+					}
+				}
+			}
 			break;
 		case AssemblyUtils.INC:
+			File f = new File(line);
+			if(f.exists()) {
+				byte[] fileBytes = FileUtils.readFile(f);
+				for(Byte fileByte : fileBytes) {
+					machineCode.write(locationCounter++, fileByte);
+				}
+			}
 			break;
 		case AssemblyUtils.ORG:
+			int newLocation = DigitUtils.getDigits(line);
+			if(newLocation >= 0) {
+				locationCounter = newLocation;
+			}
 			break;
 		case AssemblyUtils.RS:
+			int bytesToSkip = DigitUtils.getDigits(line);
+			if(bytesToSkip >= 0) {
+				locationCounter += bytesToSkip;
+			}
 			break;
 			
 		}
 	}
 	
+	private int processExpression(String expression) {
+		return DigitUtils.getDigits(expression);
+	}
+	
 	private void processOpCode(String instruction, String operand) {
 		boolean match = false;
+		bytes = 3;
 		for(int i = 0; i < AssemblyUtils.ADDRESS_MODE_COUNT; i++) {
 			if(AssemblyUtils.checkForAddressMode(i, instruction)) {
 				if(checkAddressMode(i, operand)) {
@@ -156,7 +200,7 @@ public class Assembler {
 		if(!match) {
 			secondPassLines.add(lineCount);
 			secondPassAddress.add(locationCounter);
-			locationCounter += 3;
+			locationCounter += bytes;
 		} else {
 			opCode = AssemblyUtils.getOpCode(instruction, addressingMode);
 			bytes = AssemblyUtils.getBytes(opCode);
@@ -211,14 +255,21 @@ public class Assembler {
 			break;
 		case AssemblyUtils.IMPLIED:
 			match = AssemblyUtils.checkImplied(operand);
+			bytes = 1;
 			break;
 		case AssemblyUtils.INDIRECT_X:
 		case AssemblyUtils.INDIRECT_Y:
 		case AssemblyUtils.ZERO_PAGE:
 		case AssemblyUtils.ZERO_PAGE_X:
 		case AssemblyUtils.ZERO_PAGE_Y:
-		case AssemblyUtils.RELATIVE:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck)) && address <= 0xFF;
+			break;
+		case AssemblyUtils.RELATIVE:
+			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
+			if(match) {
+				address = (byte) (address - (locationCounter + (address < locationCounter ? 2 : 1))) & 0xFF;
+			}
+			bytes = 2; 
 			break;
 		}
 		return match;
@@ -228,346 +279,31 @@ public class Assembler {
 		boolean match = false;
 		String operand = StringUtils.checkAddressPattern(addressToCheck, pattern);
 		if(operand != null) {
-			address = DigitUtils.getDigits(operand);
-			match = true;
-		}
-		return match;
-	}
-	
-	
-	
-	/**
-	 * Checks the string for a valid immediate operand. Checks for disambiguating operators '$' for Hex 
-	 * and '%' for bin. If none found, assumes decimal mode. No labels allowed!
-	 * @param addressToCheck - The string containing the presumed address;
-	 * @return true if valid immediate operand found. False otherwise. 
-	 */
-	
-	public boolean checkImmediate(String addressToCheck) {
-		boolean match = false;
-		String tmp = ""; 
-		String operandDigits;
-		if(addressToCheck.length() > 0 && addressToCheck.charAt(0) == '#') {
-			tmp = addressToCheck.substring(1);
-			operandDigits = DigitUtils.getDigitString(tmp);
-			if(operandDigits != null && StringUtils.validateLine(addressToCheck, addressToCheck.indexOf(operandDigits) + operandDigits.length() - 1)) {
+			if(operand.charAt(0) == 'L') {
+				match = checkLabelsForAddress(operand.substring(1));
+			} else {
+				address = DigitUtils.getDigits(operand);
 				match = true;
-				address = DigitUtils.getDigits(tmp);
-				addressString = operandDigits;
-			} else {
-				match = false;
 			}
 		}
 		return match;
 	}
 	
-	public boolean checkZeroPage(String addressToCheck) {
-		return checkAbsOrZp(addressToCheck, 0, 0xFF);
-	}
-	
-	public boolean checkZeroPageX(String addressToCheck) {
-		return checkAbsOrZpIndexed(addressToCheck, 'x', 0, 0xFF);
-	}
-	
-	public boolean checkZeroPageY(String addressToCheck) {
-		return checkAbsOrZpIndexed(addressToCheck, 'y', 0, 0xFF);
-	}
-	
-	public boolean checkAbsolute(String addressToCheck) {
-		return checkAbsOrZp(addressToCheck, 0xFF, 0xFFFF);
-	}
-	
-	public boolean checkAbsoluteX(String addressToCheck) {
-		return checkAbsOrZpIndexed(addressToCheck, 'x', 0xFF, 0xFFFF);
-	}
-	
-	public boolean checkAbsoluteY(String addressToCheck) {
-		return checkAbsOrZpIndexed(addressToCheck, 'y', 0xFF, 0xFFFF);
-	}
-	
-	public boolean checkAbsOrZp(String addressToCheck, int lowerBounds, int upperBounds) {
-		boolean match = false;
-		String operandDigits;
-		if(addressToCheck.length() > 0) {
-			operandDigits = DigitUtils.getDigitString(addressToCheck);
-			if(operandDigits != null && StringUtils.validateLine(addressToCheck, addressToCheck.indexOf(operandDigits) + operandDigits.length() - 1)) {
-				match = true;
-				address = DigitUtils.getDigits(addressToCheck);
-				addressString = operandDigits;
-				match = address >= lowerBounds && address <= upperBounds;
-			} else {
-				match = false;
+	private boolean checkLabelsForAddress(String labelToCheck) {
+		for(int i = 0; i < labels.size(); i++) {
+			if(labels.get(i).equals(labelToCheck)) {
+				address = labelAddresses.get(i);
+				return true;
 			}
 		}
-		return match;
+		return false;
 	}
-	
-	public boolean checkAbsOrZpIndexed(String addressToCheck, char indexToCheck, int lowerBounds, int upperBounds) {
-		boolean match = false;
-		String operandDigits;
-		if(addressToCheck.length() > 0) {
-			operandDigits = DigitUtils.getDigitString(addressToCheck);
-			int lastDigitIndex = addressToCheck.indexOf(operandDigits) + operandDigits.length();
-			if(operandDigits != null) {
-				if(addressToCheck.charAt(lastDigitIndex) == ',') {
-					if(addressToCheck.toLowerCase().charAt(lastDigitIndex + 1) == indexToCheck) {
-						match = StringUtils.validateLine(addressToCheck, lastDigitIndex + 1);
-						if(match) {
-							address = DigitUtils.getDigits(addressToCheck);
-							addressString = operandDigits;
-							match = address >= lowerBounds && address <= upperBounds;
-						}
-					}
-				}
-			}
-		}
-		return match;
-	}
-	
-	/**
-	 * Validates whether an operand describes an Indirect addressing mode. 
-	 * First examines string for an index (i.e. 'X' or 'Y') and calls the 
-	 * appropriate helper function.
-	 * @param addressToCheck - The string containing the operand
-	 * @return True if operand describes an indirect addressing mode. False otherwise. 
-	 */
-	public boolean checkIndirect(String addressToCheck) {
-		boolean match = false;
-		String operandDigits;
-		int lastValidIndex;
-		if(addressToCheck.charAt(0) == '(') {
-			operandDigits = DigitUtils.getDigitString(addressToCheck.substring(1));
-			lastValidIndex = addressToCheck.indexOf(operandDigits) + operandDigits.length();
-			if(lastValidIndex < addressToCheck.length() && addressToCheck.charAt(lastValidIndex) == ')') {
-				match = StringUtils.validateLine(addressToCheck, lastValidIndex);
-				if(match) {
-					address = DigitUtils.getDigits(addressToCheck.substring(1));
-					addressString = operandDigits;
-				}
-			}
-		}
-		return match;
-	}
-	
-	/**
-	 * Validates that the string represents either the Indexed Indirect or Indirect Indexed addressing  modes.
-	 * Function parses the string to check for disambiguating identifiers: [(),].
-	 * If appropriate identifiers are found, they are stripped and the remaining characters are checked for
-	 * digit status according to any radix included in the string. 
-	 * @param addressToCheck - String representing the operand to be checked.
-	 * @param index - Location within the string of the index character (i.e. "X", "x", "Y", "y").
-	 * @return True if the operand describes and indexed indirect address mode. False otherwise. 
-	 */
-	
-	public boolean checkIndirectIndex(String addressToCheck, int index) {
-		boolean match = false;
-		//Store the index character for later comparison.
-		char indexChar = addressToCheck.charAt(index);	
-		// Stores the potential address mode after index character is checked. Primed at -1 for later validation.
-		int potentialAddressMode = -1;
-		int radix = -1;
-		int lastValidChar = -1;
-		String tmp = "";
-		// Check if we have an "X" index
-		if(indexChar == 'X' || indexChar == 'x') {
-			// With whitespace trimmed, the ")" character must immediately follow the "X", and the "," character 
-			// must immediately precede the X
-			if(addressToCheck.length() > (index + 1) && addressToCheck.charAt(index + 1) == ')' && addressToCheck.charAt(index - 1) == ',') {
-				//Trim everything but the (potential) address
-				tmp = addressToCheck.substring(1, index - 1);
-				// Set address mode now so we don't have to find it later.
-				potentialAddressMode = AssemblyUtils.INDIRECT_X;
-				lastValidChar = index + 1;
-			} 
-		} else if(indexChar == 'Y' || indexChar == 'y') {
-			// With whitespace trimmed, the "," character must immediately precede the "Y", and the 
-			// ")" must immediately precede the ",". 
-			if(addressToCheck.charAt(index - 1) == ',' && addressToCheck.charAt(index - 2) == ')') {
-				// Trim everything but the (potential) address
-				tmp = addressToCheck.substring(1, index - 2);
-				// Set address mode now so we don't have to find it later.
-				potentialAddressMode = AssemblyUtils.INDIRECT_Y;
-				lastValidChar = index;
-			}
-		}
-		// If we found all our disambiguating identifiers, potential address will no longer be -1
-		if(potentialAddressMode > 0) {
-			// Check for a radix identifier to help with digit validation.
-			radix = tmp.charAt(0) == '$' ? DigitUtils.HEX : (tmp.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
-			// Trim radix identifier, if present
-			tmp = tmp.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
-			int lastValidDigit = DigitUtils.checkDigits(tmp, radix);
-			if(lastValidDigit >= 0) {
-				// Convert string address to int
-				address = StringUtils.stringToInt(tmp.substring(0, lastValidDigit + 1), radix);
-				// Indexed indirect addresses can only be in Zero Page. 
-				if(address > 0xFF) {
-					match = false;
-				} else {
-					// Validate the rest of the line
-					match = StringUtils.validateLine(addressToCheck, lastValidChar);
-					// Set addressing mode using the mode we found earlier
-					addressingMode = potentialAddressMode;
-					addressString = tmp;
-				}
-			} else {
-				Label l = checkLabels(tmp);
-				if(l != null && potentialAddressMode != AssemblyUtils.INDIRECT_X) {
-					address = l.getAddress();
-					if(address > 0xFF) {
-						match = false;
-					} else {
-						operandLabel = l;
-						match = StringUtils.validateLine(addressToCheck, lastValidChar);
-						addressingMode = potentialAddressMode;
-						addressString = StringUtils.intToHexString(address);
-					}
-				}
-			}
-		}
-		return match;
-	}
-	
-	public boolean checkIndirectNoIndex(String addressToCheck) {
-		boolean match = false;
-		if(addressToCheck.charAt(0) != '(') {
-			return false;
-		}
-		if(!addressToCheck.contains(")")) {
-			return false;
-		}
-		String tmp = addressToCheck.substring(1, addressToCheck.indexOf(')'));
-		int radix = tmp.charAt(0) == '$' ? DigitUtils.HEX : (tmp.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
-		tmp = tmp.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
-		int lastValidDigit = DigitUtils.checkDigits(tmp, radix);
-		if(lastValidDigit >= 0) {
-			address = StringUtils.stringToInt(tmp.substring(0,  lastValidDigit + 1), radix);
-			if(address > 0xFFFF) {
-				match = false;
-			} else {
-				match = StringUtils.validateLine(addressToCheck, addressToCheck.indexOf(')'));
-				addressingMode = AssemblyUtils.INDIRECT;
-				addressString = tmp;
-			}
-		} else {
-			Label l = checkLabels(tmp);
-			if(l != null) {
-				address = l.getAddress();
-				if(address > 0xFFFF) {
-					match = false;
-				} else {
-					operandLabel = l;
-					match = StringUtils.validateLine(addressToCheck, addressToCheck.indexOf(')'));
-					addressingMode = AssemblyUtils.INDIRECT;
-					addressString = StringUtils.intToHexString(address);
-				}
-			}
-		}
-		return match;
-	}
-	
-	public boolean checkRelative(String addressToCheck) {
-		if(addressToCheck.length() <= 0) {
-			return false;
-		}
-		boolean match = false;
-		int radix = addressToCheck.charAt(0) == '$' ? DigitUtils.HEX : (addressToCheck.charAt(0) == '%' ? DigitUtils.BIN : DigitUtils.DECIMAL);
-		String tmp = addressToCheck.substring(radix == DigitUtils.DECIMAL ? 0 : 1);
-		int lastIndex = DigitUtils.checkDigits(tmp, radix);
-		if(lastIndex >= 0) {
-			address = StringUtils.stringToInt(tmp.substring(0,  lastIndex + 1), radix);
-			if(address > 0xFF) {
-				match = false;
-			} else {
-				match = StringUtils.validateLine(tmp, lastIndex);
-				addressingMode = AssemblyUtils.RELATIVE;
-				addressString = tmp;
-			}
-		} else {
-			Label l = checkLabels(tmp);
-			if(l != null) {
-				address = l.getAddress();
-				address = address - (locationCounter + 2);
-				if(address > 0xFF) {
-					match = false;
-				} else {
-					operandLabel = l;
-					match = StringUtils.validateLine(addressToCheck, l.getLength() - 1);
-					addressingMode = AssemblyUtils.RELATIVE;
-					addressString = StringUtils.intToHexString(address);
-				}
-			}
-		}
-		return match;
-	}
-	
-	/**
-	 * No Labels Allowed!
-	 * @param addressToCheck
-	 * @return
-	 */
-	public boolean checkAccumulator(String addressToCheck) {
-		boolean match = false;
-		if(addressToCheck.length() > 0 && addressToCheck.charAt(0) == 'A') {
-			if(addressToCheck.length() == 1 || addressToCheck.charAt(1) == ';') {
-				match = true;
-				address = -1;
-				addressString = "";
-			}
-		}
-		return match;
-	}
-	
-	/**
-	 * No Labels Allowed!
-	 * @param addressToCheck
-	 * @return
-	 */
-	public boolean checkImplied(String addressToCheck) {
-		boolean match = false;
-		if(addressToCheck.length() == 0 || addressToCheck.charAt(0) == ';') {
-			match = true;
-			address = -1;
-			addressString = "";
-		}
-		return match;
-	}
-	
-	
-	private int getIndex(String addressToCheck) {
-		int index = addressToCheck.indexOf('X');
-		if(index >= 0) {
-			return index;
-		} else {
-			index = addressToCheck.indexOf('x');
-			if(index >= 0) {
-				return index;
-			} else {
-				index = addressToCheck.indexOf('Y');
-				if(index >= 0) {
-					return index;
-				} else {
-					index = addressToCheck.indexOf('y');
-				}
-			}
-		}
-		return index;
-	}
-	
 	
 	
 	private int findOpCode() {
 		return AssemblyUtils.getOpCode(instruction, addressingMode);
 	}
-	
-	private Label checkLabels(String stringToCheck) {
-		for(Label l : labels) {
-			if(l.checkLabelAgainstString(stringToCheck)) {
-				return l;
-			}
-		}
-		return null;
-	}
+
 	
 	private void constructListing(int opCode, int bytes) {
 		if(locationCounter % 16 == 0) {
@@ -608,12 +344,20 @@ public class Assembler {
 		return opCode;
 	}
 	
-	public ArrayList<Label> getLabels() {
-		return labels;
+	public int getLocationCounter() {
+		return locationCounter;
 	}
 	
-	public void addLabel(Label l) {
-		labels.add(l);
+	public int getByteAt(int address) {
+		return machineCode.read(address);
+	}
+	
+	public int getLabelAddress(String label) {
+		int index = labels.indexOf(label);
+		if(index >= 0) {
+			index = labelAddresses.get(index);
+		}
+		return index;
 	}
 	
 	public void printPassTwoLines() {
