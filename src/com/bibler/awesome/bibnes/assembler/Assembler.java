@@ -82,24 +82,34 @@ public class Assembler {
 	
 	public void parseOpCode(String lineToParse) {
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
-		String label = StringUtils.checkLabel(lineToParse);
+		String label = StringUtils.checkLabel(lineToParse, lineCount);
+		int additionalLabelChars = 0;
 		if(label != null) {
 			if(label.charAt(label.length() - 1) == ':') {
 				label = label.substring(0, label.length() - 1);
+				additionalLabelChars = 1;
 			}
 			labels.add(label);
 			labelAddresses.add(locationCounter);
-			tmp = StringUtils.trimWhiteSpace(lineToParse.substring(label.length()));
-		} 
+			tmp = StringUtils.trimWhiteSpace(lineToParse.substring(label.length() + additionalLabelChars));
+		} else if(lineToParse.charAt(0) != ' ' && lineToParse.charAt(0) != ';') {
+			ErrorHandler.handleError(lineToParse, lineCount, ErrorHandler.ILLEGAL_LABEL);
+		}
+		if(tmp.length() == 0) {
+			return;
+		}
 		String directive = checkDirectives(tmp);
 		if(directive != null) {
 			processDirective(AssemblyUtils.getDirective(directive), lineToParse.substring(lineToParse.toUpperCase().indexOf(directive) + directive.length()));
-		} else {
+		} else { 
+			if(tmp.charAt(0) == '.') {
+				ErrorHandler.handleError(tmp, lineCount, ErrorHandler.ILLEGAL_DIRECTIVE);
+			}
 			if(tmp.length() > 0 && matchOpCode(tmp)) {
 				instruction = tmp.substring(0, 3);
 				tmp = tmp.substring(3);
 				processOpCode(instruction, tmp);
-			}
+			} 
 		}
 	}
 	
@@ -143,7 +153,7 @@ public class Assembler {
 		case AssemblyUtils.WORD:
 		case AssemblyUtils.DW:
 			line = StringUtils.trimWhiteSpace(line);
-			String label = StringUtils.checkLabel(line);
+			String label = StringUtils.checkLabel(line, lineCount);
 			if(label != null) {
 				int labelAddress = this.getLabelAddress(label);
 				machineCode.write(locationCounter++, labelAddress & 0xFF);
@@ -320,7 +330,7 @@ public class Assembler {
 	
 	public boolean checkAddressMode(String addressToCheck, String pattern) {
 		boolean match = false;
-		String operand = StringUtils.checkAddressPattern(addressToCheck, pattern);
+		String operand = StringUtils.checkAddressPattern(addressToCheck, pattern, lineCount);
 		if(operand != null) {
 			if(operand.charAt(0) == 'L') {
 				match = checkLabelsForAddress(operand.substring(1));

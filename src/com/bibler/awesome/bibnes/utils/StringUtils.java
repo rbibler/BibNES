@@ -4,6 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
+import com.bibler.awesome.bibnes.assembler.ErrorHandler;
 
 public class StringUtils {
 	
@@ -15,7 +16,7 @@ public class StringUtils {
 	public static char charToSave = '~';
 	public static boolean saveNextMatch;
 	
-	public static String checkAddressPattern(String addressToCheck, String pattern) {
+	public static String checkAddressPattern(String addressToCheck, String pattern, int lineCount) {
 		String operand = null;
 		int addressIndex = 0;
 		char charToCheck;
@@ -42,7 +43,7 @@ public class StringUtils {
 						addressIndex += operand.length();
 					}
 				} else {
-					operand = checkLabel(addressToCheck.substring(addressIndex));
+					operand = checkLabel(addressToCheck.substring(addressIndex), lineCount);
 					if(operand == null) {
 						break;
 					} else {
@@ -132,7 +133,7 @@ public class StringUtils {
 		return legit;
 	}
 	
-	public static String checkLabel(String s) {
+	public static String checkLabel(String s, int line) {
 		String label = null;
 		Matcher m = alphabeticChars.matcher(s.substring(0, 1));
 		final int maxLength = Assembler.MAX_LABEL_LENGTH < s.length() ? Assembler.MAX_LABEL_LENGTH : s.length();
@@ -147,7 +148,7 @@ public class StringUtils {
 				}
 				
 			}
-		}
+		} 
 		if(label != null && label.length() > maxLength) {
 			label = label.substring(0, maxLength);
 			

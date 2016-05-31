@@ -388,7 +388,11 @@ public class AssemblyUtils {
 				break;
 			}
 		}
-		return directives[directiveIndex];
+		if(directiveIndex != -1) {
+			return directives[directiveIndex];
+		} else {
+			return null;
+		}
 	}
 	
 	public static int getDirective(String directive) {
