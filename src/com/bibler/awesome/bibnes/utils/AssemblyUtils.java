@@ -34,6 +34,10 @@ public class AssemblyUtils {
 	public final static int ORG = 7;
 	public final static int RS = 8;
 	public final static int WORD = 9;
+	public final static int BS = 10;
+	public final static int BANK = 11;
+	
+	public final static int DEFAULT_BANK_SIZE = 0x2000;
 	
 	private static HashMap<String, Integer> immediateOpCodes;
 	private static HashMap<String, Integer> accumulatorOpCodes;
@@ -401,7 +405,7 @@ public class AssemblyUtils {
 	
 	private static String[] directives = new String[] {
 			"ALIGN", "BYTE", "DB", "DW", "EQU", "FILL", "INC",
-			"ORG", "RS", "WORD"
+			"ORG", "RS", "WORD", "BS", "BANK"
 	};
 	
 	

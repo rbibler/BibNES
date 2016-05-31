@@ -118,6 +118,21 @@ public class DirectivesTest extends TestCase {
 		for(int i = 0; i < 0x100; i++) {
 			assertEquals(0x44, assembler.getByteAt(locationCounter++));
 		}
+		
+		s = ".BANK 10";
+		assembler.parseOpCode(s);
+		locationCounter = assembler.getLocationCounter();
+		assertEquals(10 * 0x2000, locationCounter);
+		
+		s = ".ORG $34";
+		assembler.parseOpCode(s);
+		locationCounter = assembler.getLocationCounter();
+		assertEquals((10 * 0x2000) + 0x34, locationCounter);
+		
+		s = ".ORG $C000";
+		assembler.parseOpCode(s);
+		locationCounter = assembler.getLocationCounter();
+		assertEquals(10 * 0x2000, locationCounter);
 	}
 
 }

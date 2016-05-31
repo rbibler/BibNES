@@ -13,7 +13,7 @@ import junit.framework.TestCase;
 
 public class ParseTest extends TestCase {
 	
-	public void testInstructionParse() {
+	/*public void testInstructionParse() {
 		Assembler assembler = new Assembler();
 		String s = "ADC #$F2";
 		assertTrue(assembler.matchOpCode(StringUtils.trimWhiteSpace(s)));
@@ -328,11 +328,11 @@ public class ParseTest extends TestCase {
 		assertEquals(0x6E, assembler.getOpCode());
 		assertEquals(0x4400, assembler.getAddress());
 		
-	}
+	}*/
 	
 	public void testFromFile() {
 		Assembler assembler = new Assembler();
-		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(new File("C:/users/ryan/desktop/test.asm")));
+		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(new File("C:/Users/Ryan/Desktop/NES/nerdy nights tutorials/tests/background/background.asm")));
 		assembler.writeMachineCodeToFile(new File("C:/users/ryan/desktop/textTest.bin"), machineCode);
 		assembler.printPassTwoLines();
 	}

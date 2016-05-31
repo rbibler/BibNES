@@ -38,20 +38,29 @@ public class Assembler {
 	int address;
 	int bytes;
 	int lineCount;
+	int currentBank;
+	int bankSize;
 	
 	public Assembler() {
-		setByteSize(0x8000);
+		currentBank = 0;
+		bankSize = AssemblyUtils.DEFAULT_BANK_SIZE;
+		setByteSize(0x22000);
 	}
 	
 	public void setByteSize(int byteSize) {
 		machineCode = new Memory(byteSize);
+		for(int i = 0; i < machineCode.size(); i++) {
+			machineCode.write(i, 0xFF);
+		}
 	}
 	
 	public Memory passOne(String[] lines) {
 		this.linesToAssemble = lines;
 		lineCount = 0;
 		for(String line : lines) {
-			parseOpCode(line);
+			if(!line.trim().isEmpty()) {
+				parseOpCode(line);
+			}
 			lineCount++;
 		}
 		passTwo(lines);
@@ -61,9 +70,12 @@ public class Assembler {
 	private void passTwo(String[] lines) {
 		String line;
 		for(int i = 0; i < secondPassLines.size(); i++) {
-			line = lines[secondPassLines.get(i)];
-			locationCounter = secondPassAddress.get(i);
-			parseOpCode(line);
+			int lineToCheck = secondPassLines.get(i);
+			if(lineToCheck < lines.length) {
+				line = lines[secondPassLines.get(i)];
+				locationCounter = secondPassAddress.get(i);
+				parseOpCode(line);
+			}
 		}
 	}
 
@@ -72,13 +84,16 @@ public class Assembler {
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
 		String label = StringUtils.checkLabel(lineToParse);
 		if(label != null) {
+			if(label.charAt(label.length() - 1) == ':') {
+				label = label.substring(0, label.length() - 1);
+			}
 			labels.add(label);
 			labelAddresses.add(locationCounter);
 			tmp = StringUtils.trimWhiteSpace(lineToParse.substring(label.length()));
 		} 
 		String directive = checkDirectives(tmp);
 		if(directive != null) {
-			processDirective(AssemblyUtils.getDirective(directive), tmp.substring(directive.length() + 1));
+			processDirective(AssemblyUtils.getDirective(directive), lineToParse.substring(lineToParse.toUpperCase().indexOf(directive) + directive.length()));
 		} else {
 			if(tmp.length() > 0 && matchOpCode(tmp)) {
 				instruction = tmp.substring(0, 3);
@@ -112,6 +127,7 @@ public class Assembler {
 			break;
 		case AssemblyUtils.BYTE:
 		case AssemblyUtils.DB:
+			line = StringUtils.trimWhiteSpace(line);
 			int byteToWrite;
 			String[] bytesToCheck = StringUtils.trimWhiteSpace(line).split("[,]");
 			if(bytesToCheck.length > 0) {
@@ -126,25 +142,35 @@ public class Assembler {
 			break;
 		case AssemblyUtils.WORD:
 		case AssemblyUtils.DW:
-			int wordToWrite;
-			String[] wordsToCheck = StringUtils.trimWhiteSpace(line).split("[,]");
-			if(wordsToCheck.length > 0) {
-				for(String s : wordsToCheck) {
-					wordToWrite = DigitUtils.getDigits(s);
-					machineCode.write(locationCounter++, wordToWrite & 0xFF);
-					machineCode.write(locationCounter++, wordToWrite >> 8 & 0xFF);
-				}
+			line = StringUtils.trimWhiteSpace(line);
+			String label = StringUtils.checkLabel(line);
+			if(label != null) {
+				int labelAddress = this.getLabelAddress(label);
+				machineCode.write(locationCounter++, labelAddress & 0xFF);
+				machineCode.write(locationCounter++, labelAddress >> 8 & 0xFF);
 			} else {
-				wordToWrite = DigitUtils.getDigits(line);
-				machineCode.write(locationCounter++, wordToWrite & 0xFF);
-				machineCode.write(locationCounter++,  wordToWrite >> 8 & 0xFF);
+				int wordToWrite;
+				String[] wordsToCheck = StringUtils.trimWhiteSpace(line).split("[,]");
+				if(wordsToCheck.length > 0) {
+					for(String s : wordsToCheck) {
+						wordToWrite = DigitUtils.getDigits(s);
+						machineCode.write(locationCounter++, wordToWrite & 0xFF);
+						machineCode.write(locationCounter++, wordToWrite >> 8 & 0xFF);
+					}
+				} else {
+					wordToWrite = DigitUtils.getDigits(line);
+					machineCode.write(locationCounter++, wordToWrite & 0xFF);
+					machineCode.write(locationCounter++,  wordToWrite >> 8 & 0xFF);
+				}
 			}
 			break;
 		case AssemblyUtils.EQU:
+			line = StringUtils.trimWhiteSpace(line);
 			int value = processExpression(line);
 			labelAddresses.set(labelAddresses.size() - 1, value);
 			break;
 		case AssemblyUtils.FILL:
+			line = StringUtils.trimWhiteSpace(line);
 			String[] params = StringUtils.trimWhiteSpace(line).split("[,]");
 			if(params.length > 0) {
 				int bytesToFill = DigitUtils.getDigits(params[0]);
@@ -157,7 +183,8 @@ public class Assembler {
 			}
 			break;
 		case AssemblyUtils.INC:
-			File f = new File(line);
+			String s = line.trim().replaceAll("[\"]", "");
+			File f = new File(s);
 			if(f.exists()) {
 				byte[] fileBytes = FileUtils.readFile(f);
 				for(Byte fileByte : fileBytes) {
@@ -166,17 +193,33 @@ public class Assembler {
 			}
 			break;
 		case AssemblyUtils.ORG:
+			line = StringUtils.trimWhiteSpace(line);
 			int newLocation = DigitUtils.getDigits(line);
 			if(newLocation >= 0) {
-				locationCounter = newLocation;
+				locationCounter = (currentBank * bankSize) + (newLocation % bankSize);
 			}
 			break;
 		case AssemblyUtils.RS:
+			line = StringUtils.trimWhiteSpace(line);
 			int bytesToSkip = DigitUtils.getDigits(line);
 			if(bytesToSkip >= 0) {
 				locationCounter += bytesToSkip;
 			}
 			break;
+		case AssemblyUtils.BS:
+			line = StringUtils.trimWhiteSpace(line);
+			bankSize = DigitUtils.getDigits(line);
+			if(bankSize != -1) {
+				bankSize *= AssemblyUtils.DEFAULT_BANK_SIZE;
+			}
+			break;
+		case AssemblyUtils.BANK:
+			line = StringUtils.trimWhiteSpace(line);
+			int bank = DigitUtils.getDigits(line);
+			if(bank != -1) {
+				currentBank = bank;
+				locationCounter = bank * bankSize;
+			}
 			
 		}
 	}

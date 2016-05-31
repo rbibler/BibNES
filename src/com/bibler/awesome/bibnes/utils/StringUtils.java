@@ -150,7 +150,9 @@ public class StringUtils {
 		}
 		if(label != null && label.length() > maxLength) {
 			label = label.substring(0, maxLength);
+			
 		}
+		
 		return label;
 	}
 
