@@ -332,8 +332,8 @@ public class ParseTest extends TestCase {
 	
 	public void testFromFile() {
 		Assembler assembler = new Assembler();
-		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(new File("C:/Users/Ryan/Desktop/NES/nerdy nights tutorials/tests/background/background.asm")));
-		assembler.writeMachineCodeToFile(new File("C:/users/ryan/desktop/textTest.bin"), machineCode);
+		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(new File("C:/Users/rbibl/desktop/test.asm")));
+		//assembler.writeMachineCodeToFile(new File("C:/users/ryan/desktop/textTest.bin"), machineCode);
 	}
 	
 	

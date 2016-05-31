@@ -30,6 +30,8 @@ public class Assembler {
 	
 	private String[] linesToAssemble;
 	
+	private boolean  secondPass;
+	
 	
 	String instruction;
 	String addressString;
@@ -55,6 +57,7 @@ public class Assembler {
 	}
 	
 	public Memory passOne(String[] lines) {
+		secondPass = false;
 		this.linesToAssemble = lines;
 		lineCount = 0;
 		for(String line : lines) {
@@ -69,13 +72,14 @@ public class Assembler {
 	
 	private void passTwo(String[] lines) {
 		String line;
+		secondPass = true;
 		for(int i = 0; i < secondPassLines.size(); i++) {
-			int lineToCheck = secondPassLines.get(i);
-			if(lineToCheck < lines.length) {
+			lineCount = secondPassLines.get(i);
+			if(lineCount < lines.length) {
 				line = lines[secondPassLines.get(i)];
 				locationCounter = secondPassAddress.get(i);
 				parseOpCode(line);
-			}
+			} 
 		}
 	}
 
@@ -109,7 +113,14 @@ public class Assembler {
 				instruction = tmp.substring(0, 3);
 				tmp = tmp.substring(3);
 				processOpCode(instruction, tmp);
-			} 
+			} else {
+				tmp = tmp.trim();
+				if(tmp.length() != 0) {
+					if(tmp.charAt(0) != ';') {
+						ErrorHandler.handleError(lineToParse, lineCount, ErrorHandler.NO_OP_CODE);
+					}
+				}
+			}
 		}
 	}
 	
@@ -143,11 +154,21 @@ public class Assembler {
 			if(bytesToCheck.length > 0) {
 				for(String s : bytesToCheck) {
 					byteToWrite = DigitUtils.getDigits(s);
-					machineCode.write(locationCounter++, byteToWrite);
+					if(byteToWrite == -1) {
+						//TODO Add error for incorrect operand
+						//TODO Add label check
+					} else {
+						machineCode.write(locationCounter++, byteToWrite);
+					}
 				}
 			} else {
 				byteToWrite = DigitUtils.getDigits(line);
-				machineCode.write(locationCounter++, byteToWrite);
+				if(byteToWrite == -1) {
+					//TODO Add error for incorrect operand
+					//TODO Add label check
+				} else {
+					machineCode.write(locationCounter++, byteToWrite);
+				}
 			}
 			break;
 		case AssemblyUtils.WORD:
@@ -164,20 +185,32 @@ public class Assembler {
 				if(wordsToCheck.length > 0) {
 					for(String s : wordsToCheck) {
 						wordToWrite = DigitUtils.getDigits(s);
-						machineCode.write(locationCounter++, wordToWrite & 0xFF);
-						machineCode.write(locationCounter++, wordToWrite >> 8 & 0xFF);
+						if(wordToWrite == -1) {
+							//TODO Add Error handler for incorrect operand
+						} else {
+							machineCode.write(locationCounter++, wordToWrite & 0xFF);
+							machineCode.write(locationCounter++, wordToWrite >> 8 & 0xFF);
+						}
 					}
 				} else {
 					wordToWrite = DigitUtils.getDigits(line);
-					machineCode.write(locationCounter++, wordToWrite & 0xFF);
-					machineCode.write(locationCounter++,  wordToWrite >> 8 & 0xFF);
+					if(wordToWrite == -1) {
+						//TODO Add Error handler for incorrect operand
+					} else {
+						machineCode.write(locationCounter++, wordToWrite & 0xFF);
+						machineCode.write(locationCounter++,  wordToWrite >> 8 & 0xFF);
+					}
 				}
 			}
 			break;
 		case AssemblyUtils.EQU:
 			line = StringUtils.trimWhiteSpace(line);
 			int value = processExpression(line);
-			labelAddresses.set(labelAddresses.size() - 1, value);
+			if(value == -1) {
+				//TODO Add Error Handler for incorrect operand
+			} else {
+				labelAddresses.set(labelAddresses.size() - 1, value);
+			}
 			break;
 		case AssemblyUtils.FILL:
 			line = StringUtils.trimWhiteSpace(line);
@@ -185,10 +218,16 @@ public class Assembler {
 			if(params.length > 0) {
 				int bytesToFill = DigitUtils.getDigits(params[0]);
 				int fillByte = DigitUtils.getDigits(params[1]);
-				if(fillByte <= 0xFF && bytesToFill + locationCounter < machineCode.size()) {
-					for(int i = 0; i < bytesToFill; i++) {
-						machineCode.write(locationCounter++, fillByte);
+				if(fillByte <= 0xFF) {
+					if(bytesToFill + locationCounter < machineCode.size()) {
+						for(int i = 0; i < bytesToFill; i++) {
+							machineCode.write(locationCounter++, fillByte);
+						}
+					} else {
+						//TODO Add error handler for Fill overflow
 					}
+				} else {
+					//TODO Add Error handler for incorrect operand
 				}
 			}
 			break;
@@ -199,7 +238,13 @@ public class Assembler {
 				byte[] fileBytes = FileUtils.readFile(f);
 				for(Byte fileByte : fileBytes) {
 					machineCode.write(locationCounter++, fileByte);
+					if(locationCounter >= machineCode.size()) {
+						//TODO Add Error Handler for inc overflow
+						break;
+					}
 				}
+			} else {
+				//TODO Add error handler for file not found
 			}
 			break;
 		case AssemblyUtils.ORG:
@@ -207,6 +252,8 @@ public class Assembler {
 			int newLocation = DigitUtils.getDigits(line);
 			if(newLocation >= 0) {
 				locationCounter = (currentBank * bankSize) + (newLocation % bankSize);
+			} else {
+				//TODO Add error handler for incorrect operand
 			}
 			break;
 		case AssemblyUtils.RS:
@@ -214,6 +261,8 @@ public class Assembler {
 			int bytesToSkip = DigitUtils.getDigits(line);
 			if(bytesToSkip >= 0) {
 				locationCounter += bytesToSkip;
+			} else {
+				//TODO Add error handler for incorrect operand
 			}
 			break;
 		case AssemblyUtils.BS:
@@ -221,6 +270,8 @@ public class Assembler {
 			bankSize = DigitUtils.getDigits(line);
 			if(bankSize != -1) {
 				bankSize *= AssemblyUtils.DEFAULT_BANK_SIZE;
+			} else {
+				//TODO Add error handler for incorrect operand
 			}
 			break;
 		case AssemblyUtils.BANK:
@@ -229,6 +280,8 @@ public class Assembler {
 			if(bank != -1) {
 				currentBank = bank;
 				locationCounter = bank * bankSize;
+			} else {
+				//TODO Add error handler for incorrect operand
 			}
 			
 		}
@@ -251,9 +304,13 @@ public class Assembler {
 			}
 		}
 		if(!match) {
-			secondPassLines.add(lineCount);
-			secondPassAddress.add(locationCounter);
-			locationCounter += bytes;
+			if(secondPass){
+				ErrorHandler.handleError(instruction + " " + operand, lineCount, ErrorHandler.MISSING_OPERAND);
+			} else {
+				secondPassLines.add(lineCount);
+				secondPassAddress.add(locationCounter);
+				locationCounter += bytes;
+			}
 		} else {
 			opCode = AssemblyUtils.getOpCode(instruction, addressingMode);
 			bytes = AssemblyUtils.getBytes(opCode);
@@ -320,7 +377,12 @@ public class Assembler {
 		case AssemblyUtils.RELATIVE:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
 			if(match) {
-				address = (byte) (address - (locationCounter + (address < locationCounter ? 2 : 1))) & 0xFF;
+				address = (address - (locationCounter + (address < locationCounter ? 2 : 1)));
+				if(Math.abs(address) <= 0xFF) {
+					address = (byte) (address & 0xFF);
+				} else {
+					//TODO Add Error handler for Jump To Far.
+				}
 			}
 			bytes = 2; 
 			break;
