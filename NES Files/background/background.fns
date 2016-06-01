@@ -1,9 +1,9 @@
 $0000#DEVELO#F0
-$C040#Forever#0
+$E052#Forever#0
 $0000#CDROM#F0
 $0001#MAGICKIT#F0
-$C014#vblankwait1#0
-$C036#vblankwait2#0
-$C019#clrmem#0
-$0000#RESET#F0
-$C043#NMI#0
+$E024#vblankwait1#0
+$E048#vblankwait2#0
+$E029#clrmem#0
+$E010#RESET#0
+$E055#NMI#0

@@ -46,7 +46,7 @@ public class Assembler {
 	public Assembler() {
 		currentBank = 0;
 		bankSize = AssemblyUtils.DEFAULT_BANK_SIZE;
-		setByteSize(0x22000);
+		setByteSize(0x8000);
 	}
 	
 	public void setByteSize(int byteSize) {
