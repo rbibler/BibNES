@@ -16,7 +16,7 @@ public class StringUtils {
 	public static char charToSave = '~';
 	public static boolean saveNextMatch;
 	
-	public static String checkAddressPattern(String addressToCheck, String pattern, int lineCount) {
+	public static String checkAddressPattern(String addressToCheck, String pattern) {
 		String operand = null;
 		int addressIndex = 0;
 		char charToCheck;
@@ -43,7 +43,7 @@ public class StringUtils {
 						addressIndex += operand.length();
 					}
 				} else {
-					operand = checkLabel(addressToCheck.substring(addressIndex), lineCount);
+					operand = checkLabel(addressToCheck.substring(addressIndex));
 					if(operand == null) {
 						break;
 					} else {
@@ -133,7 +133,7 @@ public class StringUtils {
 		return legit;
 	}
 	
-	public static String checkLabel(String s, int line) {
+	public static String checkLabel(String s) {
 		String label = null;
 		Matcher m = alphabeticChars.matcher(s.substring(0, 1));
 		final int maxLength = Assembler.MAX_LABEL_LENGTH < s.length() ? Assembler.MAX_LABEL_LENGTH : s.length();

@@ -13,7 +13,7 @@ import com.bibler.awesome.bibnes.utils.StringUtils;
 
 public class Assembler {
 	
-	public static final int MAX_LABEL_LENGTH = 12;
+	public static final int MAX_LABEL_LENGTH = 256;
 	
 	private StringBuilder listing = new StringBuilder();
 	private Memory machineCode;
@@ -86,7 +86,7 @@ public class Assembler {
 	
 	public void parseOpCode(String lineToParse) {
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
-		String label = StringUtils.checkLabel(lineToParse, lineCount);
+		String label = StringUtils.checkLabel(lineToParse);
 		int additionalLabelChars = 0;
 		if(label != null) {
 			if(label.charAt(label.length() - 1) == ':') {
@@ -143,6 +143,10 @@ public class Assembler {
 	 */
 	
 	private void processDirective(int directive, String line) {
+		boolean error = false;
+		String label = null;
+		int labelAddress = -1;
+		int errorCode = -1;
 		switch(directive) {
 		case AssemblyUtils.ALIGN:
 			break;
@@ -151,12 +155,23 @@ public class Assembler {
 			line = StringUtils.trimWhiteSpace(line);
 			int byteToWrite;
 			String[] bytesToCheck = StringUtils.trimWhiteSpace(line).split("[,]");
-			if(bytesToCheck.length > 0) {
+			if(bytesToCheck.length > 1) {
 				for(String s : bytesToCheck) {
 					byteToWrite = DigitUtils.getDigits(s);
 					if(byteToWrite == -1) {
-						//TODO Add error for incorrect operand
-						//TODO Add label check
+						label = StringUtils.checkLabel(s);
+						if(label != null) {
+							labelAddress = this.getLabelAddress(label);
+							if(labelAddress == -1) {
+								error = true;
+								errorCode = ErrorHandler.MISSING_OPERAND;
+							} else {
+								machineCode.write(locationCounter++, labelAddress);
+							}
+						} else {
+							error = true;
+							errorCode = ErrorHandler.MISSING_OPERAND;
+						}
 					} else {
 						machineCode.write(locationCounter++, byteToWrite);
 					}
@@ -164,8 +179,19 @@ public class Assembler {
 			} else {
 				byteToWrite = DigitUtils.getDigits(line);
 				if(byteToWrite == -1) {
-					//TODO Add error for incorrect operand
-					//TODO Add label check
+					label = StringUtils.checkLabel(line);
+					if(label != null) {
+						labelAddress = this.getLabelAddress(label);
+						if(labelAddress != -1) {
+							machineCode.write(locationCounter++, labelAddress);
+						} else {
+							error = true;
+							errorCode = ErrorHandler.MISSING_OPERAND;
+						}
+					} else {
+						error = true;
+						errorCode = ErrorHandler.MISSING_OPERAND;
+					}
 				} else {
 					machineCode.write(locationCounter++, byteToWrite);
 				}
@@ -174,11 +200,16 @@ public class Assembler {
 		case AssemblyUtils.WORD:
 		case AssemblyUtils.DW:
 			line = StringUtils.trimWhiteSpace(line);
-			String label = StringUtils.checkLabel(line, lineCount);
+			label = StringUtils.checkLabel(line);
 			if(label != null) {
-				int labelAddress = this.getLabelAddress(label);
-				machineCode.write(locationCounter++, labelAddress & 0xFF);
-				machineCode.write(locationCounter++, labelAddress >> 8 & 0xFF);
+				labelAddress = this.getLabelAddress(label);
+				if(labelAddress == -1) {
+					error = true;
+					errorCode = ErrorHandler.MISSING_OPERAND;
+				} else {
+					machineCode.write(locationCounter++, labelAddress & 0xFF);
+					machineCode.write(locationCounter++, labelAddress >> 8 & 0xFF);
+				}
 			} else {
 				int wordToWrite;
 				String[] wordsToCheck = StringUtils.trimWhiteSpace(line).split("[,]");
@@ -186,7 +217,8 @@ public class Assembler {
 					for(String s : wordsToCheck) {
 						wordToWrite = DigitUtils.getDigits(s);
 						if(wordToWrite == -1) {
-							//TODO Add Error handler for incorrect operand
+							error = true;
+							errorCode = ErrorHandler.MISSING_OPERAND;
 						} else {
 							machineCode.write(locationCounter++, wordToWrite & 0xFF);
 							machineCode.write(locationCounter++, wordToWrite >> 8 & 0xFF);
@@ -195,7 +227,8 @@ public class Assembler {
 				} else {
 					wordToWrite = DigitUtils.getDigits(line);
 					if(wordToWrite == -1) {
-						//TODO Add Error handler for incorrect operand
+						error = true;
+						errorCode = ErrorHandler.MISSING_OPERAND;
 					} else {
 						machineCode.write(locationCounter++, wordToWrite & 0xFF);
 						machineCode.write(locationCounter++,  wordToWrite >> 8 & 0xFF);
@@ -207,7 +240,8 @@ public class Assembler {
 			line = StringUtils.trimWhiteSpace(line);
 			int value = processExpression(line);
 			if(value == -1) {
-				//TODO Add Error Handler for incorrect operand
+				error = true;
+				errorCode = ErrorHandler.MISSING_OPERAND;
 			} else {
 				labelAddresses.set(labelAddresses.size() - 1, value);
 			}
@@ -224,10 +258,12 @@ public class Assembler {
 							machineCode.write(locationCounter++, fillByte);
 						}
 					} else {
-						//TODO Add error handler for Fill overflow
+						error = true;
+						errorCode = ErrorHandler.OVERFLOW;
 					}
 				} else {
-					//TODO Add Error handler for incorrect operand
+					error = true;
+					errorCode = ErrorHandler.OPERAND_TOO_LARGE;
 				}
 			}
 			break;
@@ -239,21 +275,24 @@ public class Assembler {
 				for(Byte fileByte : fileBytes) {
 					machineCode.write(locationCounter++, fileByte);
 					if(locationCounter >= machineCode.size()) {
-						//TODO Add Error Handler for inc overflow
+						error = true;
+						errorCode = ErrorHandler.OVERFLOW;
 						break;
 					}
 				}
 			} else {
-				//TODO Add error handler for file not found
+				error = true;
+				errorCode = ErrorHandler.FILE_NOT_FOUND;
 			}
 			break;
 		case AssemblyUtils.ORG:
 			line = StringUtils.trimWhiteSpace(line);
 			int newLocation = DigitUtils.getDigits(line);
 			if(newLocation >= 0) {
-				locationCounter = (currentBank * bankSize) + (newLocation % bankSize);
+				locationCounter = newLocation;
 			} else {
-				//TODO Add error handler for incorrect operand
+				error = true;
+				errorCode = ErrorHandler.MISSING_OPERAND;
 			}
 			break;
 		case AssemblyUtils.RS:
@@ -262,7 +301,8 @@ public class Assembler {
 			if(bytesToSkip >= 0) {
 				locationCounter += bytesToSkip;
 			} else {
-				//TODO Add error handler for incorrect operand
+				error = true;
+				errorCode = ErrorHandler.MISSING_OPERAND;
 			}
 			break;
 		case AssemblyUtils.BS:
@@ -271,7 +311,8 @@ public class Assembler {
 			if(bankSize != -1) {
 				bankSize *= AssemblyUtils.DEFAULT_BANK_SIZE;
 			} else {
-				//TODO Add error handler for incorrect operand
+				error = true;
+				errorCode = ErrorHandler.MISSING_OPERAND;
 			}
 			break;
 		case AssemblyUtils.BANK:
@@ -281,9 +322,12 @@ public class Assembler {
 				currentBank = bank;
 				locationCounter = bank * bankSize;
 			} else {
-				//TODO Add error handler for incorrect operand
+				error = true;
+				errorCode = ErrorHandler.MISSING_OPERAND;
 			}
-			
+		}
+		if(error) {
+			ErrorHandler.handleError(line, lineCount, errorCode);
 		}
 	}
 	
@@ -360,8 +404,13 @@ public class Assembler {
 			break;
 		case AssemblyUtils.ACCUMULATOR:
 		case AssemblyUtils.IMMEDIATE:
+			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
+			break;
 		case AssemblyUtils.INDIRECT:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
+			if(match == false) {
+				match = checkForIndirectLabel(operand);
+			}
 			break;
 		case AssemblyUtils.IMPLIED:
 			match = AssemblyUtils.checkImplied(operand);
@@ -381,7 +430,7 @@ public class Assembler {
 				if(Math.abs(address) <= 0xFF) {
 					address = (byte) (address & 0xFF);
 				} else {
-					//TODO Add Error handler for Jump To Far.
+					ErrorHandler.handleError(operand, lineCount, ErrorHandler.JUMP_OUT_OF_RANGE);
 				}
 			}
 			bytes = 2; 
@@ -390,9 +439,24 @@ public class Assembler {
 		return match;
 	}
 	
+	private boolean checkForIndirectLabel(String operand) {
+		boolean match = false;
+		String label = StringUtils.checkLabel(operand);
+		if(label != null) {
+			int labelAddress = getLabelAddress(label);
+			if(labelAddress != -1) {
+				address = labelAddress;
+				match = true;
+			} else {
+				ErrorHandler.handleError(operand, lineCount, ErrorHandler.MISSING_OPERAND);
+			}
+		}
+		return match;
+	}
+	
 	public boolean checkAddressMode(String addressToCheck, String pattern) {
 		boolean match = false;
-		String operand = StringUtils.checkAddressPattern(addressToCheck, pattern, lineCount);
+		String operand = StringUtils.checkAddressPattern(addressToCheck, pattern);
 		if(operand != null) {
 			if(operand.charAt(0) == 'L') {
 				match = checkLabelsForAddress(operand.substring(1));

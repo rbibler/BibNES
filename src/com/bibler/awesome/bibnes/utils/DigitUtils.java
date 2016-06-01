@@ -28,7 +28,7 @@ public class DigitUtils {
 		int radix = s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
 		s = s.substring(radix == 10 ? 0 : 1);
 		int lastDigit = checkDigits(s, radix);
-		int returnNumber = 0;
+		int returnNumber = -1;
 		if(lastDigit >= 0) {
 			returnNumber = Integer.parseInt(s.substring(0, lastDigit + 1), radix);
 		}
