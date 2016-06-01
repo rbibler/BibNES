@@ -466,4 +466,36 @@ public class AssemblyUtils {
 			{{'X', 'Y'}, {'X'}, {'A', 'S'}, {'A'}},
 			{{'P'}}
 	};
+
+	public static String getAddressModeName(int addressingMode) {
+		switch(addressingMode) {
+		case ACCUMULATOR:
+			return "Accumulator";
+		case ABSOLUTE:
+			return "Absolute";
+		case ABSOLUTE_X:
+			return "Absolute X";
+		case ABSOLUTE_Y:
+			return "Absolute Y";
+		case IMMEDIATE:
+			return "Immediate";
+		case IMPLIED:
+			return "Implied";
+		case INDIRECT:
+			return "Indirect";
+		case INDIRECT_X:
+			return "Indirect X";
+		case INDIRECT_Y:
+			return "Indirect Y";
+		case RELATIVE:
+			return "Relative";
+		case ZERO_PAGE:
+			return "Zero Page";
+		case ZERO_PAGE_X:
+			return "Zero Page X";
+		case ZERO_PAGE_Y:
+			return "Zero Page Y";
+		}
+		return null;
+	}
 }

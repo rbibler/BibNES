@@ -356,15 +356,19 @@ public class Assembler {
 				locationCounter += bytes;
 			}
 		} else {
+			System.out.println(instruction + " " + AssemblyUtils.getAddressModeName(addressingMode) + " " + StringUtils.intToHexString(address));
 			opCode = AssemblyUtils.getOpCode(instruction, addressingMode);
+			if(opCode == 0x10) {
+				System.out.println("BPL");
+			}
 			bytes = AssemblyUtils.getBytes(opCode);
 			machineCode.write(locationCounter++, opCode);
-			if(address >= 0) {
+			//if(address >= 0) {
 				int[] operandBytes = DigitUtils.splitWord(address, bytes - 1);
 				for(int i = operandBytes.length - 1; i >= 0; i--) {
 					machineCode.write(locationCounter++, operandBytes[i]);
 				}
-			}
+			//}
 			
 		}
 	}

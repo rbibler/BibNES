@@ -1,6 +1,7 @@
 package com.bibler.awesome.bibness.assembler.tests;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
@@ -331,9 +332,11 @@ public class ParseTest extends TestCase {
 	}*/
 	
 	public void testFromFile() {
+		String currentDirFile = System.getProperty("user.dir");
+		System.out.println(currentDirFile);
 		Assembler assembler = new Assembler();
-		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(new File("C:/Users/ryan/desktop/NES/nerdy nights tutorials/tests/background/background.asm")));
-		assembler.writeMachineCodeToFile(new File("C:/users/ryan/desktop/textTest.bin"), machineCode);
+		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(new File(currentDirFile + "/NES Files/background/background.asm")));
+		assembler.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/background/background.bin"), machineCode);
 	}
 	
 	
