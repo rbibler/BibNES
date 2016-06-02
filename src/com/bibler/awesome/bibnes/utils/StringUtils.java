@@ -76,6 +76,14 @@ public class StringUtils {
 		return Integer.parseInt(s, radix);
 	}
 	
+	public static byte[] stringToAsciiBytes(String s) {
+		byte[] bytes = new byte[s.length()];
+		for(int i = 0; i < s.length(); i++) {
+			bytes[i] = (byte) s.charAt(i);
+		}
+		return bytes;
+	}
+	
 	public static String intToHexString(int intToConvert) {
 		StringBuilder sb = new StringBuilder();
 		int temp = Integer.reverseBytes(intToConvert);

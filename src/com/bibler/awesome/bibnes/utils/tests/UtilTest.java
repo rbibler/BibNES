@@ -7,6 +7,15 @@ import junit.framework.TestCase;
 
 public class UtilTest extends TestCase {
 	
+	public void testStringToAscii() {
+		String s;
+		s = "NES";
+		byte[] bytes = StringUtils.stringToAsciiBytes(s);
+		assertEquals(0x4E, bytes[0]);
+		assertEquals(0x45, bytes[1]);
+		assertEquals(0x53, bytes[2]);
+	}
+	
 	public void testGetDigitString() {
 		String s;
 		s = "$44";

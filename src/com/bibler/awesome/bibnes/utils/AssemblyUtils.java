@@ -36,6 +36,10 @@ public class AssemblyUtils {
 	public final static int WORD = 9;
 	public final static int BS = 10;
 	public final static int BANK = 11;
+	public final static int INES_PRG = 12;
+	public final static int INES_CHR = 13;
+	public final static int INES_MAP = 14;
+	public final static int INES_MIRROR = 15;
 	
 	public final static int DEFAULT_BANK_SIZE = 0x2000;
 	
@@ -409,7 +413,7 @@ public class AssemblyUtils {
 	
 	private static String[] directives = new String[] {
 			"ALIGN", "BYTE", "DB", "DW", "EQU", "FILL", "INC",
-			"ORG", "RS", "WORD", "BS", "BANK"
+			"ORG", "RS", "WORD", "BS", "BANK", "INESPRG", "INESCHR", "INESMAP", "INESMIR"
 	};
 	
 	

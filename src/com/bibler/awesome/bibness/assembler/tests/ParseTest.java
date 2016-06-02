@@ -335,10 +335,10 @@ public class ParseTest extends TestCase {
 		String currentDirFile = System.getProperty("user.dir");
 		System.out.println(currentDirFile);
 		Assembler assembler = new Assembler();
-		File f = new File(currentDirFile + "/NES Files/szsi.asm");
+		File f = new File(currentDirFile + "/NES Files/background/background.asm");
 		assembler.setFileRoot(f.getParentFile());
 		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(f));
-		assembler.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/szsi.nes"), machineCode);
+		assembler.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/background/background.nes"), machineCode);
 	}
 	
 	

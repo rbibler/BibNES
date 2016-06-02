@@ -47,6 +47,11 @@ public class Assembler {
 	int currentBank;
 	int bankSize;
 	
+	private int inesPrgSize = 1;
+	private int inesChrSize = 1;
+	private int inesMapper;
+	private int inesMirroring;
+	
 	public Assembler() {
 		currentBank = 0;
 		bankSize = AssemblyUtils.DEFAULT_BANK_SIZE;
@@ -65,6 +70,7 @@ public class Assembler {
 	}
 	
 	public Memory passOne(String[] lines) {
+		checkForINESHeaderInfo(lines);
 		secondPass = false;
 		this.linesToAssemble = lines;
 		lineCount = 0;
@@ -90,6 +96,35 @@ public class Assembler {
 				locationCounter = secondPassAddress.get(i);
 				parseOpCode(line);
 			} 
+		}
+	}
+	
+	private void checkForINESHeaderInfo(String[] lines) {
+		for(String line : lines) {
+			String directive = checkDirectives(line);
+			if(directive != null) {
+				if(directive.contains("INES")) {
+					processDirective(AssemblyUtils.getDirective(directive), 
+							line.substring(line.toUpperCase().indexOf(directive) + directive.length()));
+				}
+			}
+		}
+		processHeaderInfo();
+	}
+	
+	private void processHeaderInfo() {
+		int machineCodeSize = (inesPrgSize * 0x8000) + (inesChrSize * 0x4000);
+		setByteSize(machineCodeSize);
+		byte[] NESBytes = StringUtils.stringToAsciiBytes("NES");
+		int index = 0;
+		for(int i = 0; i < NESBytes.length; i++) {
+			machineCode.write(index++, NESBytes[i]);
+		}
+		machineCode.write(index++, 0x1A);
+		machineCode.write(index++, inesPrgSize);
+		machineCode.write(index++, inesChrSize);
+		for(int i = 0; i < 10 - index; i++) {
+			machineCode.write(index++, 0);
 		}
 	}
 
@@ -176,14 +211,16 @@ public class Assembler {
 								error = true;
 								errorCode = ErrorHandler.MISSING_OPERAND;
 							} else {
-								machineCode.write(locationCounter++, labelAddress);
+								machineCode.write(locationCounter + 16, labelAddress);
+								locationCounter++;
 							}
 						} else {
 							error = true;
 							errorCode = ErrorHandler.MISSING_OPERAND;
 						}
 					} else {
-						machineCode.write(locationCounter++, byteToWrite);
+						machineCode.write(locationCounter + 16, byteToWrite);
+						locationCounter++;
 					}
 				}
 			} else {
@@ -193,7 +230,8 @@ public class Assembler {
 					if(label != null) {
 						labelAddress = this.getLabelAddress(label);
 						if(labelAddress != -1) {
-							machineCode.write(locationCounter++, labelAddress);
+							machineCode.write(locationCounter + 16, labelAddress);
+							locationCounter++;
 						} else {
 							error = true;
 							errorCode = ErrorHandler.MISSING_OPERAND;
@@ -203,7 +241,8 @@ public class Assembler {
 						errorCode = ErrorHandler.MISSING_OPERAND;
 					}
 				} else {
-					machineCode.write(locationCounter++, byteToWrite);
+					machineCode.write(locationCounter + 16, byteToWrite);
+					locationCounter++;
 				}
 			}
 			break;
@@ -217,8 +256,10 @@ public class Assembler {
 					error = true;
 					errorCode = ErrorHandler.MISSING_OPERAND;
 				} else {
-					machineCode.write(locationCounter++, labelAddress & 0xFF);
-					machineCode.write(locationCounter++, labelAddress >> 8 & 0xFF);
+					machineCode.write(locationCounter + 16, labelAddress & 0xFF);
+					locationCounter++;
+					machineCode.write(locationCounter + 16, labelAddress >> 8 & 0xFF);
+					locationCounter++;
 				}
 			} else {
 				int wordToWrite;
@@ -230,8 +271,10 @@ public class Assembler {
 							error = true;
 							errorCode = ErrorHandler.MISSING_OPERAND;
 						} else {
-							machineCode.write(locationCounter++, wordToWrite & 0xFF);
-							machineCode.write(locationCounter++, wordToWrite >> 8 & 0xFF);
+							machineCode.write(locationCounter + 16, wordToWrite & 0xFF);
+							locationCounter++;
+							machineCode.write(locationCounter + 16, wordToWrite >> 8 & 0xFF);
+							locationCounter++;
 						}
 					}
 				} else {
@@ -240,8 +283,10 @@ public class Assembler {
 						error = true;
 						errorCode = ErrorHandler.MISSING_OPERAND;
 					} else {
-						machineCode.write(locationCounter++, wordToWrite & 0xFF);
-						machineCode.write(locationCounter++,  wordToWrite >> 8 & 0xFF);
+						machineCode.write(locationCounter + 16, wordToWrite & 0xFF);
+						locationCounter++;
+						machineCode.write(locationCounter + 16,  wordToWrite >> 8 & 0xFF);
+						locationCounter++;
 					}
 				}
 			}
@@ -265,7 +310,8 @@ public class Assembler {
 				if(fillByte <= 0xFF) {
 					if(bytesToFill + locationCounter < machineCode.size()) {
 						for(int i = 0; i < bytesToFill; i++) {
-							machineCode.write(locationCounter++, fillByte);
+							machineCode.write(locationCounter + 16, fillByte);
+							locationCounter++;
 						}
 					} else {
 						error = true;
@@ -288,7 +334,7 @@ public class Assembler {
 			if(f.exists()) {
 				byte[] fileBytes = FileUtils.readFile(f);
 				for(Byte fileByte : fileBytes) {
-					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF), fileByte);
+					machineCode.write((currentBank * bankSize) + (locationCounter + 16 & 0x1FFF), fileByte);
 					locationCounter++;
 					if(locationCounter >= machineCode.size()) {
 						error = true;
@@ -341,6 +387,31 @@ public class Assembler {
 				error = true;
 				errorCode = ErrorHandler.MISSING_OPERAND;
 			}
+			break;
+		case AssemblyUtils.INES_PRG:
+			line = StringUtils.trimWhiteSpace(line);
+			int prg = DigitUtils.getDigits(line);
+			if(prg != -1) {
+				inesPrgSize = prg;
+			} else {
+				error = true;
+				errorCode = ErrorHandler.MISSING_OPERAND;
+			}
+			break;
+		case AssemblyUtils.INES_CHR:
+			line = StringUtils.trimWhiteSpace(line);
+			int chr = DigitUtils.getDigits(line);
+			if(chr != -1) {
+				inesChrSize = chr;
+			} else {
+				error = true;
+				errorCode = ErrorHandler.MISSING_OPERAND;
+			}
+			break;
+		case AssemblyUtils.INES_MAP:
+			break;
+		case AssemblyUtils.INES_MIRROR:
+			break;
 		}
 		if(error) {
 			ErrorHandler.handleError(line, lineCount, errorCode);
@@ -383,12 +454,12 @@ public class Assembler {
 				System.out.println("BPL");
 			}
 			bytes = AssemblyUtils.getBytes(opCode);
-			machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF), opCode);
+			machineCode.write((currentBank * bankSize) + (locationCounter + 16 & 0x1FFF), opCode);
 			locationCounter++;
 			//if(address >= 0) {
 				int[] operandBytes = DigitUtils.splitWord(address, bytes - 1);
 				for(int i = operandBytes.length - 1; i >= 0; i--) {
-					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF), operandBytes[i]);
+					machineCode.write((currentBank * bankSize) + (locationCounter + 16 & 0x1FFF), operandBytes[i]);
 					locationCounter++;
 				}
 			//}
@@ -503,7 +574,7 @@ public class Assembler {
 		}
 		listing.append(StringUtils.intToHexString(opCode, 2));
 		listing.append(" ");
-		machineCode.write(locationCounter, opCode);
+		machineCode.write(locationCounter + 16, opCode);
 		locationCounter++;
 		
 		final int endIndex = bytes - 1 <= addressString.length() ? bytes - 1 : addressString.length() - 1;
@@ -511,7 +582,7 @@ public class Assembler {
 			listing.append(addressString);
 			addressString = addressString.substring(addressString.length() - 2);
 			listing.append(" ");
-			machineCode.write(locationCounter, (address >> ((bytes - 1) - i) * 8) & 0xFF);
+			machineCode.write(locationCounter + 16, (address >> ((bytes - 1) - i) * 8) & 0xFF);
 			locationCounter++;
 		}
 	}
