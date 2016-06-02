@@ -69,7 +69,7 @@ public class AssemblyUtils {
 	private static void fillAddressModePatterns() {
 		addressModePatterns = new ArrayList<String>();
 		addressModePatterns.add("~A");														// Accumulator
-		addressModePatterns.add("" + StringUtils.digitChar);								// Absolute
+		addressModePatterns.add("" + StringUtils.digitOrLabelChar);								// Absolute
 		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",x");					// Absolute X
 		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",y");					// Absolute Y
 		addressModePatterns.add("#" + StringUtils.digitOrLabelChar);						// Immediate

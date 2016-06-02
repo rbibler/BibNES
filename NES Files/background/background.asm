@@ -1,14 +1,4 @@
-  .inesprg 1   ; 1x 16KB PRG code
-  .ineschr 1   ; 1x  8KB CHR data
-  .inesmap 0   ; mapper 0 = NROM, no bank swapping
-  .inesmir 1   ; background mirroring
-  
-
-;;;;;;;;;;;;;;;
-
-    
-  .bank 0
-  .org $C000 
+  .org $0000 
 RESET:
   SEI          ; disable IRQs
   CLD          ; disable decimal mode
@@ -48,6 +38,10 @@ vblankwait2:      ; Second wait for vblank, PPU is ready after this
   STA $2001
 
 Forever:
+  LDA $0200
+  CLC
+  ADC #$40
+  STA $0200
   JMP Forever     ;jump back to Forever, infinite loop
   
  
@@ -59,18 +53,13 @@ NMI:
   
   
   
-  .bank 1
   .org $FFFA     ;first of the three vectors starts here
   .dw NMI        ;when an NMI happens (once per frame if enabled) the 
                    ;processor will jump to the label NMI:
   .dw RESET      ;when the processor first turns on or is reset, it will jump
                    ;to the label RESET:
   .dw 0          ;external interrupt IRQ is not used in this tutorial
-  
-  
-;;;;;;;;;;;;;;  
-  
-  
-  .bank 2
-  .org $0000
-  .incbin "mario.chr"   ;includes 8KB graphics file from SMB1
+  .org $3FFA
+  .dw NMI
+  .DW RESET
+  .DW 0  

@@ -338,6 +338,9 @@ public class Assembler {
 	private void processOpCode(String instruction, String operand) {
 		boolean match = false;
 		bytes = 3;
+		if(instruction.equals("JMP")) {
+			System.out.println("JUMP!");
+		}
 		for(int i = 0; i < AssemblyUtils.ADDRESS_MODE_COUNT; i++) {
 			if(AssemblyUtils.checkForAddressMode(i, instruction)) {
 				if(checkAddressMode(i, operand)) {
@@ -404,7 +407,7 @@ public class Assembler {
 		case AssemblyUtils.ABSOLUTE:
 		case AssemblyUtils.ABSOLUTE_X:
 		case AssemblyUtils.ABSOLUTE_Y:
-			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck)) && address >= 0xFF && address <= 0xFFFF;
+			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck))  && address <= 0xFFFF;
 			break;
 		case AssemblyUtils.ACCUMULATOR:
 		case AssemblyUtils.IMMEDIATE:
@@ -412,9 +415,6 @@ public class Assembler {
 			break;
 		case AssemblyUtils.INDIRECT:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
-			if(match == false) {
-				match = checkForIndirectLabel(operand);
-			}
 			break;
 		case AssemblyUtils.IMPLIED:
 			match = AssemblyUtils.checkImplied(operand);
@@ -439,21 +439,6 @@ public class Assembler {
 			}
 			bytes = 2; 
 			break;
-		}
-		return match;
-	}
-	
-	private boolean checkForIndirectLabel(String operand) {
-		boolean match = false;
-		String label = StringUtils.checkLabel(operand);
-		if(label != null) {
-			int labelAddress = getLabelAddress(label);
-			if(labelAddress != -1) {
-				address = labelAddress;
-				match = true;
-			} else {
-				ErrorHandler.handleError(operand, lineCount, ErrorHandler.MISSING_OPERAND);
-			}
 		}
 		return match;
 	}
