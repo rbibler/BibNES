@@ -13,6 +13,8 @@ import com.bibler.awesome.bibnes.utils.StringUtils;
 
 public class Assembler {
 	
+	private File fileRoot;
+	
 	public static final int MAX_LABEL_LENGTH = 256;
 	
 	private StringBuilder listing = new StringBuilder();
@@ -27,6 +29,8 @@ public class Assembler {
 	//Lines to check on Second Pass
 	private ArrayList<Integer> secondPassLines = new ArrayList<Integer>();
 	private ArrayList<Integer> secondPassAddress = new ArrayList<Integer>();
+	private ArrayList<Integer> secondPassBanks = new ArrayList<Integer>();
+	private ArrayList<Integer> secondPassBankSizes = new ArrayList<Integer>();
 	
 	private String[] linesToAssemble;
 	
@@ -46,7 +50,11 @@ public class Assembler {
 	public Assembler() {
 		currentBank = 0;
 		bankSize = AssemblyUtils.DEFAULT_BANK_SIZE;
-		setByteSize(0x8000);
+		setByteSize(0x000);
+	}
+	
+	public void setFileRoot(File fileRoot) {
+		this.fileRoot = fileRoot;
 	}
 	
 	public void setByteSize(int byteSize) {
@@ -75,6 +83,8 @@ public class Assembler {
 		secondPass = true;
 		for(int i = 0; i < secondPassLines.size(); i++) {
 			lineCount = secondPassLines.get(i);
+			currentBank = secondPassBanks.get(i);
+			bankSize = secondPassBankSizes.get(i);
 			if(lineCount < lines.length) {
 				line = lines[secondPassLines.get(i)];
 				locationCounter = secondPassAddress.get(i);
@@ -268,12 +278,18 @@ public class Assembler {
 			}
 			break;
 		case AssemblyUtils.INC:
-			String s = line.trim().replaceAll("[\"]", "");
-			File f = new File(s);
+			String s = line.substring(line.indexOf('"') + 1, line.lastIndexOf('"')).trim();
+			File f = null;
+			if(s.charAt(0) == 'C' || s.charAt(0) == 'c') {
+				f = new File(s);
+			} else {
+				f = new File(fileRoot.getAbsolutePath() + "/" + s);
+			}
 			if(f.exists()) {
 				byte[] fileBytes = FileUtils.readFile(f);
 				for(Byte fileByte : fileBytes) {
-					machineCode.write(locationCounter++, fileByte);
+					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF), fileByte);
+					locationCounter++;
 					if(locationCounter >= machineCode.size()) {
 						error = true;
 						errorCode = ErrorHandler.OVERFLOW;
@@ -356,6 +372,8 @@ public class Assembler {
 			} else {
 				secondPassLines.add(lineCount);
 				secondPassAddress.add(locationCounter);
+				secondPassBanks.add(currentBank);
+				secondPassBankSizes.add(bankSize);
 				locationCounter += bytes;
 			}
 		} else {
@@ -365,11 +383,13 @@ public class Assembler {
 				System.out.println("BPL");
 			}
 			bytes = AssemblyUtils.getBytes(opCode);
-			machineCode.write(locationCounter++, opCode);
+			machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF), opCode);
+			locationCounter++;
 			//if(address >= 0) {
 				int[] operandBytes = DigitUtils.splitWord(address, bytes - 1);
 				for(int i = operandBytes.length - 1; i >= 0; i--) {
-					machineCode.write(locationCounter++, operandBytes[i]);
+					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF), operandBytes[i]);
+					locationCounter++;
 				}
 			//}
 			
