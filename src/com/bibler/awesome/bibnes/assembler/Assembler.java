@@ -101,7 +101,7 @@ public class Assembler {
 	
 	private void checkForINESHeaderInfo(String[] lines) {
 		for(String line : lines) {
-			String directive = checkDirectives(line);
+			String directive = checkDirectives(line.trim());
 			if(directive != null) {
 				if(directive.contains("INES")) {
 					processDirective(AssemblyUtils.getDirective(directive), 
@@ -123,7 +123,11 @@ public class Assembler {
 		machineCode.write(index++, 0x1A);
 		machineCode.write(index++, inesPrgSize);
 		machineCode.write(index++, inesChrSize);
-		for(int i = 0; i < 10 - index; i++) {
+		int byte6 = (inesMapper & 0xF) << 4;
+		int byte7 = inesMapper & 0xF0;
+		machineCode.write(index++, byte6);
+		machineCode.write(index++, byte7);
+		for(int i = 0; i < 8; i++) {
 			machineCode.write(index++, 0);
 		}
 	}
@@ -211,7 +215,7 @@ public class Assembler {
 								error = true;
 								errorCode = ErrorHandler.MISSING_OPERAND;
 							} else {
-								machineCode.write(locationCounter + 16, labelAddress);
+								machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, labelAddress);
 								locationCounter++;
 							}
 						} else {
@@ -219,7 +223,7 @@ public class Assembler {
 							errorCode = ErrorHandler.MISSING_OPERAND;
 						}
 					} else {
-						machineCode.write(locationCounter + 16, byteToWrite);
+						machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, byteToWrite);
 						locationCounter++;
 					}
 				}
@@ -230,7 +234,7 @@ public class Assembler {
 					if(label != null) {
 						labelAddress = this.getLabelAddress(label);
 						if(labelAddress != -1) {
-							machineCode.write(locationCounter + 16, labelAddress);
+							machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, labelAddress);
 							locationCounter++;
 						} else {
 							error = true;
@@ -256,9 +260,9 @@ public class Assembler {
 					error = true;
 					errorCode = ErrorHandler.MISSING_OPERAND;
 				} else {
-					machineCode.write(locationCounter + 16, labelAddress & 0xFF);
+					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, labelAddress & 0xFF);
 					locationCounter++;
-					machineCode.write(locationCounter + 16, labelAddress >> 8 & 0xFF);
+					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, labelAddress >> 8 & 0xFF);
 					locationCounter++;
 				}
 			} else {
@@ -271,9 +275,9 @@ public class Assembler {
 							error = true;
 							errorCode = ErrorHandler.MISSING_OPERAND;
 						} else {
-							machineCode.write(locationCounter + 16, wordToWrite & 0xFF);
+							machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, wordToWrite & 0xFF);
 							locationCounter++;
-							machineCode.write(locationCounter + 16, wordToWrite >> 8 & 0xFF);
+							machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, wordToWrite >> 8 & 0xFF);
 							locationCounter++;
 						}
 					}
@@ -283,9 +287,9 @@ public class Assembler {
 						error = true;
 						errorCode = ErrorHandler.MISSING_OPERAND;
 					} else {
-						machineCode.write(locationCounter + 16, wordToWrite & 0xFF);
+						machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, wordToWrite & 0xFF);
 						locationCounter++;
-						machineCode.write(locationCounter + 16,  wordToWrite >> 8 & 0xFF);
+						machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16,  wordToWrite >> 8 & 0xFF);
 						locationCounter++;
 					}
 				}
@@ -310,7 +314,7 @@ public class Assembler {
 				if(fillByte <= 0xFF) {
 					if(bytesToFill + locationCounter < machineCode.size()) {
 						for(int i = 0; i < bytesToFill; i++) {
-							machineCode.write(locationCounter + 16, fillByte);
+							machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, fillByte);
 							locationCounter++;
 						}
 					} else {
@@ -334,7 +338,7 @@ public class Assembler {
 			if(f.exists()) {
 				byte[] fileBytes = FileUtils.readFile(f);
 				for(Byte fileByte : fileBytes) {
-					machineCode.write((currentBank * bankSize) + (locationCounter + 16 & 0x1FFF), fileByte);
+					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, fileByte);
 					locationCounter++;
 					if(locationCounter >= machineCode.size()) {
 						error = true;
@@ -409,6 +413,14 @@ public class Assembler {
 			}
 			break;
 		case AssemblyUtils.INES_MAP:
+			line = StringUtils.trimWhiteSpace(line);
+			int map = DigitUtils.getDigits(line);
+			if(map != -1) {
+				inesMapper = map;
+			} else {
+				error = true;
+				errorCode = ErrorHandler.MISSING_OPERAND;
+			}
 			break;
 		case AssemblyUtils.INES_MIRROR:
 			break;
@@ -454,12 +466,12 @@ public class Assembler {
 				System.out.println("BPL");
 			}
 			bytes = AssemblyUtils.getBytes(opCode);
-			machineCode.write((currentBank * bankSize) + (locationCounter + 16 & 0x1FFF), opCode);
+			machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, opCode);
 			locationCounter++;
 			//if(address >= 0) {
 				int[] operandBytes = DigitUtils.splitWord(address, bytes - 1);
 				for(int i = operandBytes.length - 1; i >= 0; i--) {
-					machineCode.write((currentBank * bankSize) + (locationCounter + 16 & 0x1FFF), operandBytes[i]);
+					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, operandBytes[i]);
 					locationCounter++;
 				}
 			//}
@@ -498,7 +510,7 @@ public class Assembler {
 		case AssemblyUtils.ABSOLUTE:
 		case AssemblyUtils.ABSOLUTE_X:
 		case AssemblyUtils.ABSOLUTE_Y:
-			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck))  && address <= 0xFFFF;
+			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck))  ;
 			break;
 		case AssemblyUtils.ACCUMULATOR:
 		case AssemblyUtils.IMMEDIATE:
@@ -521,7 +533,8 @@ public class Assembler {
 		case AssemblyUtils.RELATIVE:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
 			if(match) {
-				address = (address - (locationCounter + (address < locationCounter ? 2 : 1)));
+				//address = (address - (locationCounter + (address < locationCounter ? 2 : 1)));j
+				address = address - (locationCounter + 2);
 				if(Math.abs(address) <= 0xFF) {
 					address = (byte) (address & 0xFF);
 				} else {
