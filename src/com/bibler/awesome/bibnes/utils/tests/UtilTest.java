@@ -7,6 +7,8 @@ import junit.framework.TestCase;
 
 public class UtilTest extends TestCase {
 	
+	
+	
 	public void testStringToAscii() {
 		String s;
 		s = "NES";

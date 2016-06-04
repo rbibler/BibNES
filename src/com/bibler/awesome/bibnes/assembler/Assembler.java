@@ -533,10 +533,9 @@ public class Assembler {
 		case AssemblyUtils.RELATIVE:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
 			if(match) {
-				//address = (address - (locationCounter + (address < locationCounter ? 2 : 1)));j
 				address = address - (locationCounter + 2);
 				if(Math.abs(address) <= 0xFF) {
-					address = (byte) (address & 0xFF);
+					address = (int) (address & 0xFF);					//Convert negative into positive 
 				} else {
 					ErrorHandler.handleError(operand, lineCount, ErrorHandler.JUMP_OUT_OF_RANGE);
 				}

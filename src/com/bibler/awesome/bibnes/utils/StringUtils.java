@@ -17,6 +17,50 @@ public class StringUtils {
 	public static boolean saveNextMatch;
 	
 	public static String checkAddressPattern(String addressToCheck, String pattern) {
+		String operand = "";
+		boolean capture = false;
+		int addressIndex = 0;
+		char patternChar;
+		char operandChar;
+		for(int i = 0; i < pattern.length(); i++) {
+			patternChar = pattern.charAt(i);
+			if(patternChar == '~') {
+				if(i == pattern.length() - 1) {
+					operand = addressToCheck.substring(addressIndex);
+					break;
+				} else {
+					do {
+						operandChar = addressToCheck.charAt(addressIndex++);
+						if(operandChar == pattern.charAt(i + 1)) {
+							i++;
+							break;
+						} else {
+							operand += operandChar;
+						}
+					} while(addressIndex < addressToCheck.length());
+				}
+			} else {
+				if(addressIndex >= addressToCheck.length() || addressToCheck.charAt(addressIndex++) != patternChar ) {
+					operand = null;
+					break;
+				}
+			}
+		}
+		if(!validateEndOfLine(addressToCheck.substring(addressIndex))) {
+			operand = null;
+		}
+		return operand;
+	}
+	
+	private static boolean validateEndOfLine(String s) {
+		boolean match = false;
+		if(s.length() == 0 || s.trim().charAt(0) == ';') {
+			match = true;
+		}
+		return match;
+	}
+	
+	/*public static String checkAddressPattern(String addressToCheck, String pattern) {
 		String operand = null;
 		int addressIndex = 0;
 		char charToCheck;
@@ -30,6 +74,7 @@ public class StringUtils {
 			if(charToCheck == digitChar) {
 				operand = DigitUtils.getDigitString(addressToCheck.substring(addressIndex));
 				if(operand == null) {
+					
 					break;
 				} else {
 					addressIndex += operand.length();
@@ -70,7 +115,7 @@ public class StringUtils {
 			}
 		}
 		return operand;
-	}
+	}*/
 	
 	public static int stringToInt(String s, int radix) {
 		return Integer.parseInt(s, radix);
