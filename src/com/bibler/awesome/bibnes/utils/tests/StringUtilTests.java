@@ -9,7 +9,7 @@ public class StringUtilTests extends TestCase {
 	public void testPatternCheck() {
 		String pattern;
 		String s;
-		pattern = "~,x";
+		pattern = "~";
 		s = "(LABEL + 3),x";
 		String operand = StringUtils.checkAddressPattern(s, pattern);
 		assertTrue(operand.equals("(LABEL + 3)"));
@@ -21,6 +21,12 @@ public class StringUtilTests extends TestCase {
 		s = "(LABEL + 3),xGWAR";
 		operand = StringUtils.checkAddressPattern(s, pattern);
 		assertNull(operand);
+		
+		s = "A";
+		pattern = "~";
+		operand = StringUtils.checkAddressPattern(s, pattern);
+		assertTrue(operand.equals("A"));
+	
 	}
 
 }

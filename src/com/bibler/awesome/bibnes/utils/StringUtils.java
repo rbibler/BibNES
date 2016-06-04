@@ -26,11 +26,15 @@ public class StringUtils {
 			patternChar = pattern.charAt(i);
 			if(patternChar == '~') {
 				if(i == pattern.length() - 1) {
-					operand = addressToCheck.substring(addressIndex);
+					operand = addressToCheck.substring(addressIndex, addressToCheck.contains(";") ? addressToCheck.indexOf(';') : addressToCheck.length());
+					addressIndex += operand.length();
 					break;
 				} else {
 					do {
 						operandChar = addressToCheck.charAt(addressIndex++);
+						if(operandChar == ';') {
+							break;
+						}
 						if(operandChar == pattern.charAt(i + 1)) {
 							i++;
 							break;

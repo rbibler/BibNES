@@ -153,7 +153,7 @@ public class Assembler {
 		}
 		String directive = checkDirectives(tmp);
 		if(directive != null) {
-			processDirective(AssemblyUtils.getDirective(directive), lineToParse.substring(lineToParse.toUpperCase().indexOf(directive) + directive.length()));
+			processDirective(AssemblyUtils.getDirective(directive), tmp.substring(tmp.toUpperCase().indexOf(directive) + directive.length()));
 		} else { 
 			if(tmp.charAt(0) == '.') {
 				ErrorHandler.handleError(tmp, lineCount, ErrorHandler.ILLEGAL_DIRECTIVE);
@@ -297,12 +297,11 @@ public class Assembler {
 			break;
 		case AssemblyUtils.EQU:
 			line = StringUtils.trimWhiteSpace(line);
-			int value = processExpression(line);
-			if(value == -1) {
+			if(processOperand(line) && address != -1) {
+				labelAddresses.set(labelAddresses.size() - 1, address);
+			} else {
 				error = true;
 				errorCode = ErrorHandler.MISSING_OPERAND;
-			} else {
-				labelAddresses.set(labelAddresses.size() - 1, value);
 			}
 			break;
 		case AssemblyUtils.FILL:
@@ -337,10 +336,12 @@ public class Assembler {
 			}
 			if(f.exists()) {
 				byte[] fileBytes = FileUtils.readFile(f);
+				int locationToWrite = (currentBank * bankSize) + (locationCounter & 0x1FFF) + 16;
 				for(Byte fileByte : fileBytes) {
-					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, fileByte);
+					machineCode.write(locationToWrite, fileByte);
 					locationCounter++;
-					if(locationCounter >= machineCode.size()) {
+					locationToWrite++;
+					if(locationToWrite >= machineCode.size()) {
 						error = true;
 						errorCode = ErrorHandler.OVERFLOW;
 						break;
@@ -430,10 +431,6 @@ public class Assembler {
 		}
 	}
 	
-	private int processExpression(String expression) {
-		return DigitUtils.getDigits(expression);
-	}
-	
 	private void processOpCode(String instruction, String operand) {
 		boolean match = false;
 		bytes = 3;
@@ -468,13 +465,11 @@ public class Assembler {
 			bytes = AssemblyUtils.getBytes(opCode);
 			machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, opCode);
 			locationCounter++;
-			//if(address >= 0) {
-				int[] operandBytes = DigitUtils.splitWord(address, bytes - 1);
-				for(int i = operandBytes.length - 1; i >= 0; i--) {
-					machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, operandBytes[i]);
-					locationCounter++;
-				}
-			//}
+			int[] operandBytes = DigitUtils.splitWord(address, bytes - 1);
+			for(int i = operandBytes.length - 1; i >= 0; i--) {
+				machineCode.write((currentBank * bankSize) + (locationCounter & 0x1FFF) + 16, operandBytes[i]);
+				locationCounter++;
+			}
 			
 		}
 	}
@@ -513,6 +508,11 @@ public class Assembler {
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck))  ;
 			break;
 		case AssemblyUtils.ACCUMULATOR:
+			char first = operand.charAt(0);
+			if(first == 'A' || first == 'a') {
+				match = StringUtils.validateLine(operand, 0);
+			}
+			break;
 		case AssemblyUtils.IMMEDIATE:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
 			break;
@@ -533,7 +533,8 @@ public class Assembler {
 		case AssemblyUtils.RELATIVE:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck));
 			if(match) {
-				address = address - (locationCounter + 2);
+				int additive = address < 0 ? 1 : 2;
+				address = address - (locationCounter + additive);
 				if(Math.abs(address) <= 0xFF) {
 					address = (int) (address & 0xFF);					//Convert negative into positive 
 				} else {
@@ -550,12 +551,92 @@ public class Assembler {
 		boolean match = false;
 		String operand = StringUtils.checkAddressPattern(addressToCheck, pattern);
 		if(operand != null) {
-			if(operand.charAt(0) == 'L') {
-				match = checkLabelsForAddress(operand.substring(1));
-			} else {
-				address = DigitUtils.getDigits(operand);
-				match = true;
+			match = processOperand(operand);
+		}
+		return match;
+	}
+	
+	public boolean processOperand(String operand) {
+		boolean match = false;
+		if(DigitUtils.stringContainsOnlyDigits(operand)) {
+			address = DigitUtils.getDigits(operand);
+			match = true;
+		} else {
+			match = checkForLabel(operand);
+			if(!match) {
+				match = processExpression(operand);
 			}
+		} 
+		return match;
+	}
+	
+	public boolean processExpression(String expression) {
+		boolean match = false;
+		match = checkHigh(expression);
+		if(!match) {
+			match = checkLow(expression);
+			if(!match) {
+				match = checkMathExpression(expression);
+			}
+		}
+		return match;
+	}
+	
+	private boolean checkHigh(String expression) {
+		boolean match = false;
+		String operand = "";
+		if(expression.startsWith("HIGH(")) {
+			bytes = 2;
+			for(int i = 5; i < expression.length(); i++) {
+				if(expression.charAt(i) == ')') {
+					break;
+				} else {
+					operand += expression.charAt(i);
+				}
+			}
+			if(operand.charAt(0) == '#') {
+				operand = operand.substring(1);
+			}
+			match = processOperand(operand);
+			if(match) {
+				address = address >> 8 & 0xFF;
+			}
+		}
+		return match;
+	}
+	
+	private boolean checkLow(String expression) {
+		boolean match = false;
+		String operand = "";
+		if(expression.startsWith("LOW(")) {
+			for(int i = 4; i < expression.length(); i++) {
+				if(expression.charAt(i) == ')') {
+					break;
+				} else {
+					operand += expression.charAt(i);
+				}
+			}
+			if(operand.charAt(0) == '#') {
+				operand = operand.substring(1);
+			}
+			match = processOperand(operand);
+			if(match) {
+				address = address & 0xFF;
+			}
+		}
+		return match;
+	}
+	
+	private boolean checkMathExpression(String expression) {
+		return false;
+	}
+	
+	private boolean checkForLabel(String labelToCheck) {
+		boolean match = labels.contains(labelToCheck);
+		if(match) {
+			address = labelAddresses.get(labels.indexOf(labelToCheck));
+		} else {
+			address = -1;
 		}
 		return match;
 	}
@@ -570,34 +651,6 @@ public class Assembler {
 		return false;
 	}
 	
-	
-	private int findOpCode() {
-		return AssemblyUtils.getOpCode(instruction, addressingMode);
-	}
-
-	
-	private void constructListing(int opCode, int bytes) {
-		if(locationCounter % 16 == 0) {
-			if(locationCounter != 0) {
-				listing.append("\n");
-			}
-			listing.append(StringUtils.intToHexString(locationCounter, 4));
-			listing.append(" ");
-		}
-		listing.append(StringUtils.intToHexString(opCode, 2));
-		listing.append(" ");
-		machineCode.write(locationCounter + 16, opCode);
-		locationCounter++;
-		
-		final int endIndex = bytes - 1 <= addressString.length() ? bytes - 1 : addressString.length() - 1;
-		for(int i = 0; i < endIndex; i++) {
-			listing.append(addressString);
-			addressString = addressString.substring(addressString.length() - 2);
-			listing.append(" ");
-			machineCode.write(locationCounter + 16, (address >> ((bytes - 1) - i) * 8) & 0xFF);
-			locationCounter++;
-		}
-	}
 	
 	public int getAddressMode() {
 		return addressingMode;
@@ -629,6 +682,11 @@ public class Assembler {
 			index = labelAddresses.get(index);
 		}
 		return index;
+	}
+	
+	public void addLabel(String label, int labelAddress) {
+		labels.add(label);
+		labelAddresses.add(labelAddress);
 	}
 	
 	public void printPassTwoLines() {

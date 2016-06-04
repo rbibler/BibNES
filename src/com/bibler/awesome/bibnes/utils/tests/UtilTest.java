@@ -7,7 +7,15 @@ import junit.framework.TestCase;
 
 public class UtilTest extends TestCase {
 	
-	
+	public void testOnlyDigits() {
+		String s;
+		s = "$45";
+		assertTrue(DigitUtils.stringContainsOnlyDigits(s));
+		s = "$45,x";
+		assertFalse(DigitUtils.stringContainsOnlyDigits(s));
+		s = "%0101010101010";
+		assertTrue(DigitUtils.stringContainsOnlyDigits(s));
+	}
 	
 	public void testStringToAscii() {
 		String s;
@@ -63,34 +71,7 @@ public class UtilTest extends TestCase {
 		s = "0x34      The following is a comment;";
 		assertFalse(StringUtils.validateLine(s, s.indexOf('4')));
 	}
-	
-	public void testAddressPatternCheck() {
-		String pattern;
-		String addressToCheck;
-		pattern = "#" + StringUtils.digitChar;
-		addressToCheck = "#$44";
-		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
-		
-		pattern = "" + StringUtils.digitChar;
-		addressToCheck = "$44";
-		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
-		
-		pattern += ",x";
-		addressToCheck += ",x";
-		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
-		
-		pattern = "(" + StringUtils.digitChar + ")";
-		addressToCheck = "($4400)";
-		assertEquals("$4400", StringUtils.checkAddressPattern(addressToCheck, pattern));
-		
-		pattern = "(" + StringUtils.digitChar + ",x)";
-		addressToCheck = "($44,x)";
-		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
-		
-		pattern = "(" + StringUtils.digitChar + "),y";
-		addressToCheck = "($44),y";
-		assertEquals("$44", StringUtils.checkAddressPattern(addressToCheck, pattern));
-	}
+
 	
 	public void testLabelCheck() {
 		String s;

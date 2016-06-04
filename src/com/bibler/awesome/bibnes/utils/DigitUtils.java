@@ -14,19 +14,38 @@ public class DigitUtils {
 	static Pattern decimalValues = Pattern.compile("[0-9]");
 	static Matcher m;
 	
+	
+	public static boolean stringContainsOnlyDigits(String s) {
+		int radix = getRadix(s);
+		String tmp = stripRadix(s, radix);
+		int lastIndex = checkDigits(tmp, radix);
+		if(lastIndex == tmp.length() - 1) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	private static int getRadix(String s) {
+		return s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
+	} 
 	public static String getDigitString(String s) {
-		int radix = s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
-		String tmp = s.substring(radix == 10 ? 0 : 1);
+		int radix = getRadix(s);
+		String tmp = stripRadix(s, radix);
 		int lastDigit = checkDigits(tmp, radix) + (radix == 10 ? 1 : 2);
 		if(lastDigit > 0) {
 			return s.substring(0,  lastDigit);
 		}
 		return null;
 	}
+
+	private static String stripRadix(String s, int radix) {
+		return s.substring(radix == 10 ? 0 : 1);
+	}
 	
 	public static int getDigits(String s) {
-		int radix = s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
-		s = s.substring(radix == 10 ? 0 : 1);
+		int radix = getRadix(s);
+		s = stripRadix(s, radix);
 		int lastDigit = checkDigits(s, radix);
 		int returnNumber = -1;
 		if(lastDigit >= 0) {
@@ -62,7 +81,7 @@ public class DigitUtils {
 	
 	public static boolean checkFirstDigit(String s) {
 		int radix = s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
-		s = s.substring(radix == 10 ? 0 : 1);
+		s = stripRadix(s, radix);
 		return checkDigit(s.charAt(0), radix);
 	}
 	

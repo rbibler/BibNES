@@ -72,19 +72,19 @@ public class AssemblyUtils {
 	
 	private static void fillAddressModePatterns() {
 		addressModePatterns = new ArrayList<String>();
-		addressModePatterns.add("~A");														// Accumulator
-		addressModePatterns.add("" + StringUtils.digitOrLabelChar);								// Absolute
-		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",x");					// Absolute X
-		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",y");					// Absolute Y
-		addressModePatterns.add("#" + StringUtils.digitOrLabelChar);						// Immediate
+		addressModePatterns.add("~");														// Accumulator
+		addressModePatterns.add("~");								// Absolute
+		addressModePatterns.add("~,x");					// Absolute X
+		addressModePatterns.add("~,y");					// Absolute Y
+		addressModePatterns.add("#~");						// Immediate
 		addressModePatterns.add("");														// Implied
-		addressModePatterns.add("(" + StringUtils.digitOrLabelChar + ")");					// Indirect
-		addressModePatterns.add("(" + StringUtils.digitChar + ",x)");						// Indirect, X
-		addressModePatterns.add("(" + StringUtils.digitOrLabelChar + "),y");				// Indirect, Y
-		addressModePatterns.add("" + StringUtils.digitOrLabelChar);							// Relative
-		addressModePatterns.add("" + StringUtils.digitOrLabelChar);							// ZeroPage
-		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",x");					// ZeroPage, X
-		addressModePatterns.add("" + StringUtils.digitOrLabelChar + ",y");					// ZeroPage, Y
+		addressModePatterns.add("(~)");					// Indirect
+		addressModePatterns.add("(~,x)");						// Indirect, X
+		addressModePatterns.add("(~),y");				// Indirect, Y
+		addressModePatterns.add("~");							// Relative
+		addressModePatterns.add("~");							// ZeroPage
+		addressModePatterns.add("~,x");					// ZeroPage, X
+		addressModePatterns.add("~,y");					// ZeroPage, Y
 		
 	}
 	
