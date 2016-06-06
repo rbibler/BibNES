@@ -22,5 +22,16 @@ public class FileUtils {
 		}
 		return fileBytes;
 	}
+	
+	public static File getFileForInclusion(String line, File fileRoot) {
+		String s = line.substring(line.indexOf('"') + 1, line.lastIndexOf('"')).trim();
+		File f = null;
+		if(s.charAt(0) == 'C' || s.charAt(0) == 'c') {
+			f = new File(s);
+		} else {
+			f = new File(fileRoot.getAbsolutePath() + "/" + s);
+		}
+		return f;
+	}
 
 }

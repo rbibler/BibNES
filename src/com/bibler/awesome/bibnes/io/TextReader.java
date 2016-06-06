@@ -9,9 +9,6 @@ import java.util.ArrayList;
 public class TextReader {
 	
 	public static String[] readTextFile(File f) {
-		if(!f.getName().endsWith(".bns") && !f.getName().endsWith(".asm")) {
-			return null;
-		}
 		ArrayList<String> lines = new ArrayList<String>();
 		BufferedReader reader = null;
 		try {

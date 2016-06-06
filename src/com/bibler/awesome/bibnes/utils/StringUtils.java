@@ -16,6 +16,15 @@ public class StringUtils {
 	public static char charToSave = '~';
 	public static boolean saveNextMatch;
 	
+	public static String trimComments(String s) {
+		String ret = s;
+		int index = s.indexOf(';');
+		if(index >= 0) {
+			ret = s.substring(0, index);
+		}
+		return ret;
+	}
+	
 	public static String checkAddressPattern(String addressToCheck, String pattern) {
 		String operand = "";
 		boolean capture = false;

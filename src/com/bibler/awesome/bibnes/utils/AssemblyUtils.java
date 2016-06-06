@@ -30,16 +30,18 @@ public class AssemblyUtils {
 	public final static int DW = 3;
 	public final static int EQU = 4;
 	public final static int FILL = 5;
-	public final static int INC = 6;
-	public final static int ORG = 7;
-	public final static int RS = 8;
-	public final static int WORD = 9;
-	public final static int BS = 10;
-	public final static int BANK = 11;
-	public final static int INES_PRG = 12;
-	public final static int INES_CHR = 13;
-	public final static int INES_MAP = 14;
-	public final static int INES_MIRROR = 15;
+	public final static int INCLUDE = 6;
+	public final static int INC = 7;
+	public final static int ORG = 8;
+	public final static int RSSET = 9;
+	public final static int RS = 10;
+	public final static int WORD = 11;
+	public final static int BS = 12;
+	public final static int BANK = 13;
+	public final static int INES_PRG = 14;
+	public final static int INES_CHR = 15;
+	public final static int INES_MAP = 16;
+	public final static int INES_MIRROR = 17;
 	
 	public final static int DEFAULT_BANK_SIZE = 0x2000;
 	
@@ -412,8 +414,9 @@ public class AssemblyUtils {
 	}
 	
 	private static String[] directives = new String[] {
-			"ALIGN", "BYTE", "DB", "DW", "EQU", "FILL", "INC",
-			"ORG", "RS", "WORD", "BS", "BANK", "INESPRG", "INESCHR", "INESMAP", "INESMIR"
+			"ALIGN", "BYTE", "DB", "DW", "EQU", "FILL", "INCLUDE", "INC",
+			"ORG", "RSSET", "RS", "WORD", "BS", "BANK", "INESPRG", "INESCHR", "INESMAP", "INESMIR"
+			
 	};
 	
 	

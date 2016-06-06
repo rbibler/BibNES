@@ -17,12 +17,11 @@ public class ParseTest extends TestCase {
 	
 	public void testFromFile() {
 		String currentDirFile = System.getProperty("user.dir");
-		System.out.println(currentDirFile);
 		Assembler assembler = new Assembler();
-		File f = new File(currentDirFile + "/NES Files/szsi/szsi.asm");
+		File f = new File(currentDirFile + "/NES Files/test/test.asm");
 		assembler.setFileRoot(f.getParentFile());
 		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(f));
-		assembler.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/szsi/szsi_test.nes"), machineCode);
+		assembler.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/test/test.nes"), machineCode);
 	}
 	
 	
