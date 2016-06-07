@@ -15,6 +15,7 @@ public class NESTests extends TestCase {
 		File f = new File(currentDirFile + "/NES Files/background/background_test.asm");
 		NESCreator creator = new NESCreator();
 		Memory result = creator.createNESFile(f);
+		result.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/background/background_test.nes"));
 		assertEquals(1, creator.getINESPrgSize());
 		assertEquals(1, creator.getINESChrSize());
 		assertEquals(0, creator.getINESMapper());
@@ -29,7 +30,7 @@ public class NESTests extends TestCase {
 		byte[] bytes = FileUtils.readFile(testCase);
 		if(bytes != null) {
 			for(int i = 0; i < bytes.length; i++) {
-				if(bytes[i] != result.read(i) && i > 0x10) {
+				if(((int) bytes[i] & 0xFF) != result.read(i) && i > 0x10) {
 					System.out.println("No match at " + i);
 					match = false;
 					break;

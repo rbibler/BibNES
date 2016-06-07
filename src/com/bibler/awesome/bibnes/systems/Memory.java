@@ -1,5 +1,9 @@
 package com.bibler.awesome.bibnes.systems;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 public class Memory {
 	
 	private int[] memoryArray;
@@ -24,6 +28,23 @@ public class Memory {
 	
 	public int size() {
 		return size;
+	}
+
+	public void writeMachineCodeToFile(File f) {
+		FileOutputStream stream = null;
+		try {
+			stream = new FileOutputStream(f);
+			for(int i = 0; i < size(); i++) {
+				stream.write(read(i));
+			}
+		} catch(IOException e) {}
+		finally {
+			if(stream != null) {
+				try {
+					stream.close();
+				} catch(IOException e) {}
+			}
+		}
 	}
 
 }

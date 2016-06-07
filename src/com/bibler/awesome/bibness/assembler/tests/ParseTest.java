@@ -18,10 +18,9 @@ public class ParseTest extends TestCase {
 	public void testFromFile() {
 		String currentDirFile = System.getProperty("user.dir");
 		Assembler assembler = new Assembler();
-		File f = new File(currentDirFile + "/NES Files/test/test.asm");
-		assembler.setFileRoot(f.getParentFile());
+		File f = new File(currentDirFile + "/NES Files/test/allsuitea.asm");
 		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(f));
-		assembler.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/test/test.nes"), machineCode);
+		machineCode.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/test/AllSuiteA.bin"));
 	}
 	
 	

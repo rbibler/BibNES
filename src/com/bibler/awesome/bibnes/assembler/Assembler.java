@@ -1,8 +1,6 @@
 package com.bibler.awesome.bibnes.assembler;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 
 import com.bibler.awesome.bibnes.assembler.directives.Bank;
@@ -130,19 +128,24 @@ public class Assembler {
 		int errorCode = -1;
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
 		errorCode = processLabel(lineToParse);
-		if(errorCode == -1) {
+		if(errorCode == -1) {											
 			tmp = trimLineAfterLabel(lineToParse);
-		} else if(errorCode == -1){
-			ErrorHandler.handleError(tmp, lineCount, ErrorHandler.ILLEGAL_DIRECTIVE);
+		} else if(errorCode != -1 && !confirmFirstCharEmpty(lineToParse)){
+			ErrorHandler.handleError(tmp, lineCount, errorCode);
 		}
 		if(tmp.length() == 0) {
 			return;
 		}
 		errorCode = processDirective(tmp); 
 		if(errorCode != -1 && tmp.charAt(0) == '.') {
-			ErrorHandler.handleError(tmp, lineCount, ErrorHandler.ILLEGAL_DIRECTIVE);
+			ErrorHandler.handleError(tmp, lineCount, errorCode);
 		}
 		errorCode = processOpCode(tmp);
+	}
+	
+	public boolean confirmFirstCharEmpty(String line) {
+		char firstChar = line.charAt(0);
+		return firstChar == ' ' || firstChar == ';' || firstChar == '\t';
 	}
 	
 	public int processLabel(String lineToProcess) {
@@ -299,10 +302,10 @@ public class Assembler {
 		case AssemblyUtils.ABSOLUTE:
 		case AssemblyUtils.ABSOLUTE_X:
 		case AssemblyUtils.ABSOLUTE_Y:
-			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck))  ;
+			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck)) && address >= 0x100;
 			break;
 		case AssemblyUtils.ACCUMULATOR:
-			char first = operand.charAt(0);
+			char first = operand.length() > 0 ? operand.charAt(0) : ' ';
 			if(first == 'A' || first == 'a') {
 				match = StringUtils.validateLine(operand, 0);
 			}
@@ -351,6 +354,9 @@ public class Assembler {
 	}
 	
 	public boolean processOperand(String operand) {
+		if(instruction == "JMP" && secondPass) {
+			System.out.println("Stopping here");
+		}
 		boolean match = false;
 		if(DigitUtils.stringContainsOnlyDigits(operand)) {
 			address = DigitUtils.getDigits(operand);
@@ -563,23 +569,6 @@ public class Assembler {
 	public void printPassTwoLines() {
 		for(int i = 0; i < secondPassLines.size(); i++) {
 			System.out.println(linesToAssemble[secondPassLines.get(i)]);
-		}
-	}
-	
-	public void writeMachineCodeToFile(File f, Memory codeToWrite) {
-		FileOutputStream stream = null;
-		try {
-			stream = new FileOutputStream(f);
-			for(int i = 0; i < codeToWrite.size(); i++) {
-				stream.write(codeToWrite.read(i));
-			}
-		} catch(IOException e) {}
-		finally {
-			if(stream != null) {
-				try {
-					stream.close();
-				} catch(IOException e) {}
-			}
 		}
 	}
 

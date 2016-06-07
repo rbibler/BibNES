@@ -27,7 +27,11 @@ public class DigitUtils {
 	}
 	
 	private static int getRadix(String s) {
+		if(s.length() > 0) {
 		return s.charAt(0) == '$' ? HEX : (s.charAt(0) == '%' ? BIN : DECIMAL);
+		} else {
+			return 10;
+		}
 	} 
 	public static String getDigitString(String s) {
 		int radix = getRadix(s);

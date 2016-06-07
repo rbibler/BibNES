@@ -27,20 +27,23 @@ public class StringUtils {
 	
 	public static String checkAddressPattern(String addressToCheck, String pattern) {
 		String operand = "";
-		boolean capture = false;
 		int addressIndex = 0;
 		char patternChar;
 		char operandChar;
+		String tmpAddress = addressToCheck.toLowerCase();
 		for(int i = 0; i < pattern.length(); i++) {
 			patternChar = pattern.charAt(i);
 			if(patternChar == '~') {
 				if(i == pattern.length() - 1) {
-					operand = addressToCheck.substring(addressIndex, addressToCheck.contains(";") ? addressToCheck.indexOf(';') : addressToCheck.length());
+					operand = tmpAddress.substring(addressIndex, tmpAddress.contains(";") ? tmpAddress.indexOf(';') : tmpAddress.length());
 					addressIndex += operand.length();
 					break;
 				} else {
 					do {
-						operandChar = addressToCheck.charAt(addressIndex++);
+						if(tmpAddress.length() == 0) {
+							break;
+						}
+						operandChar = tmpAddress.charAt(addressIndex++);
 						if(operandChar == ';') {
 							break;
 						}
@@ -50,10 +53,10 @@ public class StringUtils {
 						} else {
 							operand += operandChar;
 						}
-					} while(addressIndex < addressToCheck.length());
+					} while(addressIndex < tmpAddress.length());
 				}
 			} else {
-				if(addressIndex >= addressToCheck.length() || addressToCheck.charAt(addressIndex++) != patternChar ) {
+				if(addressIndex >= tmpAddress.length() || tmpAddress.charAt(addressIndex++) != patternChar ) {
 					operand = null;
 					break;
 				}
@@ -72,63 +75,6 @@ public class StringUtils {
 		}
 		return match;
 	}
-	
-	/*public static String checkAddressPattern(String addressToCheck, String pattern) {
-		String operand = null;
-		int addressIndex = 0;
-		char charToCheck;
-		saveNextMatch = false;
-		for(int i = 0; i < pattern.length(); i++) {
-			charToCheck = pattern.charAt(i);
-			if(charToCheck == charToSave) {
-				saveNextMatch = true;
-				continue;
-			}
-			if(charToCheck == digitChar) {
-				operand = DigitUtils.getDigitString(addressToCheck.substring(addressIndex));
-				if(operand == null) {
-					
-					break;
-				} else {
-					addressIndex += operand.length();
-				}
-			} else if(charToCheck == digitOrLabelChar) {
-				if(DigitUtils.checkFirstDigit(addressToCheck.substring(addressIndex))) {
-					operand = DigitUtils.getDigitString(addressToCheck.substring(addressIndex));
-					if(operand == null) {
-						break;
-					} else {
-						addressIndex += operand.length();
-					}
-				} else {
-					operand = checkLabel(addressToCheck.substring(addressIndex));
-					if(operand == null) {
-						break;
-					} else {
-						addressIndex += operand.length();
-						operand = "L" + operand;
-					}
-				}
-			} else {
-				if(addressIndex < addressToCheck.length() && addressToCheck.charAt(addressIndex) == charToCheck) {
-					if(saveNextMatch) {
-						operand = "" + addressToCheck.charAt(addressIndex);
-					}
-					addressIndex++;
-				} else {
-					break;
-				}
-			}
-		}
-		if(operand != null) {
-			if(addressIndex < addressToCheck.length() - 1) {
-				if(addressToCheck.charAt(addressIndex) != ';') {
-					operand = null;
-				}
-			}
-		}
-		return operand;
-	}*/
 	
 	public static int stringToInt(String s, int radix) {
 		return Integer.parseInt(s, radix);
@@ -185,7 +131,7 @@ public class StringUtils {
 	}
 	
 	public static String trimWhiteSpace(String lineToTrim) {
-		return lineToTrim.replaceAll("\\s+", "");
+		return lineToTrim.replaceAll("\\s+", "").replaceAll("\t", "");
 	}
 	
 	public static boolean validateLine(String s, int lastLegitChar) {
