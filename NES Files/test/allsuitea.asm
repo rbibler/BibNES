@@ -294,8 +294,8 @@ test02:
 ; expected result: $01DD = 0x6E
 test03:
 	LDA #$4B
-	LSR
-	ASL
+	LSR A
+	ASL A
 	
 	STA $50
 	ASL $50
@@ -329,9 +329,9 @@ test03:
 	
 	; rol & ror
 	
-	ROL
-	ROL
-	ROR
+	ROL A
+	ROL A
+	ROR A
 	STA $70
 	
 	LDX $70
@@ -443,7 +443,7 @@ test05:
 test06:
 
 ; RESET TO CARRY FLAG = 0
-	ROL
+	ROL A
 
 	LDA #$6A
 	STA $50
