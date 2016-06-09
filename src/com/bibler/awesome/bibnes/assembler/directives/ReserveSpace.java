@@ -18,8 +18,9 @@ public class ReserveSpace extends Directive {
 		int bytesToSkip = DigitUtils.getDigits(line);
 		if(bytesToSkip >= 0) {
 			int rsCounter = assembler.getRSCounter();
-			assembler.setLabelAddress(assembler.getLabelCount() - 1, rsCounter);
+			//assembler.setLabelAddress(assembler.getLabelCount() - 1, rsCounter);
 			assembler.setRSCounter(rsCounter += bytesToSkip);
+			assembler.setLocationCounter(assembler.getLocationCounter() + bytesToSkip);
 			
 		} else {
 			errorCode = ErrorHandler.MISSING_OPERAND;

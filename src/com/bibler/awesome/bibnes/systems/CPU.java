@@ -56,7 +56,14 @@ public class CPU {
 		}
 		cyclesRemaining--;
 		totalCycles++;
-		System.out.println("OpCode: " + StringUtils.intToHexString(instruction) + " Cycles: " + cyclesRemaining + " Accumulator: " + StringUtils.intToHexString(accumulator) + " Total Cycles: " + totalCycles);
+		printStatus();
+	}
+	
+	private void printStatus() {
+		System.out.println(StringUtils.intToHexString(programCounter) +  ": OpCode: " +
+				StringUtils.intToHexString(instruction) + " A: " + StringUtils.intToHexString(accumulator) + " X: " +
+				StringUtils.intToHexString(getXIndex()) + " Y: " + StringUtils.intToHexString(getYIndex()) + 
+				" Total Cycles: " + totalCycles);
 	}
 	
 	public void powerOn() {
@@ -160,6 +167,10 @@ public class CPU {
 			case 0x09:
 				immediate();
 				ORA();
+				break;
+			case 0x0A:
+				accumulator();
+				ASL();
 				break;
 			case 0x0D:
 				absolute();
@@ -615,7 +626,7 @@ public class CPU {
 				BNE();
 				break;
 			case 0xD1:
-				indexedIndirect();
+				indirectIndexed();
 				CMP();
 				break;
 			case 0xD5:
@@ -667,6 +678,9 @@ public class CPU {
 			case 0xE9:
 				immediate();
 				SBC();
+				break;
+			case 0xEA:
+				NOP();
 				break;
 			case 0xEC:
 				absolute();
@@ -757,6 +771,7 @@ public class CPU {
 	
 	private void CMP() {
 		if(cyclesRemaining == 1) {
+			SEC();
 			final int result = accumulator - dataRegister - (~statusRegister & 1);
 			int carryFlag = 0;
 			if(result >= 0 && result <= 0xFF) {
@@ -823,15 +838,18 @@ public class CPU {
 	}
 	
 	private void ASL() {
-		if(cyclesRemaining == 2) {
+		if(cyclesRemaining == 1) {
 			dataRegister = dataRegister << 1;
 			statusRegister ^= (-((dataRegister >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(dataRegister == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 			statusRegister ^= (-((dataRegister >> 8) & 1) ^ statusRegister) & 1;					// set carry flag
-			
-		} else if(cyclesRemaining == 1) {
-			memorySpace.write(dataCounter, dataRegister);
+			if(instruction == 0x0A) {
+				accumulator = dataRegister;
+			} else {
+				memorySpace.write(dataCounter, dataRegister);
+			}
 		}
+		
 	}
 	
 	private void BIT() {
@@ -842,6 +860,10 @@ public class CPU {
 			statusRegister ^= (-(dataRegister >> 6 & 1) ^ statusRegister) & (1 << OVERFLOW_FLAG);
 			
 		}
+	}
+	
+	private void NOP() {
+		
 	}
 	
 	private void CLC() {
@@ -1144,7 +1166,9 @@ public class CPU {
 				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
 					cyclesRemaining -= 1;
 				}
+				System.out.println("Branch Taken: BNE");
 			} else {
+				System.out.println("Branch Not Taken: BNE");
 				cyclesRemaining -= 2;
 			}
 		}
@@ -1158,7 +1182,9 @@ public class CPU {
 				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
 					cyclesRemaining -= 1;
 				}
+				System.out.println("Branch Taken: BEQ");
 			} else {
+				System.out.println("Branch NOT Taken: BEQ");
 				cyclesRemaining -= 2;
 			}
 		}
@@ -1324,7 +1350,7 @@ public class CPU {
 			if((nextAddress & 0xFF00) != (dataCounter & 0xFF00)) {
 				nextAddress &= dataCounter;
 			}
-			dataCounter = dataRegister | (memorySpace.read(nextAddress) <<8);
+			dataCounter = dataRegister | (memorySpace.read(nextAddress) << 8);
 		}
 	}
 	
@@ -1418,7 +1444,7 @@ public class CPU {
 	
 	private int[] instructionTimes = new int[] {
 		//  0 1 2 3 4 5 6 7 8 9 A B C D E F	
-			7,6,0,0,0,3,5,0,3,2,0,0,0,4,6,0,	// 0
+			7,6,0,0,0,3,5,0,3,2,2,0,0,4,6,0,	// 0
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 1
 			6,6,0,0,3,3,5,0,4,2,2,0,4,4,6,0,	// 2
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// 3
@@ -1432,7 +1458,7 @@ public class CPU {
 			4,5,0,0,4,4,4,0,2,4,2,0,4,4,4,0,	// B
 			2,6,0,0,3,3,5,0,2,2,2,0,4,4,6,0,	// C
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0,	// D
-			2,6,0,0,3,3,5,0,2,2,0,0,4,4,6,0,	// E
+			2,6,0,0,3,3,5,0,2,2,2,0,4,4,6,0,	// E
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0		// F
 			
 	};

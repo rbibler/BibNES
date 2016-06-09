@@ -14,7 +14,8 @@ public class ParseTest extends TestCase {
 		Assembler assembler = new Assembler();
 		File f = new File(currentDirFile + "/NES Files/test/allsuitea.asm");
 		Memory machineCode = assembler.passOne(AssemblyUtils.processFile(f));
-		machineCode.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/test/AllSuiteA.bin"));
+		machineCode.writeMachineCodeToFile(new File(currentDirFile + "/NES Files/test/allsuitea.bin"));
+		System.out.println(assembler.generateListing());
 	}
 	
 	

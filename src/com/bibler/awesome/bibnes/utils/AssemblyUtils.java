@@ -90,6 +90,10 @@ public class AssemblyUtils {
 		
 	}
 	
+	public static boolean noZeroPage(String instruction, int zpToCheck) {
+		return !checkForAddressMode(zpToCheck, instruction);
+	}
+	
 	public static boolean checkImplied(String s) {
 		if(s.length() == 0) {
 			return true;
@@ -303,6 +307,7 @@ public class AssemblyUtils {
 		
 		absoluteYOpCodes = new HashMap<String, Integer>();
 		absoluteYOpCodes.put("ADC", 0x79);
+		absoluteYOpCodes.put("AND", 0x39);
 		absoluteYOpCodes.put("CMP", 0xD9);
 		absoluteYOpCodes.put("EOR", 0x59);
 		absoluteYOpCodes.put("LDA", 0xB9);
@@ -434,7 +439,7 @@ public class AssemblyUtils {
 				2,2,0,0,2,2,2,0,1,3,1,0,0,3,0,0,	// 9
 				2,2,2,0,2,2,2,0,1,2,1,0,3,3,3,0,	// A
 				2,2,0,0,2,2,2,0,1,3,1,0,3,3,3,0,	// B
-				2,6,0,0,2,2,2,0,1,2,1,0,3,3,3,0,	// C
+				2,2,0,0,2,2,2,0,1,2,1,0,3,3,3,0,	// C
 				2,2,0,0,0,2,2,0,1,3,0,0,0,3,3,0,	// D
 				2,2,0,0,2,2,2,0,1,2,1,0,3,3,3,0,	// E
 				2,2,0,0,0,2,2,0,1,3,0,0,0,3,3,0		// F

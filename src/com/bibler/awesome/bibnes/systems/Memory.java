@@ -20,7 +20,7 @@ public class Memory {
 	}
 	
 	public void write(int addressToWrite, int data) {
-		if(addressToWrite == 0x1C000) {
+		if(addressToWrite == 0x71) {
 			System.out.println("here");
 		}
 		memoryArray[addressToWrite % size] = data & 0xFF;

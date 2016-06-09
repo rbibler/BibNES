@@ -16,6 +16,25 @@ public class StringUtils {
 	public static char charToSave = '~';
 	public static boolean saveNextMatch;
 	
+	
+	public static String insertStringAtIndex(int index, String toInsert, String baseString) {
+		String ret = baseString;
+		int diff = index - baseString.length();
+		for(int i = 0; i < diff; i++) {
+			ret += " ";
+		}
+		return ret + toInsert;
+	}
+	public static String intToPaddedString(int intToPad, int stringLength, int radix) {
+		String digits = Integer.toString(intToPad, radix);
+		int diff = stringLength - digits.length() - 1;
+		String ret = "";
+		for(int i = 0; i < diff; i++) {
+			ret += "0";
+		}
+		return ret + digits;
+	}
+	
 	public static String trimComments(String s) {
 		String ret = s;
 		int index = s.indexOf(';');
@@ -104,6 +123,9 @@ public class StringUtils {
 				break;
 			}
 			s = s.substring(1);
+		}
+		if(intToConvert == 0) {
+			s = "0";
 		}
 		return s;
 	}

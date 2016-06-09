@@ -922,3 +922,10 @@ suiteafinal:
 	INC $0210
 theend:
 	JMP theend
+	
+	.org $FFFA     ;first of the three vectors starts here
+  .dw 0        ;when an NMI happens (once per frame if enabled) the 
+                   ;processor will jump to the label NMI:
+  .dw start      ;when the processor first turns on or is reset, it will jump
+                   ;to the label RESET:
+  .dw 0          ;external interrupt IRQ is not used in this tutorial

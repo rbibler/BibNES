@@ -30,6 +30,7 @@ public class Assembler {
 	public static final int MAX_LABEL_LENGTH = 256;
 	
 	private StringBuilder listing = new StringBuilder();
+	private StringBuilder currentLine = new StringBuilder();
 	private Memory machineCode;
 	
 	private int locationCounter;
@@ -49,6 +50,7 @@ public class Assembler {
 	private String[] linesToAssemble;
 	
 	private boolean  secondPass;
+
 	
 	
 	String instruction;
@@ -95,6 +97,9 @@ public class Assembler {
 		lineCount = 0;
 		String line;
 		for(int i = 0; i < linesToAssemble.length; i++) {
+			if(i == 735) {
+				System.out.println("Weird");
+			}
 			line = linesToAssemble[i];
 			if(line != null && !line.trim().isEmpty()) {
 				parseLine(line);
@@ -125,6 +130,10 @@ public class Assembler {
 
 	
 	public void parseLine(String lineToParse) {
+		currentLine.append(StringUtils.intToPaddedString(lineCount, 6, DigitUtils.DECIMAL).toUpperCase());
+		currentLine.append(" ");
+		currentLine.append(StringUtils.intToPaddedString(locationCounter, 4, DigitUtils.HEX).toUpperCase());
+		currentLine.append(" ");
 		int errorCode = -1;
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
 		errorCode = processLabel(lineToParse);
@@ -141,6 +150,8 @@ public class Assembler {
 			ErrorHandler.handleError(tmp, lineCount, errorCode);
 		}
 		errorCode = processOpCode(tmp);
+		listing.append(StringUtils.insertStringAtIndex(26, lineToParse + "\n", currentLine.toString()));
+		currentLine.delete(0, currentLine.length());
 	}
 	
 	public boolean confirmFirstCharEmpty(String line) {
@@ -256,10 +267,13 @@ public class Assembler {
 		opCode = AssemblyUtils.getOpCode(instruction, addressingMode);
 		bytes = AssemblyUtils.getBytes(opCode);
 		writeCurrentLocationAndBank(opCode);
+		currentLine.append(StringUtils.intToHexString(opCode));
 		int[] operandBytes = DigitUtils.splitWord(address, bytes - 1);
 		for(int i = operandBytes.length - 1; i >= 0; i--) {
+			currentLine.append(" " + StringUtils.intToHexString(operandBytes[i]));
 			writeCurrentLocationAndBank(operandBytes[i]);
 		}
+		
 	}
 
 	private int addToSecondPass(String instruction, String operand) {
@@ -267,6 +281,7 @@ public class Assembler {
 		if(secondPass){
 			errorCode = ErrorHandler.MISSING_OPERAND;
 		} else {
+			System.out.println(instruction + " bytes " + bytes + " Deferred to 2nd Pass");
 			secondPassLines.add(lineCount);
 			secondPassAddress.add(locationCounter);
 			secondPassBanks.add(currentBank);
@@ -301,8 +316,10 @@ public class Assembler {
 		switch(addressModeToCheck) {
 		case AssemblyUtils.ABSOLUTE:
 		case AssemblyUtils.ABSOLUTE_X:
-		case AssemblyUtils.ABSOLUTE_Y:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck)) && address >= 0x100;
+			break;
+		case AssemblyUtils.ABSOLUTE_Y:
+			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck)) && checkForNoZeroPage(AssemblyUtils.ZERO_PAGE_Y);
 			break;
 		case AssemblyUtils.ACCUMULATOR:
 			char first = operand.length() > 0 ? operand.charAt(0) : ' ';
@@ -342,6 +359,14 @@ public class Assembler {
 			break;
 		}
 		return match;
+	}
+	
+	private boolean checkForNoZeroPage(int zpToCheck) {
+		if(AssemblyUtils.noZeroPage(instruction, zpToCheck)) {
+			return true;
+		} else {
+			return address >= 0x100;
+		}
 	}
 	
 	public boolean checkAddressMode(String addressToCheck, String pattern) {
@@ -442,13 +467,27 @@ public class Assembler {
 	}
 	
 	private boolean checkForLabel(String labelToCheck) {
-		boolean match = labels.contains(labelToCheck);
-		if(match) {
-			address = labelAddresses.get(labels.indexOf(labelToCheck));
+		int index = checkLabelContains(labelToCheck);
+		if(index != -1) {
+			address = labelAddresses.get(index);
+			return true;
 		} else {
 			address = -1;
+			return false;
 		}
-		return match;
+	}
+	
+	private int checkLabelContains(String labelToCheck) {
+		int index = -1;
+		int count = 0;
+		for(String s : labels) {
+			if(s.equalsIgnoreCase(labelToCheck)) {
+				index = count; 
+				break;
+			}
+			count++;
+		}
+		return index;
 	}
 	
 	public boolean checkForLocationOverflow() {
@@ -570,6 +609,10 @@ public class Assembler {
 		for(int i = 0; i < secondPassLines.size(); i++) {
 			System.out.println(linesToAssemble[secondPassLines.get(i)]);
 		}
+	}
+	
+	public String generateListing() {
+		return listing.toString();
 	}
 
 }
