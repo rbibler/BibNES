@@ -117,7 +117,7 @@ public class StringUtils {
 			sb.append(hexValues[b & 0xF]);
 		}
 		String s  = sb.toString();
-		while(s.length() > 0) {
+		while(s.length() > 2) {
 			char c = s.charAt(0);
 			if(c != '0') {
 				break;
@@ -125,7 +125,7 @@ public class StringUtils {
 			s = s.substring(1);
 		}
 		if(intToConvert == 0) {
-			s = "0";
+			s = "00";
 		}
 		return s;
 	}

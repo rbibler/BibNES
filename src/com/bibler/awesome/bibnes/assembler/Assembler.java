@@ -2,6 +2,7 @@ package com.bibler.awesome.bibnes.assembler;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Vector;
 
 import com.bibler.awesome.bibnes.assembler.directives.Bank;
 import com.bibler.awesome.bibnes.assembler.directives.BankSize;
@@ -29,7 +30,7 @@ public class Assembler {
 	
 	public static final int MAX_LABEL_LENGTH = 256;
 	
-	private StringBuilder listing = new StringBuilder();
+	private String[] listing;
 	private StringBuilder currentLine = new StringBuilder();
 	private Memory machineCode;
 	
@@ -93,6 +94,7 @@ public class Assembler {
 	
 	public Memory passOne(String[] lines) {
 		this.linesToAssemble = lines;
+		listing = new String[lines.length];
 		secondPass = false;
 		lineCount = 0;
 		String line;
@@ -128,12 +130,12 @@ public class Assembler {
 	
 	
 
-	
+	/**
+	 * Scans a line of text, processing labels, directives, opcodes, and operands.
+	 * 
+	 * @param lineToParse
+	 */
 	public void parseLine(String lineToParse) {
-		currentLine.append(StringUtils.intToPaddedString(lineCount, 6, DigitUtils.DECIMAL).toUpperCase());
-		currentLine.append(" ");
-		currentLine.append(StringUtils.intToPaddedString(locationCounter, 4, DigitUtils.HEX).toUpperCase());
-		currentLine.append(" ");
 		int errorCode = -1;
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
 		errorCode = processLabel(lineToParse);
@@ -150,8 +152,13 @@ public class Assembler {
 			ErrorHandler.handleError(tmp, lineCount, errorCode);
 		}
 		errorCode = processOpCode(tmp);
-		listing.append(StringUtils.insertStringAtIndex(26, lineToParse + "\n", currentLine.toString()));
-		currentLine.delete(0, currentLine.length());
+		if(errorCode == -1) {
+			String lineAndLocation = StringUtils.intToPaddedString(lineCount, 6, DigitUtils.DECIMAL).toUpperCase();
+			lineAndLocation += " " + StringUtils.intToPaddedString(locationCounter, 4, DigitUtils.HEX).toUpperCase() + " ";
+			lineAndLocation += currentLine.toString();
+			listing[lineCount] = StringUtils.insertStringAtIndex(26, lineToParse, lineAndLocation);
+			currentLine.delete(0, currentLine.length());
+		}
 	}
 	
 	public boolean confirmFirstCharEmpty(String line) {
@@ -612,7 +619,17 @@ public class Assembler {
 	}
 	
 	public String generateListing() {
-		return listing.toString();
+		String s = "";
+		int lineNum = 0;
+		for(String line : listing) {
+			if(line == null) {
+				line = StringUtils.intToPaddedString(lineNum, 6, 10);
+			}
+			s += line + "\n";
+			
+			lineNum++;
+		}
+		return s;
 	}
 
 }
