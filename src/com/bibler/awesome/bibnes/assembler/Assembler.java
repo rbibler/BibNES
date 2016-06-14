@@ -35,6 +35,7 @@ public class Assembler implements Notifiable, Notifier{
 	private String[] listing;
 	private StringBuilder currentLine = new StringBuilder();
 	private Memory machineCode;
+	private ErrorHandler errorHandler;
 	
 	private int locationCounter;
 	
@@ -72,12 +73,14 @@ public class Assembler implements Notifiable, Notifier{
 		bankSize = AssemblyUtils.DEFAULT_BANK_SIZE;
 		setByteSize(0x8000);
 		fillDirectives();
+		errorHandler = new ErrorHandler();
 	}
 	
 	public void registerObjectToNotify(Notifiable objectToNotify) {
 		if(!objectsToNotify.contains(objectToNotify)) {
 			objectsToNotify.add(objectToNotify);
 		}
+		errorHandler.registerObjectToNotify(objectToNotify);
 	}
 	
 	public void setFileRoot(File fileRoot) {
@@ -149,14 +152,14 @@ public class Assembler implements Notifiable, Notifier{
 		if(errorCode == -1) {											
 			tmp = trimLineAfterLabel(lineToParse);
 		} else if(errorCode != -1 && !confirmFirstCharEmpty(lineToParse)){
-			ErrorHandler.handleError(tmp, lineCount, errorCode);
+			errorHandler.handleError(tmp, lineCount, errorCode);
 		}
 		if(tmp.length() == 0) {
 			return;
 		}
 		errorCode = processDirective(tmp); 
 		if(errorCode != -1 && tmp.charAt(0) == '.') {
-			ErrorHandler.handleError(tmp, lineCount, errorCode);
+			errorHandler.handleError(tmp, lineCount, errorCode);
 		}
 		errorCode = processOpCode(tmp);
 		if(errorCode == -1) {
@@ -209,6 +212,8 @@ public class Assembler implements Notifiable, Notifier{
 		if(directive != null) {
 			returnCode = processDirective(AssemblyUtils.getDirective(directive), 
 					directiveToProcess.substring(directiveToProcess.toUpperCase().indexOf(directive) + directive.length()));
+		} else {
+			returnCode = ErrorHandler.ILLEGAL_DIRECTIVE;
 		}
 		return returnCode;
 		
@@ -367,7 +372,7 @@ public class Assembler implements Notifiable, Notifier{
 				if(Math.abs(address) <= 0xFF) {
 					address = (int) (address & 0xFF);					//Convert negative into positive 
 				} else {
-					ErrorHandler.handleError(operand, lineCount, ErrorHandler.JUMP_OUT_OF_RANGE);
+					errorHandler.handleError(operand, lineCount, ErrorHandler.JUMP_OUT_OF_RANGE);
 				}
 			}
 			bytes = 2; 

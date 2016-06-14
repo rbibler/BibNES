@@ -1,6 +1,11 @@
 package com.bibler.awesome.bibnes.assembler;
 
-public class ErrorHandler {
+import java.util.ArrayList;
+
+import com.bibler.awesome.bibnes.communications.Notifiable;
+import com.bibler.awesome.bibnes.communications.Notifier;
+
+public class ErrorHandler implements Notifier {
 	
 	public static final int NO_OP_CODE = 0x01;
 	public static final int ILLEGAL_LABEL = 0x02;
@@ -11,7 +16,9 @@ public class ErrorHandler {
 	public static final int OPERAND_TOO_LARGE = 7;
 	public static final int JUMP_OUT_OF_RANGE = 8;
 	
-	private static String[] errorMessages = new String[] {
+	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
+	
+	private String[] errorMessages = new String[] {
 			"", 
 			"Syntax error! Expected Instruction, found ",
 			"Illegal Label! Label must begin with Alpabetic Character.",
@@ -23,10 +30,30 @@ public class ErrorHandler {
 			"Jump out of Range!"
 	};
 	
+	public ErrorHandler() {
+		
+	}
 	
-	public static void handleError(String errorText, int line, int errorCode) {
-		System.out.println("Error at line " + (line + 1) + ": " + errorMessages[errorCode] + " " + errorText);
+	public void registerObjectToNotify(Notifiable objectToNotify) {
+		if(!objectsToNotify.contains(objectToNotify)) {
+			objectsToNotify.add(objectToNotify);
+		}
+	}
+	
+	
+	
+	
+	public void handleError(String errorText, int line, int errorCode) {
+		notify("Error at line " + (line + 1) + ": " + errorMessages[errorCode] + " " + errorText);
+	}
 
+
+	@Override
+	public void notify(String messageToSend) {
+		for(Notifiable notifiable : objectsToNotify) {
+			notifiable.takeNotice(messageToSend, this);
+		}
+		
 	}
 
 }

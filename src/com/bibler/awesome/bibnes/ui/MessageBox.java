@@ -41,6 +41,7 @@ public class MessageBox extends JPanel {
 		add(scrollPane, BorderLayout.CENTER);
 		Font f = new Font("Courier", Font.PLAIN, 13);
 		messageArea.setFont(f);
+		setTextColor(Color.BLACK);
 	}
 	
 	public void deleteAll() {
@@ -54,7 +55,7 @@ public class MessageBox extends JPanel {
 	
 	public void writeNewLineToBox(String lineToWrite) {
 		try {
-			doc.insertString(doc.getLength(), lineToWrite + "\n", null);
+			doc.insertString(doc.getLength(), lineToWrite + "\n", attributeSet);
 		} catch (BadLocationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
