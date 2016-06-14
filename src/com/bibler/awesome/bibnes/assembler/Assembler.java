@@ -19,12 +19,14 @@ import com.bibler.awesome.bibnes.assembler.directives.IncludeBinary;
 import com.bibler.awesome.bibnes.assembler.directives.Origin;
 import com.bibler.awesome.bibnes.assembler.directives.ReserveSpace;
 import com.bibler.awesome.bibnes.assembler.directives.ReserveSpaceSet;
+import com.bibler.awesome.bibnes.communications.Notifiable;
+import com.bibler.awesome.bibnes.communications.Notifier;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
 import com.bibler.awesome.bibnes.utils.DigitUtils;
 import com.bibler.awesome.bibnes.utils.StringUtils;
 
-public class Assembler {
+public class Assembler implements Notifiable, Notifier{
 	
 	private File fileRoot;
 	
@@ -52,7 +54,7 @@ public class Assembler {
 	
 	private boolean  secondPass;
 
-	
+	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
 	String instruction;
 	String addressString;
@@ -70,6 +72,12 @@ public class Assembler {
 		bankSize = AssemblyUtils.DEFAULT_BANK_SIZE;
 		setByteSize(0x8000);
 		fillDirectives();
+	}
+	
+	public void registerObjectToNotify(Notifiable objectToNotify) {
+		if(!objectsToNotify.contains(objectToNotify)) {
+			objectsToNotify.add(objectToNotify);
+		}
 	}
 	
 	public void setFileRoot(File fileRoot) {
@@ -109,6 +117,7 @@ public class Assembler {
 			lineCount++;
 		}
 		passTwo(linesToAssemble);
+		notify("DONE");
 		return machineCode;
 	}
 	
@@ -127,8 +136,6 @@ public class Assembler {
 			} 
 		}
 	}
-	
-	
 
 	/**
 	 * Scans a line of text, processing labels, directives, opcodes, and operands.
@@ -175,6 +182,7 @@ public class Assembler {
 			}
 			labels.add(label);
 			labelAddresses.add(locationCounter);
+			currentLine.append(label);
 		} else if(lineToProcess.charAt(0) != ' ' && lineToProcess.charAt(0) != ';') {
 			errorCode = ErrorHandler.ILLEGAL_LABEL;
 		} else {
@@ -630,6 +638,24 @@ public class Assembler {
 			lineNum++;
 		}
 		return s;
+	}
+	
+	public Memory getMachineCode() {
+		return machineCode;
+	}
+
+	@Override
+	public void notify(String messageToSend) {
+		for(Notifiable notifiable : objectsToNotify) {
+			notifiable.takeNotice(messageToSend, this);
+		}
+		
+	}
+
+	@Override
+	public void takeNotice(String message, Object notifier) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
