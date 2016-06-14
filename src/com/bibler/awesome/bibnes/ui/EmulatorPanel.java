@@ -19,5 +19,9 @@ public class EmulatorPanel extends JPanel {
 		statusPanel = new EmulatorStatusPanel();
 		add(statusPanel);
 	}
+	
+	public void sendMessageToEmulator(String message, Object notifier) {
+		statusPanel.handleMessage(message, notifier);
+	}
 
 }

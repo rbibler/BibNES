@@ -1,8 +1,12 @@
 package com.bibler.awesome.bibnes.systems;
 
+import java.util.ArrayList;
+
+import com.bibler.awesome.bibnes.communications.Notifiable;
+import com.bibler.awesome.bibnes.communications.Notifier;
 import com.bibler.awesome.bibnes.utils.StringUtils;
 
-public class CPU {
+public class CPU implements Notifier {
 	
 	final int CARRY_FLAG = 0;
 	final int ZERO_FLAG = 1;
@@ -38,8 +42,29 @@ public class CPU {
 	//Debug
 	private int totalCycles;
 	
+	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
+	
 	public CPU(Memory memorySpace) {
 		this.memorySpace = memorySpace;
+	}
+	
+	public void registerObjectToNotify(Notifiable objectToNotify) {
+		if(!objectsToNotify.contains(objectToNotify)) {
+			objectsToNotify.add(objectToNotify);
+		}
+	}
+	
+	public void run() {
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				while(totalCycles < 0x1000) {
+					cycle();
+				}
+			}
+		});
+		t.start();
 	}
 	
 	public void cycle() {
@@ -56,7 +81,7 @@ public class CPU {
 		}
 		cyclesRemaining--;
 		totalCycles++;
-		printStatus();
+		notify("STEP");
 	}
 	
 	private void printStatus() {
@@ -67,7 +92,8 @@ public class CPU {
 	}
 	
 	public void powerOn() {
-		programCounter = memorySpace.read(0xFFFC) | memorySpace.read(0xFFFD) << 8;
+		//programCounter = memorySpace.read(0xFFFC) | memorySpace.read(0xFFFD) << 8;
+		programCounter = memorySpace.read(0x1FFC) | memorySpace.read(0x1FFD) << 8;
 		resetCPU();
 	}
 	
@@ -1462,5 +1488,12 @@ public class CPU {
 			4,5,0,0,0,4,6,0,2,4,0,0,0,4,7,0		// F
 			
 	};
+
+	@Override
+	public void notify(String messageToSend) {
+		for(Notifiable notifiable : objectsToNotify) {
+			notifiable.takeNotice(messageToSend, this);
+		}
+	}
 
 }

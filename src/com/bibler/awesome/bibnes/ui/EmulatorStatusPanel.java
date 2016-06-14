@@ -10,6 +10,10 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import com.bibler.awesome.bibnes.systems.CPU;
+import com.bibler.awesome.bibnes.utils.DigitUtils;
+import com.bibler.awesome.bibnes.utils.StringUtils;
+
 public class EmulatorStatusPanel extends JPanel {
 
 	/**
@@ -54,31 +58,35 @@ public class EmulatorStatusPanel extends JPanel {
 		accumulatorPanel = new JPanel();
 		accumulatorPanel.add(accumulator);
 		accumulatorPanel.add(accumulatorValue);
-		accumulatorPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		accumulatorPanel.setPreferredSize(new Dimension(100, 25));
 		
 		xIndex = new JLabel("X");
 		xIndexValue = new JLabel("00");
 		xIndexPanel = new JPanel();
 		xIndexPanel.add(xIndex);
 		xIndexPanel.add(xIndexValue);
+		xIndexPanel.setPreferredSize(new Dimension(100, 25));
 		
 		yIndex = new JLabel("Y");
 		yIndexValue = new JLabel("00");
 		yIndexPanel = new JPanel();
 		yIndexPanel.add(yIndex);
 		yIndexPanel.add(yIndexValue);
+		yIndexPanel.setPreferredSize(new Dimension(100, 25));
 		
 		programCounter = new JLabel("PC");
 		programCounterValue = new JLabel("00");
 		programCounterPanel = new JPanel();
 		programCounterPanel.add(programCounter);
 		programCounterPanel.add(programCounterValue);
+		programCounterPanel.setPreferredSize(new Dimension(100, 25));
 		
 		stackPointer = new JLabel("SP");
 		stackPointerValue = new JLabel("00");
 		stackPointerPanel = new JPanel();
 		stackPointerPanel.add(stackPointer);
 		stackPointerPanel.add(stackPointerValue);
+		stackPointerPanel.setPreferredSize(new Dimension(100, 25));
 		
 		statusHeading = new JLabel("NV-BDIZC");
 		statusValues = new JLabel("00000000");
@@ -86,6 +94,7 @@ public class EmulatorStatusPanel extends JPanel {
 		statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.Y_AXIS));
 		statusPanel.add(statusHeading);
 		statusPanel.add(statusValues);
+		accumulatorPanel.setPreferredSize(new Dimension(200, 25));
 		
 	}
 	
@@ -116,5 +125,47 @@ public class EmulatorStatusPanel extends JPanel {
 		c.gridy = 1;
 		add(stackPointerPanel, c);
 		
+	}
+	
+	public void handleMessage(String message, Object notifier) {
+		if(notifier instanceof CPU) {
+			switch(message) {
+			case "STEP":
+				updateValues((CPU) notifier);
+			}
+		}
+	}
+	
+	private void updateValues(CPU cpu) {
+		updateAccumulator(cpu.getAccumulator());
+		updateXIndex(cpu.getXIndex());
+		updateYIndex(cpu.getYIndex());
+		updateProgramCounter(cpu.getProgramCounter());
+		updateStackPointer(cpu.getStackPointer());
+		updateStatusRegister(cpu.getStatusRegister());
+	}
+	
+	public void updateAccumulator(int accumulatorValue) {
+		this.accumulatorValue.setText(StringUtils.intToHexString(accumulatorValue));
+	}
+	
+	public void updateXIndex(int xIndexValue) {
+		this.xIndexValue.setText(StringUtils.intToHexString(xIndexValue));
+	}
+	
+	public void updateYIndex(int yIndexValue) {
+		this.yIndexValue.setText(StringUtils.intToHexString(yIndexValue));
+	}
+	
+	public void updateProgramCounter(int programCounterValue) {
+		this.programCounterValue.setText(StringUtils.intToHexString(programCounterValue));
+	}
+	
+	public void updateStackPointer(int stackPointerValue) {
+		this.stackPointerValue.setText(StringUtils.intToHexString(stackPointerValue));
+	}
+	
+	public void updateStatusRegister(int statusValues) {
+		this.statusValues.setText(StringUtils.intToPaddedString(statusValues, 8, DigitUtils.BIN));
 	}
 }

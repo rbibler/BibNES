@@ -8,6 +8,8 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
+import com.bibler.awesome.bibnes.systems.CPU;
+import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.ui.menus.MainFrameMenu;
 
 public class MainFrame extends JFrame {
@@ -47,7 +49,12 @@ public class MainFrame extends JFrame {
 		Assembler assembler = new Assembler();
 		messageHandler.registerObjectToNotify(assembler);
 		assembler.registerObjectToNotify(messageHandler);
-		assembler.passOne(mainPanel.getInputLines());
+		Memory machineCode = assembler.passOne(mainPanel.getInputLines());
+		CPU cpu = new CPU(machineCode);
+		cpu.registerObjectToNotify(messageHandler);
+		cpu.powerOn();
+		cpu.resetCPU();
+		cpu.run();
 	}
 	
 	

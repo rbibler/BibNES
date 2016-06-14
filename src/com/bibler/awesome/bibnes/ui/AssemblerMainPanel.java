@@ -11,6 +11,7 @@ import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.assembler.ErrorHandler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
+import com.bibler.awesome.bibnes.systems.CPU;
 
 public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	
@@ -64,6 +65,8 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			}
 		} else if(notifier instanceof ErrorHandler) {
 			outputPanel.registerError(message);
+		} else if(notifier instanceof CPU) {
+			emulatorPanel.sendMessageToEmulator(message, notifier);
 		}
 		
 		
