@@ -331,7 +331,7 @@ public class Assembler implements Notifiable, Notifier{
 		switch(addressModeToCheck) {
 		case AssemblyUtils.ABSOLUTE:
 		case AssemblyUtils.ABSOLUTE_X:
-			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck)) && address >= 0x100;
+			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck)) && (address >= 0x100 || instruction.equalsIgnoreCase("JMP"));
 			break;
 		case AssemblyUtils.ABSOLUTE_Y:
 			match = checkAddressMode(operand, AssemblyUtils.getAddressModePattern(addressModeToCheck)) && checkForNoZeroPage(AssemblyUtils.ZERO_PAGE_Y);
