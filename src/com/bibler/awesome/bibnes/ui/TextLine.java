@@ -1,7 +1,6 @@
 package com.bibler.awesome.bibnes.ui;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.beans.*;
 import java.util.HashMap;
 import javax.swing.*;
@@ -21,9 +20,13 @@ import javax.swing.text.*;
  *  Adapted from Rob Camick's post on Java Tips Weblog
  *  https://tips4java.wordpress.com/2009/05/23/text-component-line-number/
  */
-public class TextLine extends JPanel
+public class TextLine extends EditorLineWatcher
 	implements CaretListener, DocumentListener, PropertyChangeListener
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5806320954048626583L;
 	public final static float LEFT = 0.0f;
 	public final static float CENTER = 0.5f;
 	public final static float RIGHT = 1.0f;
@@ -31,10 +34,6 @@ public class TextLine extends JPanel
 	private final static Border OUTER = new MatteBorder(0, 0, 0, 2, Color.GRAY);
 
 	private final static int HEIGHT = Integer.MAX_VALUE - 1000000;
-
-	//  Text component this TextTextLineNumber component is in sync with
-
-	private JTextComponent component;
 
 	//  Properties that can be changed
 
@@ -51,7 +50,7 @@ public class TextLine extends JPanel
     private int lastHeight;
     private int lastLine;
 
-	private HashMap<String, FontMetrics> fonts;
+	
 
 	/**
 	 *	Create a line number component for a text component. This minimum
@@ -73,12 +72,11 @@ public class TextLine extends JPanel
 	 */
 	public TextLine(JTextComponent component, int minimumDisplayDigits)
 	{
-		this.component = component;
+		super(component);
 
 		setFont( component.getFont() );
 
 		setBorderGap( 5 );
-		//setCurrentLineForeground( Color.RED );
 		setDigitAlignment( RIGHT );
 		setMinimumDisplayDigits( minimumDisplayDigits );
 
@@ -277,37 +275,6 @@ public class TextLine extends JPanel
 	}
 
 	/*
-	 *  We need to know if the caret is currently positioned on the line we
-	 *  are about to paint so the line number can be highlighted.
-	 */
-	private boolean isCurrentLine(int rowStartOffset)
-	{
-		int caretPosition = component.getCaretPosition();
-		Element root = component.getDocument().getDefaultRootElement();
-
-		if (root.getElementIndex( rowStartOffset ) == root.getElementIndex(caretPosition))
-			return true;
-		else
-			return false;
-	}
-
-	/*
-	 *	Get the line number to be drawn. The empty string will be returned
-	 *  when a line of text has wrapped.
-	 */
-	protected String getTextLineNumber(int rowStartOffset)
-	{
-		Element root = component.getDocument().getDefaultRootElement();
-		int index = root.getElementIndex( rowStartOffset );
-		Element line = root.getElement( index );
-
-		if (line.getStartOffset() == rowStartOffset)
-			return String.valueOf(index + 1);
-		else
-			return "";
-	}
-
-	/*
 	 *  Determine the X offset to properly align the line number when drawn
 	 */
 	private int getOffsetX(int availableWidth, int stringWidth)
@@ -315,58 +282,7 @@ public class TextLine extends JPanel
 		return (int)((availableWidth - stringWidth) * digitAlignment);
 	}
 
-	/*
-	 *  Determine the Y offset for the current row
-	 */
-	private int getOffsetY(int rowStartOffset, FontMetrics fontMetrics)
-		throws BadLocationException
-	{
-		//  Get the bounding rectangle of the row
-
-		Rectangle r = component.modelToView( rowStartOffset );
-		int lineHeight = fontMetrics.getHeight();
-		int y = r.y + r.height;
-		int descent = 0;
-
-		//  The text needs to be positioned above the bottom of the bounding
-		//  rectangle based on the descent of the font(s) contained on the row.
-
-		if (r.height == lineHeight)  // default font is being used
-		{
-			descent = fontMetrics.getDescent();
-		}
-		else  // We need to check all the attributes for font changes
-		{
-			if (fonts == null)
-				fonts = new HashMap<String, FontMetrics>();
-
-			Element root = component.getDocument().getDefaultRootElement();
-			int index = root.getElementIndex( rowStartOffset );
-			Element line = root.getElement( index );
-
-			for (int i = 0; i < line.getElementCount(); i++)
-			{
-				Element child = line.getElement(i);
-				AttributeSet as = child.getAttributes();
-				String fontFamily = (String)as.getAttribute(StyleConstants.FontFamily);
-				Integer fontSize = (Integer)as.getAttribute(StyleConstants.FontSize);
-				String key = fontFamily + fontSize;
-
-				FontMetrics fm = fonts.get( key );
-
-				if (fm == null)
-				{
-					Font font = new Font(fontFamily, Font.PLAIN, fontSize);
-					fm = component.getFontMetrics( font );
-					fonts.put(key, fm);
-				}
-
-				descent = Math.max(descent, fm.getDescent());
-			}
-		}
-
-		return y - descent;
-	}
+	
 
 //
 //  Implement CaretListener interface
