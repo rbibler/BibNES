@@ -1,11 +1,9 @@
 package com.bibler.awesome.bibnes.ui;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 
-import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -158,7 +156,7 @@ public class EmulatorStatusPanel extends JPanel {
 	}
 	
 	public void updateProgramCounter(int programCounterValue) {
-		this.programCounterValue.setText(StringUtils.intToHexString(programCounterValue));
+		this.programCounterValue.setText("" + programCounterValue);
 	}
 	
 	public void updateStackPointer(int stackPointerValue) {

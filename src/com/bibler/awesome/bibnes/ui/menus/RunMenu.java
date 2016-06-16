@@ -3,10 +3,12 @@ package com.bibler.awesome.bibnes.ui.menus;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.KeyStroke;
 
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
@@ -21,8 +23,11 @@ public class RunMenu extends JMenu implements Notifier {
 	private static final long serialVersionUID = -6995648999980272320L;
 	
 	private JMenuItem runItem;
+	private JMenuItem debugItem;
+	private JMenuItem stepItem;
 	private RunMenuActionListener actionListener = new RunMenuActionListener();
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
+	private MainFrame mainFrame;
 
 	public RunMenu(String menuName) {
 		super(menuName);
@@ -34,6 +39,17 @@ public class RunMenu extends JMenu implements Notifier {
 		add(runItem);
 		runItem.setActionCommand("RUN");
 		runItem.addActionListener(actionListener);
+		
+		debugItem = new JMenuItem("Debug");
+		add(debugItem);
+		debugItem.setActionCommand("DEBUG");
+		debugItem.addActionListener(actionListener);
+		
+		stepItem = new JMenuItem("Step");
+		add(stepItem);
+		stepItem.setActionCommand("STEP");
+		stepItem.addActionListener(actionListener);
+		stepItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
 	}
 	
 	public void registerObjectToNotify(MessageHandler handler) {
@@ -54,13 +70,23 @@ public class RunMenu extends JMenu implements Notifier {
 
 		@Override
 		public void actionPerformed(ActionEvent arg0) {
+			if(mainFrame == null) {
+				mainFrame = getParentFrame();
+			}
 			String command = arg0.getActionCommand();
 			switch(command) {
 			case "RUN":
-				MainFrame mainFrame = getParentFrame();
+				
 				if(mainFrame != null) {
 					mainFrame.runAssembler();
 				}
+				break;
+			case "STEP":
+				mainFrame.step();
+				break;
+			case "DEBUG":
+				mainFrame.debug();
+				break;
 			}
 			
 		}

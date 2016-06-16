@@ -21,6 +21,7 @@ public class MainFrame extends JFrame {
 	
 	private AssemblerMainPanel mainPanel;
 	private MessageHandler messageHandler = new MessageHandler();
+	private CPU cpu;
 	
 	public MainFrame() {
 		super();
@@ -46,16 +47,34 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void runAssembler() {
-		Assembler assembler = new Assembler();
-		messageHandler.registerObjectToNotify(assembler);
-		assembler.registerObjectToNotify(messageHandler);
-		Memory machineCode = assembler.passOne(mainPanel.getInputLines());
+		Memory machineCode = assemble();
 		CPU cpu = new CPU(machineCode);
 		cpu.registerObjectToNotify(messageHandler);
 		cpu.powerOn();
 		cpu.resetCPU();
 		cpu.run();
 	}
+
+	private Memory assemble() {
+		Assembler assembler = new Assembler();
+		messageHandler.registerObjectToNotify(assembler);
+		assembler.registerObjectToNotify(messageHandler);
+		Memory machineCode = assembler.passOne(mainPanel.getInputLines());
+		return machineCode;
+	}
+	
+	public void debug() {
+		Memory machineCode = assemble();
+		cpu = new CPU(machineCode);
+		cpu.registerObjectToNotify(messageHandler);
+		cpu.powerOn();
+	}
+	
+	public void step() {
+		cpu.step();
+	}
+	
+	
 	
 	
 

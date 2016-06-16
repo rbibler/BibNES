@@ -67,6 +67,12 @@ public class CPU implements Notifier {
 		t.start();
 	}
 	
+	public void step() {
+		do {
+			cycle();
+		} while(cyclesRemaining > 0);
+	}
+	
 	public void cycle() {
 		if(cyclesRemaining == 0) {
 			if(NMIFlag) {
@@ -74,6 +80,7 @@ public class CPU implements Notifier {
 				cyclesRemaining = 6;
 				instruction = NMI;
 			} else {
+				System.out.println("Fetch");
 				fetch();
 			}
 		} else {
@@ -92,8 +99,7 @@ public class CPU implements Notifier {
 	}
 	
 	public void powerOn() {
-		//programCounter = memorySpace.read(0xFFFC) | memorySpace.read(0xFFFD) << 8;
-		programCounter = memorySpace.read(0x1FFC) | memorySpace.read(0x1FFD) << 8;
+		programCounter = memorySpace.read(0xFFFC) | memorySpace.read(0xFFFD) << 8;
 		resetCPU();
 	}
 	
