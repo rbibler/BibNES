@@ -10,7 +10,9 @@ import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Memory;
+import com.bibler.awesome.bibnes.systems.Motherboard;
 import com.bibler.awesome.bibnes.ui.menus.MainFrameMenu;
+import com.bibler.awesome.bibnes.utils.NESProducer;
 
 public class MainFrame extends JFrame {
 
@@ -21,7 +23,7 @@ public class MainFrame extends JFrame {
 	
 	private AssemblerMainPanel mainPanel;
 	private MessageHandler messageHandler = new MessageHandler();
-	private CPU cpu;
+	private Motherboard board;
 	
 	public MainFrame() {
 		super();
@@ -42,13 +44,15 @@ public class MainFrame extends JFrame {
 		add(mainPanel, BorderLayout.CENTER);
 		setJMenuBar(new MainFrameMenu(messageHandler));
 		pack();
+		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setVisible(true);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 	
 	public void runAssembler() {
 		Memory machineCode = assemble();
-		CPU cpu = new CPU(machineCode);
+		CPU cpu = new CPU();
+		mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
 		cpu.registerObjectToNotify(messageHandler);
 		cpu.powerOn();
 		cpu.resetCPU();
@@ -65,13 +69,19 @@ public class MainFrame extends JFrame {
 	
 	public void debug() {
 		Memory machineCode = assemble();
-		cpu = new CPU(machineCode);
+		CPU cpu = new CPU();
 		cpu.registerObjectToNotify(messageHandler);
 		cpu.powerOn();
+		mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
+	}
+	
+	public void emulateNES() {
+		board = NESProducer.produceNES(mainPanel.getInputLines(), messageHandler);
+		board.power();
 	}
 	
 	public void step() {
-		cpu.step();
+		board.step();
 	}
 	
 	

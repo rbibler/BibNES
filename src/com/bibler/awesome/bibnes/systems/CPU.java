@@ -28,10 +28,8 @@ public class CPU implements Notifier {
 	private int programCounter;
 	private int stackPointer;
 	private int statusRegister;
-	
-	
-	//Memory map; contains ROM and RAM
-	private Memory memorySpace;
+
+	private Motherboard board;
 	
 	//Control variables
 	private int cyclesRemaining;
@@ -44,8 +42,12 @@ public class CPU implements Notifier {
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
-	public CPU(Memory memorySpace) {
-		this.memorySpace = memorySpace;
+	public CPU() {
+		
+	}
+	
+	public CPU(Motherboard board) {
+		this.board = board;
 	}
 	
 	public void registerObjectToNotify(Notifiable objectToNotify) {
@@ -66,13 +68,7 @@ public class CPU implements Notifier {
 		});
 		t.start();
 	}
-	
-	public void step() {
-		do {
-			cycle();
-		} while(cyclesRemaining > 0);
-	}
-	
+
 	public void cycle() {
 		if(cyclesRemaining == 0) {
 			if(NMIFlag) {
@@ -99,7 +95,7 @@ public class CPU implements Notifier {
 	}
 	
 	public void powerOn() {
-		programCounter = memorySpace.read(0xFFFC) | memorySpace.read(0xFFFD) << 8;
+		programCounter = board.read(0xFFFC) | board.read(0xFFFD) << 8;
 		resetCPU();
 	}
 	
@@ -164,6 +160,10 @@ public class CPU implements Notifier {
 		return totalCycles;
 	}
 	
+	public int getCyclesRemaining() {
+		return cyclesRemaining;
+	}
+	
 	public void clearStatusRegister() {
 		statusRegister = 0;
 	}
@@ -174,6 +174,14 @@ public class CPU implements Notifier {
 	
 	public void setNMI() {
 		NMIFlag = true;
+	}
+	
+	protected void writeMemory(int addressToWrite, int data) {
+		board.write(addressToWrite, data);
+	}
+	
+	protected int readMemory(int addressToRead) {
+		return board.read(addressToRead);
 	}
 	
 	private void execute() {
@@ -766,7 +774,7 @@ public class CPU implements Notifier {
 	
 	
 	private void fetch() {
-		instruction = memorySpace.read(programCounter++);
+		instruction = readMemory(programCounter++);
 		instructionCycles = instructionTimes[instruction];
 		cyclesRemaining += instructionCycles;
 	}
@@ -847,7 +855,7 @@ public class CPU implements Notifier {
 			statusRegister ^= (-((dataRegister >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(dataRegister == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 		} else if(cyclesRemaining == 1) {
-			memorySpace.write(dataCounter, dataRegister);
+			writeMemory(dataCounter, dataRegister);
 		}
 	}
 	
@@ -857,7 +865,7 @@ public class CPU implements Notifier {
 			statusRegister ^= (-((dataRegister >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(dataRegister == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 		} else if(cyclesRemaining == 1) {
-			memorySpace.write(dataCounter, dataRegister);
+			writeMemory(dataCounter, dataRegister);
 		}
 	}
 	
@@ -878,7 +886,7 @@ public class CPU implements Notifier {
 			if(instruction == 0x0A) {
 				accumulator = dataRegister;
 			} else {
-				memorySpace.write(dataCounter, dataRegister);
+				writeMemory(dataCounter, dataRegister);
 			}
 		}
 		
@@ -967,19 +975,19 @@ public class CPU implements Notifier {
 	
 	private void STA() {
 		if(cyclesRemaining == 1) {
-			memorySpace.write(dataCounter, accumulator);
+			writeMemory(dataCounter, accumulator);
 		}
 	}
 	
 	private void STX() {
 		if(cyclesRemaining == 1) {
-			memorySpace.write(dataCounter, indexX);
+			writeMemory(dataCounter, indexX);
 		}
 	}
 	
 	private void STY() {
 		if(cyclesRemaining == 1) {
-			memorySpace.write(dataCounter, indexY);
+			writeMemory(dataCounter, indexY);
 		}
 	}
 	
@@ -1073,7 +1081,7 @@ public class CPU implements Notifier {
 			if(instruction == 0x2A) {
 				accumulator = dataRegister;
 			} else {
-				memorySpace.write(dataCounter, dataRegister);
+				writeMemory(dataCounter, dataRegister);
 			}
 		}
 	}
@@ -1088,7 +1096,7 @@ public class CPU implements Notifier {
 			if(instruction == 0x6A) {
 				accumulator = dataRegister;
 			} else {
-				memorySpace.write(dataCounter, dataRegister);
+				writeMemory(dataCounter, dataRegister);
 			}
 		}
 	}
@@ -1101,7 +1109,7 @@ public class CPU implements Notifier {
 			if(instruction == 0x4A) {
 				accumulator = dataRegister;
 			} else {
-				memorySpace.write(dataCounter, dataRegister);
+				writeMemory(dataCounter, dataRegister);
 			}
 		}
 	}
@@ -1231,9 +1239,9 @@ public class CPU implements Notifier {
 	private void JSR() {
 		if(cyclesRemaining == 1) {
 			final int pcToPush = programCounter - 1;
-			memorySpace.write(0x100 | stackPointer, (pcToPush >> 8) & 0xFF);
+			writeMemory(0x100 | stackPointer, (pcToPush >> 8) & 0xFF);
 			stackPointer = (stackPointer - 1) & 0xFF;
-			memorySpace.write(0x100 | stackPointer, pcToPush & 0xFF);
+			writeMemory(0x100 | stackPointer, pcToPush & 0xFF);
 			stackPointer = (stackPointer - 1) & 0xFF;
 			programCounter = dataCounter;
 		}
@@ -1242,9 +1250,9 @@ public class CPU implements Notifier {
 	private void RTS() {
 		if(cyclesRemaining == 1) {
 			stackPointer = (stackPointer + 1) & 0xFF;
-			int newAddress = memorySpace.read(0x100 | stackPointer);
+			int newAddress = readMemory(0x100 | stackPointer);
 			stackPointer = (stackPointer + 1) & 0xFF;
-			newAddress |= memorySpace.read(0x100 | stackPointer) << 8;
+			newAddress |= readMemory(0x100 | stackPointer) << 8;
 			programCounter = newAddress + 1;
 		}
 	}
@@ -1252,25 +1260,25 @@ public class CPU implements Notifier {
 	private void RTI() {
 		if(cyclesRemaining == 1) {
 			stackPointer = (stackPointer + 1) & 0xFF;
-			statusRegister = memorySpace.read(0x100 | stackPointer);
+			statusRegister = readMemory(0x100 | stackPointer);
 			stackPointer = (stackPointer + 1) & 0xFF;
-			int newAddress = memorySpace.read(0x100 | stackPointer);
+			int newAddress = readMemory(0x100 | stackPointer);
 			stackPointer = (stackPointer + 1) & 0xFF;
-			newAddress |= memorySpace.read(0x100 | stackPointer) << 8;
+			newAddress |= readMemory(0x100 | stackPointer) << 8;
 			programCounter = newAddress;
 		}
 	}
 	
 	private void NMI() {
 		if(cyclesRemaining == 1) {
-			memorySpace.write(0x100 | stackPointer, (programCounter >> 8) & 0xFF);
+			writeMemory(0x100 | stackPointer, (programCounter >> 8) & 0xFF);
 			stackPointer = (stackPointer - 1) & 0xFF;
-			memorySpace.write(0x100 | stackPointer, programCounter & 0xFF);
+			writeMemory(0x100 | stackPointer, programCounter & 0xFF);
 			stackPointer = (stackPointer - 1) & 0xFF;
-			memorySpace.write(0x100 | stackPointer, statusRegister);
+			writeMemory(0x100 | stackPointer, statusRegister);
 			stackPointer = (stackPointer - 1) & 0xFF;
-			int lowByte = memorySpace.read(0xFFFA);
-			programCounter = lowByte | memorySpace.read(0xFFFB) << 8;
+			int lowByte = readMemory(0xFFFA);
+			programCounter = lowByte | board.read(0xFFFB) << 8;
 		}
 	}
 	/* 
@@ -1298,7 +1306,7 @@ public class CPU implements Notifier {
 	
 	private void PHA() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			memorySpace.write(0x100 | stackPointer, accumulator);
+			writeMemory(0x100 | stackPointer, accumulator);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			stackPointer = (stackPointer - 1) & 0xFF;
 		}
@@ -1308,7 +1316,7 @@ public class CPU implements Notifier {
 		if(cyclesRemaining == instructionCycles - 1) {
 			stackPointer = (stackPointer + 1) & 0xFF;
 		} else if(cyclesRemaining == instructionCycles - 2) {
-			dataRegister = memorySpace.read(0x100 | stackPointer);
+			dataRegister = readMemory(0x100 | stackPointer);
 		} else if(cyclesRemaining == instructionCycles - 3) {
 			accumulator = dataRegister;
 		}
@@ -1316,7 +1324,7 @@ public class CPU implements Notifier {
 	
 	private void PHP() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			memorySpace.write(0x100 | stackPointer, statusRegister);
+			writeMemory(0x100 | stackPointer, statusRegister);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			stackPointer = (stackPointer - 1) & 0xFF;
 		}
@@ -1326,7 +1334,7 @@ public class CPU implements Notifier {
 		if(cyclesRemaining == instructionCycles - 1) {
 			stackPointer = (stackPointer + 1) & 0xFF;
 		} else if(cyclesRemaining == instructionCycles - 2) {
-			dataRegister = memorySpace.read(0x100 | stackPointer);
+			dataRegister = readMemory(0x100 | stackPointer);
 		} else if(cyclesRemaining == instructionCycles - 3) {
 			statusRegister = dataRegister;
 		}
@@ -1342,55 +1350,55 @@ public class CPU implements Notifier {
 	private void immediate() {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = programCounter++;
-			dataRegister = memorySpace.read(dataCounter);
+			dataRegister = readMemory(dataCounter);
 		}
 	}
 
 	
 	private void relative() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataRegister = memorySpace.read(programCounter++);
+			dataRegister = readMemory(programCounter++);
 		}
 	}
 	
 	private void absolute() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataCounter = memorySpace.read(programCounter++);
+			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
-			dataCounter |= memorySpace.read(programCounter++) << 8;
+			dataCounter |= readMemory(programCounter++) << 8;
 		} else if(cyclesRemaining == instructionCycles - 3) {
-			dataRegister = memorySpace.read(dataCounter);
+			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
 	private void zeroPage() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataCounter = memorySpace.read(programCounter++);
+			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
-			dataRegister = memorySpace.read(dataCounter);
+			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
 	private void indirect() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataCounter = memorySpace.read(programCounter++);
+			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
-			dataCounter |= memorySpace.read(programCounter++) << 8;
+			dataCounter |= readMemory(programCounter++) << 8;
 		} else if(cyclesRemaining == instructionCycles - 3) {
-			dataRegister = memorySpace.read(dataCounter);
+			dataRegister = readMemory(dataCounter);
 			int nextAddress = dataCounter + 1;
 			if((nextAddress & 0xFF00) != (dataCounter & 0xFF00)) {
 				nextAddress &= dataCounter;
 			}
-			dataCounter = dataRegister | (memorySpace.read(nextAddress) << 8);
+			dataCounter = dataRegister | (readMemory(nextAddress) << 8);
 		}
 	}
 	
 	private void absoluteIndexedX() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataCounter = memorySpace.read(programCounter++);
+			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
-			dataCounter |= memorySpace.read(programCounter++) << 8;
+			dataCounter |= readMemory(programCounter++) << 8;
 		} else if(cyclesRemaining == instructionCycles - 3) {
 			if((dataCounter + indexX & 0xFF00) != (dataCounter & 0xFF00) && !pageBoundaryFlag && instruction != 0x1E) {
 				cyclesRemaining++;
@@ -1398,7 +1406,7 @@ public class CPU implements Notifier {
 			} else {
 				pageBoundaryFlag = false;
 				dataCounter = dataCounter + indexX;
-				dataRegister = memorySpace.read(dataCounter);
+				dataRegister = readMemory(dataCounter);
 			}
 		}
 		
@@ -1406,9 +1414,9 @@ public class CPU implements Notifier {
 	
 	private void absoluteIndexedY() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataCounter = memorySpace.read(programCounter++);
+			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
-			dataCounter |= memorySpace.read(programCounter++) << 8;
+			dataCounter |= readMemory(programCounter++) << 8;
 		} else if(cyclesRemaining == instructionCycles - 3) {
 			if((dataCounter + indexY & 0xFF00) != (dataCounter & 0xFF00) && !pageBoundaryFlag) {
 				cyclesRemaining++;
@@ -1416,52 +1424,52 @@ public class CPU implements Notifier {
 			} else {
 				pageBoundaryFlag = false;
 				dataCounter = dataCounter + indexY;
-				dataRegister = memorySpace.read(dataCounter);
+				dataRegister = readMemory(dataCounter);
 			}
 		}
 	}
 	
 	private void zeroPageIndexed() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataCounter = memorySpace.read(programCounter++);
+			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			dataCounter = (dataCounter + indexX) & 0xFF;
 		} else if(cyclesRemaining == instructionCycles - 3) {
-			dataRegister = memorySpace.read(dataCounter);
+			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
 	private void zeroPageIndexedY() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataCounter = memorySpace.read(programCounter++);
+			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			dataCounter = (dataCounter + indexY) & 0xFF;
 		} else if(cyclesRemaining == instructionCycles - 3) {
-			dataRegister = memorySpace.read(dataCounter);
+			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
 	private void indexedIndirect() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataCounter = memorySpace.read(programCounter++);
+			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			dataRegister = (dataCounter + indexX) & 0xFF;
 		} else if(cyclesRemaining == instructionCycles - 3) {
-			dataCounter = memorySpace.read(dataRegister);
+			dataCounter = readMemory(dataRegister);
 		} else if(cyclesRemaining == instructionCycles - 4) {
-			dataCounter |= memorySpace.read(dataRegister + 1) << 8;
+			dataCounter |= readMemory(dataRegister + 1) << 8;
 		} else if(cyclesRemaining == instructionCycles - 5) {
-			dataRegister = memorySpace.read(dataCounter);
+			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
 	private void indirectIndexed() {
 		if(cyclesRemaining == instructionCycles - 1) {
-			dataRegister = memorySpace.read(programCounter++);
+			dataRegister = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
-			dataCounter = memorySpace.read(dataRegister);
+			dataCounter = readMemory(dataRegister);
 		} else if(cyclesRemaining == instructionCycles - 3) {
-			dataCounter |= memorySpace.read(dataRegister + 1) << 8;
+			dataCounter |= readMemory(dataRegister + 1) << 8;
 		} else if(cyclesRemaining == instructionCycles - 4) {
 			if((dataCounter + indexY & 0xFF00) != (dataCounter & 0xFF00) && !pageBoundaryFlag) {
 				cyclesRemaining++;
@@ -1469,7 +1477,7 @@ public class CPU implements Notifier {
 			} else {
 				pageBoundaryFlag = false;
 				dataCounter = dataCounter + indexY;
-				dataRegister = memorySpace.read(dataCounter);
+				dataRegister = readMemory(dataCounter);
 			}
 		}
 	}

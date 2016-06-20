@@ -61,5 +61,29 @@ public class MessageBox extends JPanel {
 			e.printStackTrace();
 		}
 	}
+	
+	public void writeNewStringToBox(String stringToWrite, int offset, boolean replace) {
+		int stringLength = stringToWrite.length();
+		if(stringLength == 0) {
+			stringLength = 1;
+		}
+		int docLength = doc.getLength();
+		if(replace && offset < docLength) {
+			try {
+				doc.remove(offset, stringLength);
+			} catch (BadLocationException e) { e.printStackTrace(); }
+		} 
+		try {
+			doc.insertString(offset, stringToWrite, attributeSet);
+		} catch (BadLocationException e) { e.printStackTrace(); }
+	}
+	
+	public int getCaretPos() {
+		return messageArea.getCaretPosition();
+	}
+	
+	public int getLength() {
+		return doc.getLength();
+	}
 
 }

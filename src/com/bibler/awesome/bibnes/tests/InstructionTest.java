@@ -1,5 +1,6 @@
 package com.bibler.awesome.bibnes.tests;
 
+import com.bibler.awesome.bibnes.systems.NESBus;
 import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Memory;
 
@@ -20,7 +21,8 @@ public class InstructionTest extends TestCase {
 	
 	protected void initializeCPU() {
 		initializeRom();
-		cpu = new CPU(rom);
+		cpu = new CPU();
+		NESBus bus = new NESBus();
 	}
 	
 	private void initializeRom() {

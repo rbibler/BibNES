@@ -25,6 +25,7 @@ public class RunMenu extends JMenu implements Notifier {
 	private JMenuItem runItem;
 	private JMenuItem debugItem;
 	private JMenuItem stepItem;
+	private JMenuItem emulateItem;
 	private RunMenuActionListener actionListener = new RunMenuActionListener();
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private MainFrame mainFrame;
@@ -44,6 +45,11 @@ public class RunMenu extends JMenu implements Notifier {
 		add(debugItem);
 		debugItem.setActionCommand("DEBUG");
 		debugItem.addActionListener(actionListener);
+		
+		emulateItem = new JMenuItem("Emulate");
+		add(emulateItem);
+		emulateItem.setActionCommand("EMULATE");
+		emulateItem.addActionListener(actionListener);
 		
 		stepItem = new JMenuItem("Step");
 		add(stepItem);
@@ -86,6 +92,9 @@ public class RunMenu extends JMenu implements Notifier {
 				break;
 			case "DEBUG":
 				mainFrame.debug();
+				break;
+			case "EMULATE":
+				mainFrame.emulateNES();
 				break;
 			}
 			

@@ -1,8 +1,11 @@
 package com.bibler.awesome.bibnes.ui;
 
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Toolkit;
 
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
@@ -12,6 +15,7 @@ import com.bibler.awesome.bibnes.assembler.ErrorHandler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.systems.CPU;
+import com.bibler.awesome.bibnes.systems.Memory;
 
 public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	
@@ -35,13 +39,16 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	private void initialize() {
 		inputStatusPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		inputOutputPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-		inputPanel = new AssemblerInputPanel(600,600);
-		outputPanel = new AssemblerOutputPanel(600,200);
+		LookAndFeel currentLF = setupLookAndFeel();
+		inputPanel = new AssemblerInputPanel(900,600);
+		inputPanel.applyLookAndFeel(currentLF);
+		outputPanel = new AssemblerOutputPanel(900,200);
 		emulatorPanel = new EmulatorPanel(200, 600);
 		projectPanel = new ProjectPanel(200, 600);
 		inputStatusPane.add(inputPanel);
 		inputStatusPane.add(emulatorPanel);
-		inputStatusPane.setDividerLocation(600);
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		inputStatusPane.setDividerLocation((int) (screenSize.getWidth() * .7));
 		inputOutputPane.add(inputStatusPane);
 		inputOutputPane.add(outputPanel);
 		inputOutputPane.setDividerLocation(600);
@@ -51,8 +58,20 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		setDividerLocation(200);
 	}
 	
+	private LookAndFeel setupLookAndFeel() {
+		LookAndFeel retLF = new LookAndFeel();
+		retLF.setBackgroundColor(Color.WHITE);
+		retLF.setCurrentFont(new Font("COURIER", Font.PLAIN, 14));
+		retLF.setStandardTextColor(Color.BLACK);
+		return retLF;
+	}
+	
 	public String[] getInputLines() {
 		return inputPanel.getInputLines();
+	}
+	
+	public EmulatorPanel getEmulatorPanel() {
+		return emulatorPanel;
 	}
 
 	@Override
@@ -65,12 +84,9 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			}
 		} else if(notifier instanceof ErrorHandler) {
 			outputPanel.registerError(message);
-		} else if(notifier instanceof CPU) {
-			emulatorPanel.sendMessageToEmulator(message, notifier);
+		} else if(notifier instanceof CPU || notifier instanceof Memory) {
+			emulatorPanel.sendMessageToEmulator(message, notifier);	
 		}
-		
-		
-		
 	}
 
 }

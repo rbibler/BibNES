@@ -3,10 +3,15 @@ package com.bibler.awesome.bibnes.systems;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
-public class Memory {
+import com.bibler.awesome.bibnes.communications.Notifiable;
+import com.bibler.awesome.bibnes.communications.Notifier;
+
+public class Memory implements Notifier {
 	
 	private int[] memoryArray;
+	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
 	private int size;
 	
@@ -15,15 +20,19 @@ public class Memory {
 		memoryArray = new int[size];
 	}
 	
+	public void registerObject(Notifiable objectToNotify) {
+		if(!objectsToNotify.contains(objectToNotify)) {
+			objectsToNotify.add(objectToNotify);
+		}
+	}
+	
 	public int read(int addressToRead) {
 		return memoryArray[addressToRead % size];
 	}
 	
 	public void write(int addressToWrite, int data) {
-		if(addressToWrite == 0x71) {
-			System.out.println("here");
-		}
 		memoryArray[addressToWrite % size] = data & 0xFF;
+		notify("MEM" + (addressToWrite % size) + "," + data);
 	}
 	
 	public int size() {
@@ -44,6 +53,13 @@ public class Memory {
 					stream.close();
 				} catch(IOException e) {}
 			}
+		}
+	}
+
+	@Override
+	public void notify(String messageToSend) {
+		for(Notifiable notifiable : objectsToNotify) {
+			notifiable.takeNotice(messageToSend, this);
 		}
 	}
 

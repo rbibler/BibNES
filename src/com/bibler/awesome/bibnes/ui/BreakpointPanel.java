@@ -38,6 +38,11 @@ public class BreakpointPanel extends EditorLineWatcher {
 		repaint();
 	}
 	
+	public Integer[] getBreakPoints() {
+		Integer[] returnArray = new Integer[breakpointLines.size()];
+		return breakpointLines.toArray(returnArray);
+	}
+	
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);

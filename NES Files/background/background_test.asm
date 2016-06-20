@@ -1,14 +1,5 @@
-  .inesprg 1   ; 1x 16KB PRG code
-  .ineschr 1   ; 1x  8KB CHR data
-  .inesmap 0   ; mapper 0 = NROM, no bank swapping
-  .inesmir 1   ; background mirroring
-  
-
-;;;;;;;;;;;;;;;
-
-    
   .bank 0
-  .org $C000 
+  .org $8000 
 RESET:
   SEI          ; disable IRQs
   CLD          ; disable decimal mode
@@ -20,10 +11,6 @@ RESET:
   STX $2000    ; disable NMI
   STX $2001    ; disable rendering
   STX $4010    ; disable DMC IRQs
-
-vblankwait1:       ; First wait for vblank to make sure PPU is ready
-  BIT $2002
-  BPL vblankwait1
 
 clrmem:
   LDA #$00
@@ -38,10 +25,7 @@ clrmem:
   STA $0300, x
   INX
   BNE clrmem
-   
-vblankwait2:      ; Second wait for vblank, PPU is ready after this
-  BIT $2002
-  BPL vblankwait2
+
 
 
   LDA #%10000000   ;intensify blues
@@ -59,11 +43,12 @@ NMI:
   
   
   
-  .bank 1
+  .bank 3
   .org $FFFA     ;first of the three vectors starts here
   .dw NMI        ;when an NMI happens (once per frame if enabled) the 
                    ;processor will jump to the label NMI:
   .dw RESET      ;when the processor first turns on or is reset, it will jump
                    ;to the label RESET:
   .dw 0          ;external interrupt IRQ is not used in this tutorial
+  
   

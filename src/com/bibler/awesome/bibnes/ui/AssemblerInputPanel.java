@@ -17,11 +17,18 @@ public class AssemblerInputPanel extends JPanel {
 	private JScrollPane scrollPane;
 	private EditorLeftPanel editorLeftPanel;
 	private JPanel mainPanel;
+	private LookAndFeel currentLookAndFeel;
 	
 	public AssemblerInputPanel(int width, int height) {
 		super();
 		setPreferredSize(new Dimension(width, height));
 		initialize(width, height);
+	}
+	
+	public void applyLookAndFeel(LookAndFeel lookAndFeel) {
+		this.currentLookAndFeel = lookAndFeel;
+		inputArea.setBackground(currentLookAndFeel.getBackgroundColor());
+		inputArea.setFont(currentLookAndFeel.getCurrentFont());
 	}
 	
 	private void initialize(int width, int height) {
