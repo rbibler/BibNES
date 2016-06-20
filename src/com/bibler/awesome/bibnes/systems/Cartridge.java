@@ -18,6 +18,10 @@ public class Cartridge {
 		return null;
 	}
 	
+	public Memory getPrgMem() {
+		return PRGRom;
+	}
+	
 	public void writePrg(int addressToWrite, int data) {
 		PRGRom.write(addressToWrite, data);
 	}

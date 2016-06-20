@@ -13,7 +13,7 @@ RESET:
   STX $4010    ; disable DMC IRQs
 
 clrmem:
-  LDA #$00
+  LDA #$BA
   STA $0000, x
   STA $0100, x
   STA $0200, x

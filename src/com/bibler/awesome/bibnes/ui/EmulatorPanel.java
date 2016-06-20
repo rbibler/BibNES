@@ -6,6 +6,8 @@ import java.awt.Dimension;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
+import com.bibler.awesome.bibnes.systems.NES;
+
 public class EmulatorPanel extends JPanel {
 
 	/**
@@ -38,6 +40,8 @@ public class EmulatorPanel extends JPanel {
 			statusPanel.handleMessage(message, notifier);
 		} else if(message.startsWith("MEM")) {
 			hexPane.parseMemUpdate(message.substring(3));
+		} else if(message.equalsIgnoreCase("FILL_CPU_MEM")) {
+			hexPane.fillInValues(((NES) notifier).getCPUMem());
 		}
 	}
 

@@ -16,6 +16,7 @@ import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Memory;
+import com.bibler.awesome.bibnes.systems.NES;
 
 public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	
@@ -84,7 +85,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			}
 		} else if(notifier instanceof ErrorHandler) {
 			outputPanel.registerError(message);
-		} else if(notifier instanceof CPU || notifier instanceof Memory) {
+		} else if(notifier instanceof CPU || notifier instanceof Memory || notifier instanceof NES) {
 			emulatorPanel.sendMessageToEmulator(message, notifier);	
 		}
 	}

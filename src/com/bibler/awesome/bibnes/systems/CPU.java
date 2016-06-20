@@ -76,7 +76,6 @@ public class CPU implements Notifier {
 				cyclesRemaining = 6;
 				instruction = NMI;
 			} else {
-				System.out.println("Fetch");
 				fetch();
 			}
 		} else {

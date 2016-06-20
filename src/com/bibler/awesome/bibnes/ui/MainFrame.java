@@ -78,6 +78,7 @@ public class MainFrame extends JFrame {
 	public void emulateNES() {
 		board = NESProducer.produceNES(mainPanel.getInputLines(), messageHandler);
 		board.power();
+		board.runSystem();
 	}
 	
 	public void step() {

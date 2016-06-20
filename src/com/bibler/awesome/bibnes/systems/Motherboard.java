@@ -28,6 +28,12 @@ public class Motherboard {
 		cpu.powerOn();
 	}
 	
+	public void runSystem() {}
+	
+	public void pause() {}
+	
+	public void resume() {}
+	
 	
 
 }

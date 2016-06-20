@@ -1,16 +1,25 @@
 package com.bibler.awesome.bibnes.systems;
 
-import com.bibler.awesome.bibnes.communications.Notifiable;
+import java.util.ArrayList;
 
-public class NES extends Motherboard{
+import com.bibler.awesome.bibnes.communications.Notifiable;
+import com.bibler.awesome.bibnes.communications.Notifier;
+
+public class NES extends Motherboard implements Notifier, Runnable {
 	
 	private PPU ppu;
 	private APU apu;
 	private Memory cpuRam;
 	private Memory ppuRam;
+	private Memory cpuMem;
 	private Cartridge cart;
 	
 	private int cycleCount;
+	private boolean running;
+	private boolean pause;
+	private Object pauseLock = new Object();
+	
+	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
 	public NES() {
 		cpu = new CPU(this);
@@ -22,12 +31,46 @@ public class NES extends Motherboard{
 	@Override
 	public void registerObjectToNotify(Notifiable objectToNotify) {
 		cpu.registerObjectToNotify(objectToNotify);
-		cpuRam.registerObject(objectToNotify);
+		if(!objectsToNotify.contains(objectToNotify)) {
+			objectsToNotify.add(objectToNotify);
+		}
 	}
 	
 	public void setCart(Cartridge cart) {
 		this.cart = cart;
+		setupCPUMem();
 	}
+	
+	private void setupCPUMem() {
+		Memory prgMem = cart.getPrgMem();
+		cpuMem = new Memory(0x8000 + prgMem.size());
+		for(int i = 0; i < cpuRam.size(); i++) {
+			cpuMem.write(i, cpuRam.read(i));
+		}
+		for(int i = 0; i < prgMem.size(); i++) {
+			cpuMem.write(0x8000 + i, prgMem.read(i));
+		}
+		notify("FILL_CPU_MEM");
+	}
+	
+	public Memory getCPUMem() {
+		return cpuMem;
+	}
+	
+	@Override
+	public void runSystem() {
+		Thread t = new Thread(this);
+		pause();
+		running = true;
+		t.start();
+		resume();
+	}
+	
+	@Override
+	public void pause() {}
+	
+	@Override
+	public void resume() {}
 	
 	@Override
 	public void cycle() {
@@ -51,6 +94,7 @@ public class NES extends Motherboard{
 	
 	public void writeToRam(int addressToWrite, int data) {
 		cpuRam.write(addressToWrite, data);
+		notify("MEM" + addressToWrite + "," + data);
 	}
 	
 	public void writeToPPU(int addressToWrite, int data) {
@@ -63,6 +107,7 @@ public class NES extends Motherboard{
 	
 	public void writeToCart(int addressToWrite, int data) {
 		cart.writePrg(addressToWrite, data);
+		notify("MEM" + addressToWrite + "," + data);
 	}
 	
 	public int readFromRam(int addressToRead) {
@@ -108,7 +153,21 @@ public class NES extends Motherboard{
 		}
 		return retVal;
 	}
-	
-	
 
+	@Override
+	public void notify(String messageToSend) {
+		for(Notifiable notifiable : objectsToNotify) {
+			notifiable.takeNotice(messageToSend, this);
+		}		
+	}
+
+	@Override
+	public void run() {
+		while(running) {
+			cycle();
+		}
+		
+	}
+	
+	
 }
