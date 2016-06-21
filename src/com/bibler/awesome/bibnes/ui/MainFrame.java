@@ -7,6 +7,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
+import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Memory;
@@ -24,6 +25,7 @@ public class MainFrame extends JFrame {
 	private AssemblerMainPanel mainPanel;
 	private MessageHandler messageHandler = new MessageHandler();
 	private Motherboard board;
+	private BreakpointManager bpManager;
 	
 	public MainFrame() {
 		super();
@@ -38,8 +40,8 @@ public class MainFrame extends JFrame {
             UIManager.getSystemLookAndFeelClassName());
 		} 
 		catch (UnsupportedLookAndFeelException | ClassNotFoundException  | InstantiationException | IllegalAccessException e) {}
-		
-		mainPanel = new AssemblerMainPanel(messageHandler);
+		bpManager = new BreakpointManager();
+		mainPanel = new AssemblerMainPanel(messageHandler, bpManager);
 		setLayout(new BorderLayout());
 		add(mainPanel, BorderLayout.CENTER);
 		setJMenuBar(new MainFrameMenu(messageHandler));
@@ -75,10 +77,12 @@ public class MainFrame extends JFrame {
 		mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
 	}
 	
-	public void emulateNES() {
+	public void emulateNES(boolean debug) {
 		board = NESProducer.produceNES(mainPanel.getInputLines(), messageHandler);
 		board.power();
-		board.runSystem();
+		if(!debug) {
+			board.runSystem();
+		}
 	}
 	
 	public void step() {

@@ -25,7 +25,7 @@ public class Motherboard {
 	}
 	
 	public void power() {
-		cpu.powerOn();
+		
 	}
 	
 	public void runSystem() {}

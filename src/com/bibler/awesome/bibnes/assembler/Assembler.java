@@ -110,9 +110,6 @@ public class Assembler implements Notifiable, Notifier{
 		lineCount = 0;
 		String line;
 		for(int i = 0; i < linesToAssemble.length; i++) {
-			if(i == 735) {
-				System.out.println("Weird");
-			}
 			line = linesToAssemble[i];
 			if(line != null && !line.trim().isEmpty()) {
 				parseLine(line);
@@ -145,7 +142,7 @@ public class Assembler implements Notifiable, Notifier{
 	 * 
 	 * @param lineToParse
 	 */
-	public void parseLine(String lineToParse) {
+	public boolean parseLine(String lineToParse) {
 		int errorCode = -1;
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
 		errorCode = processLabel(lineToParse);
@@ -155,7 +152,7 @@ public class Assembler implements Notifiable, Notifier{
 			errorHandler.handleError(tmp, lineCount, errorCode);
 		}
 		if(tmp.length() == 0) {
-			return;
+			return false;
 		}
 		errorCode = processDirective(tmp); 
 		if(errorCode != -1 && tmp.charAt(0) == '.') {
@@ -166,9 +163,12 @@ public class Assembler implements Notifiable, Notifier{
 			String lineAndLocation = StringUtils.intToPaddedString(lineCount, 6, DigitUtils.DECIMAL).toUpperCase();
 			lineAndLocation += " " + StringUtils.intToPaddedString(locationCounter, 4, DigitUtils.HEX).toUpperCase() + " ";
 			lineAndLocation += currentLine.toString();
-			listing[lineCount] = StringUtils.insertStringAtIndex(26, lineToParse, lineAndLocation);
+			if(listing != null) {
+				listing[lineCount] = StringUtils.insertStringAtIndex(26, lineToParse, lineAndLocation);
+			}
 			currentLine.delete(0, currentLine.length());
 		}
+		return errorCode == -1;
 	}
 	
 	public boolean confirmFirstCharEmpty(String line) {

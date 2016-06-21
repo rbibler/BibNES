@@ -9,6 +9,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.Utilities;
 
+import com.bibler.awesome.bibnes.assembler.BreakpointManager;
+
 public class BreakpointPanel extends EditorLineWatcher {
 
 	/**
@@ -16,24 +18,37 @@ public class BreakpointPanel extends EditorLineWatcher {
 	 */
 	private static final long serialVersionUID = -1924689578563818796L;
 	private ArrayList<Integer> breakpointLines = new ArrayList<Integer>();
+	private BreakpointManager bpManager;
 
 	public BreakpointPanel(JTextComponent component) {
 		super(component);
 		// TODO Auto-generated constructor stub
 	}
 	
+	public void setBreakpointManager(BreakpointManager bpManager) {
+		this.bpManager = bpManager;
+	}
+	
 	public void updateBreakpoints(int yOffset) {
-		int line = 0;
+		int lineNum = 0;
+		String line = "";
+		int rowStart = 0;
+		int rowEnd = 0;
 		try {
-			line = getLineNumber(Utilities.getRowStart(component, component.viewToModel(new Point(0, yOffset))));
+			rowStart = Utilities.getRowStart(component, component.viewToModel(new Point(0, yOffset)));
+			rowEnd = Utilities.getRowEnd(component, component.viewToModel(new Point(0, yOffset)));
+			line = component.getText(rowStart, rowEnd - rowStart);
+			lineNum = getLineNumber(rowStart);
 		} catch (BadLocationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if(!breakpointLines.contains(line)) {
-			breakpointLines.add(line);
+		if(!breakpointLines.contains(lineNum)) {
+			if(bpManager.verifyLineAndAdd(line, lineNum)) {
+				breakpointLines.add(lineNum);
+			}
 		} else {
-			breakpointLines.remove(breakpointLines.indexOf(line));
+			breakpointLines.remove(breakpointLines.indexOf(lineNum));
+			bpManager.removeBreakpoint(lineNum);
 		}
 		repaint();
 	}

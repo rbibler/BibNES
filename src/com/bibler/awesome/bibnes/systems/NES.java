@@ -23,9 +23,15 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public NES() {
 		cpu = new CPU(this);
-		ppu = new PPU();
+		ppu = new PPU(this);
 		apu = new APU();
 		cpuRam = new Memory(0x800);
+	}
+	
+	@Override
+	public void power() {
+		cpu.powerOn();
+		ppu.reset();
 	}
 	
 	@Override
@@ -74,7 +80,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	@Override
 	public void cycle() {
-		//ppu.cycle();
+		ppu.cycle();
 		if(cycleCount % 3 == 0) {
 			cpu.cycle();
 		}
@@ -89,7 +95,6 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		cycle();
 		cycle();
 		cycle();
-		System.out.println("Stepped");
 	}
 	
 	public void writeToRam(int addressToWrite, int data) {
@@ -124,6 +129,10 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public int readFromCart(int addressToRead) {
 		return cart.readPrg(addressToRead);
+	}
+	
+	public void NMI() {
+		cpu.setNMI();
 	}
 	
 	@Override

@@ -12,6 +12,10 @@ RESET:
   STX $2001    ; disable rendering
   STX $4010    ; disable DMC IRQs
 
+vblankwait1:       ; First wait for vblank to make sure PPU is ready
+  BIT $2002
+  BPL vblankwait1
+
 clrmem:
   LDA #$BA
   STA $0000, x
@@ -26,10 +30,16 @@ clrmem:
   INX
   BNE clrmem
 
+vblankwait2:      ; Second wait for vblank, PPU is ready after this
+  BIT $2002
+  BPL vblankwait2
 
+  LDA #$ 80
+  STA $2000
 
   LDA #%10000000   ;intensify blues
   STA $2001
+  
 
 Forever:
   JMP Forever     ;jump back to Forever, infinite loop
@@ -37,6 +47,10 @@ Forever:
  
 
 NMI:
+  LDA $401
+  TAX
+  DEX
+  STX $401
   RTI
  
 ;;;;;;;;;;;;;;  

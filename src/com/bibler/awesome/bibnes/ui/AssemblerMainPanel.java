@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
+import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 import com.bibler.awesome.bibnes.assembler.ErrorHandler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
@@ -31,17 +32,17 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	private JSplitPane inputStatusPane;
 	private JSplitPane inputOutputPane;
 	
-	public AssemblerMainPanel(MessageHandler handler) {
+	public AssemblerMainPanel(MessageHandler handler, BreakpointManager bpManager) {
 		super(JSplitPane.HORIZONTAL_SPLIT);
 		handler.registerObjectToNotify(this);
-		initialize();
+		initialize(bpManager);
 	}
 	
-	private void initialize() {
+	private void initialize(BreakpointManager bpManager) {
 		inputStatusPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		inputOutputPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		LookAndFeel currentLF = setupLookAndFeel();
-		inputPanel = new AssemblerInputPanel(900,600);
+		inputPanel = new AssemblerInputPanel(900,600, bpManager);
 		inputPanel.applyLookAndFeel(currentLF);
 		outputPanel = new AssemblerOutputPanel(900,200);
 		emulatorPanel = new EmulatorPanel(200, 600);

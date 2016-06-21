@@ -4,14 +4,31 @@ import java.util.ArrayList;
 
 public class BreakpointManager {
 	
-	ArrayList<Integer> breakPoints = new ArrayList<Integer>();
+	ArrayList<Integer> breakpoints = new ArrayList<Integer>();
 	
-	public void addBreakPoint(int breakPointLocation) {
-		breakPoints.add(breakPointLocation);
+	Assembler assembler = new Assembler();
+	
+	public void addBreakPoint(int breakpointLocation) {
+		if(!breakpoints.contains(breakpointLocation)) {
+			breakpoints.add(breakpointLocation);
+		}
+	}
+	
+	public void removeBreakpoint(int breakpointLocation) {
+		breakpoints.remove(breakpoints.indexOf(breakpointLocation));
 	}
 	
 	public boolean checkForBreakPoint(int currentLocation) {
-		return breakPoints.contains(currentLocation);
+		return breakpoints.contains(currentLocation);
+	}
+	
+	public boolean verifyLineAndAdd(String line, int lineNum) {
+		boolean verify = false;
+		verify = assembler.parseLine(line);
+		if(verify) {
+			addBreakPoint(lineNum);
+		}
+		return verify;
 	}
 
 }

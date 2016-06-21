@@ -10,6 +10,8 @@ import javax.swing.JPanel;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.Utilities;
 
+import com.bibler.awesome.bibnes.assembler.BreakpointManager;
+
 public class EditorLeftPanel extends JPanel implements MouseListener {
 
 	
@@ -21,12 +23,13 @@ public class EditorLeftPanel extends JPanel implements MouseListener {
 	private BreakpointPanel breakpointPanel;
 	private TextLine textLinePanel;
 
-	public EditorLeftPanel(JTextComponent component, int height) {
-		initialize(component, height);
+	public EditorLeftPanel(JTextComponent component, int height, BreakpointManager bpManager) {
+		initialize(component, height, bpManager);
 	}
 	
-	private void initialize(JTextComponent component, int height) {
+	private void initialize(JTextComponent component, int height, BreakpointManager bpManager) {
 		breakpointPanel = new BreakpointPanel(component);
+		breakpointPanel.setBreakpointManager(bpManager);
 		breakpointPanel.setMaximumSize(new Dimension(20, 8000));
 		breakpointPanel.setPreferredSize(new Dimension(20, height - 5));
 		breakpointPanel.setMinimumSize(new Dimension(20, 20));

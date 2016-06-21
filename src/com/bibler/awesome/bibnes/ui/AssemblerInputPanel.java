@@ -6,6 +6,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 
+import com.bibler.awesome.bibnes.assembler.BreakpointManager;
+
 public class AssemblerInputPanel extends JPanel {
 
 	/**
@@ -19,10 +21,10 @@ public class AssemblerInputPanel extends JPanel {
 	private JPanel mainPanel;
 	private LookAndFeel currentLookAndFeel;
 	
-	public AssemblerInputPanel(int width, int height) {
+	public AssemblerInputPanel(int width, int height, BreakpointManager bpManager) {
 		super();
 		setPreferredSize(new Dimension(width, height));
-		initialize(width, height);
+		initialize(width, height, bpManager);
 	}
 	
 	public void applyLookAndFeel(LookAndFeel lookAndFeel) {
@@ -31,10 +33,10 @@ public class AssemblerInputPanel extends JPanel {
 		inputArea.setFont(currentLookAndFeel.getCurrentFont());
 	}
 	
-	private void initialize(int width, int height) {
+	private void initialize(int width, int height, BreakpointManager bpManager) {
 		setLayout(new BorderLayout());
 		inputArea = new JTextPane();
-	    editorLeftPanel = new EditorLeftPanel(inputArea, height);
+	    editorLeftPanel = new EditorLeftPanel(inputArea, height, bpManager);
 		
 		mainPanel = new JPanel();
 		mainPanel.setLayout(new BorderLayout());
