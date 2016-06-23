@@ -25,9 +25,8 @@ public class PPU {
 	private int v;
 	private int t;
 	private int x;
-	
-	private boolean ppuAddressLatch;
-	
+	private int w;
+		
 	private NES nes;
 	
 	public PPU(NES nes) {
@@ -96,18 +95,30 @@ public class PPU {
 	}
 	
 	private void writePPUScroll(int data) {
-		if(ppuAddressLatch) {
+		if(w == 1) {
 			ppuScroll |= (data & 0xFF);
+			t = (t & ~0b111001111100000) 
+					| ((data & 7) << 12) 
+					| ((data & 0x38) << 2) 
+					| ((data & 0xC0) << 2);
+			w = 0;
 		} else {
 			ppuScroll |= (data << 8);
-			t = (t & ~0x1F) | (data & 0x1F);
+			t = (t & ~0x1F) | ((data >> 3) & 0x1F);
+			x = data & 0x7;
+			w = 1;
 		}
-		ppuAddressLatch = !ppuAddressLatch;
 	}
 	
 	private void writePPUAddr(int data) {
-		if(ppuAddressLatch) {
+		if(w == 1) {
 			ppuAddr |= (data & 0xFF);
+			t = (t & ~0xFF) | ((data & 0xFF));
+			v  = t;
+			w = 0;
+		} else {
+			t = (t & ~0xFF00) | ((data & 0x3F) << 8);
+			w = 1;
 		}
 	}
 	
@@ -120,6 +131,14 @@ public class PPU {
 	
 	public int getT() {
 		return t;
+	}
+	
+	public int getV() {
+		return v;
+	}
+	
+	public int getX() {
+		return x;
 	}
 
 	private void updateCycleAndScanLine() {
