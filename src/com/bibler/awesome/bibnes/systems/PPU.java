@@ -22,6 +22,10 @@ public class PPU {
 	private int ppuData;
 	private int oamDMA;
 	
+	private int v;
+	private int t;
+	private int x;
+	
 	private boolean ppuAddressLatch;
 	
 	private NES nes;
@@ -36,7 +40,7 @@ public class PPU {
 	
 	
 	public void write(int addressToWrite, int data) {
-		switch(addressToWrite % REGISTER_ADDRESS_WIDTH) {
+		switch(addressToWrite % (0x2000)) {
 		case 0:
 			writePPUCtrl(data);
 			break;
@@ -72,6 +76,7 @@ public class PPU {
 	}
 	
 	private void writePPUCtrl(int data) {
+		t = (t & ~3) | ((data & 3) << 10);
 		ppuCtrl = data;
 	}
 	
@@ -95,6 +100,7 @@ public class PPU {
 			ppuScroll |= (data & 0xFF);
 		} else {
 			ppuScroll |= (data << 8);
+			t = (t & ~0x1F) | (data & 0x1F);
 		}
 		ppuAddressLatch = !ppuAddressLatch;
 	}
@@ -110,6 +116,10 @@ public class PPU {
 	public void cycle() {
 		updateCycleAndScanLine();
 		checkForVBlankAndNMI();
+	}
+	
+	public int getT() {
+		return t;
 	}
 
 	private void updateCycleAndScanLine() {
