@@ -223,4 +223,4 @@ attribute:
   
   .bank 2
   .org $0000
-  .incbin "C:/Users/Ryan/Documents/repos/BibNES/NESFiles/sprites/mario.chr"   ;includes 8KB graphics file from SMB1
+  .incbin "C:/Users/rbibl/Documents/repos/BibNES/NESFiles/background/mario.chr"   ;includes 8KB graphics file from SMB1

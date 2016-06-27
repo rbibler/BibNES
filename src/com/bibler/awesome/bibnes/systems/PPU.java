@@ -398,17 +398,24 @@ public class PPU implements Notifier {
 		int lowBg;
 		int highBg;
 		int ntByte;
+		int atByte;
+		int fineY;
 		for(int i = 0; i < frameArray.length; i++) {
 			row = (i / 256) / 8;
 			col = i % 256 / 8;
 			ntByte = nes.ppuBusRead(0x2000 + (row * 32) + col);
-			row = (ntByte / 32);
-			col = ntByte % 32;
-			address = (bgTileLocation  << 0xC) | (row << 8) | (col << 4) | ((i / 256) % 8) & 7; 
+			row = (ntByte / 16);
+			col = ntByte % 16;
+			fineY = ((i / 256) % 8);
+			address = (bgTileLocation  << 0xC) | (row << 8) | (col << 4) | fineY & 7; 
 			lowBg = nes.ppuBusRead(address);
-			address = (bgTileLocation << 0xC) | (row << 8) | (col << 4) | (1 << 3) | ((i / 256) % 8) & 7;
+			address = (bgTileLocation << 0xC) | (row << 8) | (col << 4) | (1 << 3) | fineY & 7;
 			highBg = nes.ppuBusRead(address);
-			pixel = 1 << 2 | ((highBg >> (7 - (i % 8)) & 1) << 1 | (lowBg >> (7 -(i % 8)) & 1));
+			row = (i / 256) / 32;
+			col = (i % 256) / 32;
+			atByte = nes.ppuBusRead(0x23C0 + (row * 8) + col);
+			System.out.println("ATBYTE: " + Integer.toBinaryString(atByte));
+			pixel = (atByte & 3) << 2 | ((highBg >> (7 - (i % 8)) & 1) << 1 | (lowBg >> (7 -(i % 8)) & 1));
 			frameArray[i] = NESPalette.getPixel(pixel);
 		}
 	}
