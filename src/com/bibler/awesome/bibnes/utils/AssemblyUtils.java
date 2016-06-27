@@ -42,6 +42,7 @@ public class AssemblyUtils {
 	public final static int INES_CHR = 15;
 	public final static int INES_MAP = 16;
 	public final static int INES_MIRROR = 17;
+	public final static int CHR_ZONE = 18;
 	
 	public final static int DEFAULT_BANK_SIZE = 0x2000;
 	

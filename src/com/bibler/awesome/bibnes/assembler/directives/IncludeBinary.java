@@ -20,10 +20,10 @@ public class IncludeBinary extends Directive {
 			byte[] fileBytes = FileUtils.readFile(f);
 			for(Byte fileByte : fileBytes) {
 				assembler.writeCurrentLocationAndBank(fileByte);
-				if(assembler.checkForLocationOverflow()) {
-					errorCode = ErrorHandler.OVERFLOW;
-					break;
-				}
+				//if(assembler.checkForLocationOverflow()) {
+					//errorCode = ErrorHandler.OVERFLOW;
+					//break;
+				//}
 			}
 		} else {
 			errorCode = ErrorHandler.FILE_NOT_FOUND;

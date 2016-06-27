@@ -17,7 +17,8 @@ public class EmulatorPanel extends JPanel {
 	
 	private EmulatorStatusPanel statusPanel;
 	private JTabbedPane tabPane;
-	private HexPane hexPane;
+	private HexPane cpuPane;
+	private HexPane ppuPane;
 	
 	public EmulatorPanel(int width, int height) {
 		super();
@@ -25,23 +26,29 @@ public class EmulatorPanel extends JPanel {
 		tabPane = new JTabbedPane();
 		statusPanel = new EmulatorStatusPanel();
 		tabPane.add("Status", statusPanel);
-		hexPane = new HexPane();
-		tabPane.add("Memory", hexPane);
+		cpuPane = new HexPane();
+		tabPane.add("CPU Memory", cpuPane);
+		ppuPane = new HexPane();
+		tabPane.add("PPU Memory", ppuPane);
 		setLayout(new BorderLayout());
 		add(tabPane, BorderLayout.CENTER);
 	}
 	
 	public HexPane getHexPane() {
-		return hexPane;
+		return cpuPane;
 	}
 	
 	public void sendMessageToEmulator(String message, Object notifier) {
 		if(message.startsWith("STEP")) {
 			statusPanel.handleMessage(message, notifier);
-		} else if(message.startsWith("MEM")) {
-			hexPane.parseMemUpdate(message.substring(3));
+		} else if(message.startsWith("CPUMEM")) {
+			cpuPane.parseMemUpdate(message.substring(6));
 		} else if(message.equalsIgnoreCase("FILL_CPU_MEM")) {
-			hexPane.fillInValues(((NES) notifier).getCPUMem());
+			cpuPane.fillInValues(((NES) notifier).getCPUMem());
+		} else if(message.startsWith("PPUMEM")) {
+			ppuPane.parseMemUpdate(message.substring(6));
+		} else if(message.equalsIgnoreCase("FILL_PPU_MEM")) {
+			ppuPane.fillInValues(((NES) notifier).getPPUMem());
 		}
 	}
 

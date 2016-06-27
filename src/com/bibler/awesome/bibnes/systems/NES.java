@@ -12,6 +12,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private Memory cpuRam;
 	private Memory ppuRam;
 	private Memory cpuMem;
+	private Memory ppuMem;
 	private Cartridge cart;
 	
 	private int cycleCount;
@@ -26,6 +27,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		ppu = new PPU(this);
 		apu = new APU();
 		cpuRam = new Memory(0x800);
+		ppuRam = new Memory(0x800);
 	}
 	
 	@Override
@@ -37,6 +39,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	@Override
 	public void registerObjectToNotify(Notifiable objectToNotify) {
 		cpu.registerObjectToNotify(objectToNotify);
+		ppu.registerObjectToNotify(objectToNotify);
 		if(!objectsToNotify.contains(objectToNotify)) {
 			objectsToNotify.add(objectToNotify);
 		}
@@ -45,6 +48,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	public void setCart(Cartridge cart) {
 		this.cart = cart;
 		setupCPUMem();
+		setupPPUMem();
 	}
 	
 	private void setupCPUMem() {
@@ -59,8 +63,26 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		notify("FILL_CPU_MEM");
 	}
 	
+	private void setupPPUMem() {
+		Memory chrMem = cart.getChrMem();
+		int chrSize = chrMem.size();
+		ppuMem = new Memory(0x4000);
+		for(int i = 0; i < chrMem.size(); i++) {
+			ppuMem.write(i, chrMem.read(i));
+		}
+		for(int i = 0; i < ppuRam.size(); i++) {
+			ppuMem.write(i + chrSize, ppuRam.read(i));
+		}
+		
+		notify("FILL_PPU_MEM");
+	}
+	
 	public Memory getCPUMem() {
 		return cpuMem;
+	}
+	
+	public Memory getPPUMem() {
+		return ppuMem;
 	}
 	
 	@Override
@@ -104,6 +126,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public void writeToPPU(int addressToWrite, int data) {
 		ppu.write(addressToWrite, data);
+		
 	}
 	
 	public void writeToAPU(int addressToWrite, int data) {
@@ -112,7 +135,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public void writeToCart(int addressToWrite, int data) {
 		cart.writePrg(addressToWrite, data);
-		notify("MEM" + addressToWrite + "," + data);
+		notify("CPUMEM" + addressToWrite + "," + data);
 	}
 	
 	public int readFromRam(int addressToRead) {
@@ -133,6 +156,29 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public void NMI() {
 		cpu.setNMI();
+	}
+	
+	public void ppuBusWrite(int addressToWrite, int data) {
+		if(addressToWrite < 0x2000) {
+			cart.writeCHR(addressToWrite, data);
+		} else if(addressToWrite < 0x3F00) {
+			ppuRam.write(addressToWrite % 0x2000, data);
+		} else if(addressToWrite < 0x4000) {
+			ppu.writePalette(addressToWrite, data);
+		}
+		notify("PPUMEM" + addressToWrite + "," + data);
+	}
+	
+	public int ppuBusRead(int addressToRead) {
+		int ret = 0;
+		if(addressToRead < 0x2000) {
+			ret = cart.readCHR(addressToRead);
+		} else if(addressToRead < 0x3F00) {
+			ret = ppuRam.read(addressToRead % 0x2000);
+		} else if(addressToRead < 0x4000) {
+			ret = ppu.readPalette(addressToRead);
+		}
+		return ret;
 	}
 	
 	@Override

@@ -54,6 +54,7 @@ public class Assembler implements Notifiable, Notifier{
 	private String[] linesToAssemble;
 	
 	private boolean  secondPass;
+	private boolean inesDirective;
 
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
@@ -71,7 +72,7 @@ public class Assembler implements Notifiable, Notifier{
 	public Assembler() {
 		currentBank = 0;
 		bankSize = AssemblyUtils.DEFAULT_BANK_SIZE;
-		setByteSize(0x8000);
+		setByteSize(0x10000);
 		fillDirectives();
 		errorHandler = new ErrorHandler();
 	}
@@ -143,6 +144,7 @@ public class Assembler implements Notifiable, Notifier{
 	 * @param lineToParse
 	 */
 	public boolean parseLine(String lineToParse) {
+		inesDirective = false;
 		int errorCode = -1;
 		String tmp = StringUtils.trimWhiteSpace(lineToParse);
 		errorCode = processLabel(lineToParse);
@@ -155,7 +157,7 @@ public class Assembler implements Notifiable, Notifier{
 			return false;
 		}
 		errorCode = processDirective(tmp); 
-		if(errorCode != -1 && tmp.charAt(0) == '.') {
+		if(errorCode != -1 && tmp.charAt(0) == '.' && !inesDirective) {
 			errorHandler.handleError(tmp, lineCount, errorCode);
 		}
 		errorCode = processOpCode(tmp);
@@ -210,6 +212,7 @@ public class Assembler implements Notifiable, Notifier{
 		int returnCode = -1;
 		String directive = checkDirectives(directiveToProcess);
 		if(directive != null) {
+			inesDirective = directive.contains("INES");
 			returnCode = processDirective(AssemblyUtils.getDirective(directive), 
 					directiveToProcess.substring(directiveToProcess.toUpperCase().indexOf(directive) + directive.length()));
 		} else {
@@ -220,11 +223,11 @@ public class Assembler implements Notifiable, Notifier{
 	}
 	
 	
-	String checkDirectives(String lineToCheck) {
+	public String checkDirectives(String lineToCheck) {
 		return AssemblyUtils.findDirective(lineToCheck);
 	}
 	
-	int processDirective(int directive, String line) {
+	public int processDirective(int directive, String line) {
 		return directives[directive].processDirective(line);
 	}
 	

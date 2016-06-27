@@ -189,15 +189,15 @@ public class CPU implements Notifier {
 				BRK();
 				break;
 			case 0x01:
-				indexedIndirect();
+				indexedIndirect(true);
 				ORA();
 				break;
 			case 0x05:
-				zeroPage();
+				zeroPage(true);
 				ORA();
 				break;
 			case 0x06:
-				zeroPage();
+				zeroPage(true);
 				ASL();
 				break;
 			case 0x08:
@@ -212,11 +212,11 @@ public class CPU implements Notifier {
 				ASL();
 				break;
 			case 0x0D:
-				absolute();
+				absolute(true);
 				ORA();
 				break;
 			case 0x0E:
-				absolute();
+				absolute(true);
 				ASL();
 				break;
 			case 0x10:
@@ -224,50 +224,50 @@ public class CPU implements Notifier {
 				BPL();
 				break;
 			case 0x11:
-				indirectIndexed();
+				indirectIndexed(true);
 				ORA();
 				break;
 			case 0x15:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				ORA();
 				break;
 			case 0x16:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				ASL();
 				break;
 			case 0x18:
 				CLC();
 				break;
 			case 0x19:
-				absoluteIndexedY();
+				absoluteIndexedY(true);
 				ORA();
 				break;
 			case 0x1D:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				ORA();
 				break;
 			case 0x1E:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				ASL();
 				break;
 			case 0x20:
-				absolute();
+				absolute(false);
 				JSR();
 				break;
 			case 0x21:									// AND Indexed Indirect
-				indexedIndirect();
+				indexedIndirect(true);
 				AND();
 				break;
 			case 0x24:									// BIT Zero Page
-				zeroPage();
+				zeroPage(true);
 				BIT();
 				break;
 			case 0x25:									
-				zeroPage();
+				zeroPage(true);
 				AND();
 				break;
 			case 0x26:
-				zeroPage();
+				zeroPage(true);
 				ROL();
 				break;
 			case 0x28:
@@ -282,15 +282,15 @@ public class CPU implements Notifier {
 				ROL();
 				break;
 			case 0x2C:
-				absolute();
+				absolute(true);
 				BIT();
 				break;
 			case 0x2D:
-				absolute();
+				absolute(true);
 				AND();
 				break;
 			case 0x2E:
-				absolute();
+				absolute(true);
 				ROL();
 				break;
 			case 0x30:
@@ -298,45 +298,45 @@ public class CPU implements Notifier {
 				BMI();
 				break;
 			case 0x31:
-				indirectIndexed();
+				indirectIndexed(true);
 				AND();
 				break;
 			case 0x35:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				AND();
 				break;
 			case 0x36:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				ROL();
 				break;
 			case 0x38:
 				SEC();
 				break;
 			case 0x39:
-				absoluteIndexedY();
+				absoluteIndexedY(true);
 				AND();
 				break;
 			case 0x3D:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				AND();
 				break;
 			case 0x3E:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				ROL();
 				break;
 			case 0x40:
 				RTI();
 				break;
 			case 0x41:
-				indexedIndirect();
+				indexedIndirect(true);
 				EOR();
 				break;
 			case 0x45:
-				zeroPage();
+				zeroPage(true);
 				EOR();
 				break;
 			case 0x46:
-				zeroPage();
+				zeroPage(true);
 				LSR();
 				break;
 			case 0x48:
@@ -351,15 +351,15 @@ public class CPU implements Notifier {
 				LSR();
 				break;
 			case 0x4C:
-				absolute();
+				absolute(true);
 				JMP();
 				break;
 			case 0x4D:
-				absolute();
+				absolute(true);
 				EOR();
 				break;
 			case 0x4E:
-				absolute();
+				absolute(true);
 				LSR();
 				break;
 			case 0x50:
@@ -367,45 +367,45 @@ public class CPU implements Notifier {
 				BVC();
 				break;
 			case 0x51:
-				indirectIndexed();
+				indirectIndexed(true);
 				EOR();
 				break;
 			case 0x55:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				EOR();
 				break;
 			case 0x56:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				LSR();
 				break;
 			case 0x58:
 				CLI();
 				break;
 			case 0x59:
-				absoluteIndexedY();
+				absoluteIndexedY(true);
 				EOR();
 				break;
 			case 0x5D:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				EOR();
 				break;
 			case 0x5E:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				LSR();
 				break;
 			case 0x60:
 				RTS();
 				break;
 			case 0x61:
-				indexedIndirect();
+				indexedIndirect(true);
 				ADC();
 				break;
 			case 0x65:
-				zeroPage();
+				zeroPage(true);
 				ADC();
 				break;
 			case 0x66:
-				zeroPage();
+				zeroPage(true);
 				ROR();
 				break;
 			case 0x68:
@@ -424,11 +424,11 @@ public class CPU implements Notifier {
 				JMP();
 				break;
 			case 0x6D:
-				absolute();
+				absolute(true);
 				ADC();
 				break;
 			case 0x6E:
-				absolute();
+				absolute(true);
 				ROR();
 				break;
 			case 0x70:
@@ -436,46 +436,46 @@ public class CPU implements Notifier {
 				BVS();
 				break;
 			case 0x71:
-				indirectIndexed();
+				indirectIndexed(true);
 				ADC();
 				break;
 			case 0x75:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				ADC();
 				break;
 			case 0x76:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				ROR();
 				break;
 			case 0x78:
 				SEI();
 				break;
 			case 0x79:
-				absoluteIndexedY();
+				absoluteIndexedY(true);
 				ADC();
 				break;
 			case 0x7D:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				ADC();
 				break;
 			case 0x7E:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				ROR();
 				break;
 			case 0x81:
-				indexedIndirect();
+				indexedIndirect(false);
 				STA();
 				break;
 			case 0x84:
-				zeroPage();
+				zeroPage(false);
 				STY();
 				break;
 			case 0x85:
-				zeroPage();
+				zeroPage(false);
 				STA();
 				break;
 			case 0x86:
-				zeroPage();
+				zeroPage(false);
 				STX();
 				break;
 			case 0x88:
@@ -485,15 +485,15 @@ public class CPU implements Notifier {
 				TXA();
 				break;
 			case 0x8C:
-				absolute();
+				absolute(false);
 				STY();
 				break;
 			case 0x8D:
-				absolute();
+				absolute(false);
 				STA();
 				break;
 			case 0x8E:
-				absolute();
+				absolute(false);
 				STX();
 				break;
 			case 0x90:
@@ -501,33 +501,33 @@ public class CPU implements Notifier {
 				BCC();
 				break;
 			case 0x91:
-				indirectIndexed();
+				indirectIndexed(false);
 				STA();
 				break;
 			case 0x94:
-				zeroPageIndexed();
+				zeroPageIndexed(false);
 				STY();
 				break;
 			case 0x95:
-				zeroPageIndexed();
+				zeroPageIndexed(false);
 				STA();
 				break;
 			case 0x96:
-				zeroPageIndexedY();
+				zeroPageIndexedY(false);
 				STX();
 				break;
 			case 0x98:
 				TYA();
 				break;
 			case 0x99:
-				absoluteIndexedY();
+				absoluteIndexedY(false);
 				STA();
 				break;
 			case 0x9A:
 				TXS();
 				break;
 			case 0x9D:
-				absoluteIndexedX();
+				absoluteIndexedX(false);
 				STA();
 				break;
 			case 0xA0:
@@ -535,7 +535,7 @@ public class CPU implements Notifier {
 				LDY();
 				break;
 			case 0xA1:
-				indexedIndirect();
+				indexedIndirect(true);
 				LDA();
 				break;
 			case 0xA2:
@@ -543,15 +543,15 @@ public class CPU implements Notifier {
 				LDX();
 				break;
 			case 0xA4:
-				zeroPage();
+				zeroPage(true);
 				LDY();
 				break;
 			case 0xA5:									// LDA Zero Page
-				zeroPage();
+				zeroPage(true);
 				LDA();
 				break;
 			case 0xA6:
-				zeroPage();
+				zeroPage(true);
 				LDX();
 				break;
 			case 0xA8:
@@ -565,15 +565,15 @@ public class CPU implements Notifier {
 				TAX();
 				break;
 			case 0xAC:
-				absolute();
+				absolute(true);
 				LDY();
 				break;
 			case 0xAD:									// LDA Absolute
-				absolute();
+				absolute(true);
 				LDA();
 				break;
 			case 0xAE:
-				absolute();
+				absolute(true);
 				LDX();
 				break;
 			case 0xB0:
@@ -581,41 +581,41 @@ public class CPU implements Notifier {
 				BCS();
 				break;
 			case 0xB1:
-				indirectIndexed();
+				indirectIndexed(true);
 				LDA();
 				break;
 			case 0xB4:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				LDY();
 				break;
 			case 0xB5:									// LDA Zero Page X
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				LDA();
 				break;
 			case 0xB6:
-				zeroPageIndexedY();
+				zeroPageIndexedY(true);
 				LDX();
 				break;
 			case 0xB8:
 				CLV();
 				break;
 			case 0xB9:									// LDA Absolute Y
-				absoluteIndexedY();
+				absoluteIndexedY(true);
 				LDA();
 				break;
 			case 0xBA:
 				TSX();
 				break;
 			case 0xBC:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				LDY();
 				break;
 			case 0xBD:									// LDA Absolute X
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				LDA();
 				break;
 			case 0xBE:
-				absoluteIndexedY();
+				absoluteIndexedY(true);
 				LDX();
 				break;
 			case 0xC0:
@@ -623,19 +623,19 @@ public class CPU implements Notifier {
 				CPY();
 				break;
 			case 0xC1:
-				indexedIndirect();
+				indexedIndirect(true);
 				CMP();
 				break;
 			case 0xC4:
-				zeroPage();
+				zeroPage(true);
 				CPY();
 				break;
 			case 0xC5:
-				zeroPage();
+				zeroPage(true);
 				CMP();
 				break;
 			case 0xC6:
-				zeroPage();
+				zeroPage(true);
 				DEC();
 				break;
 			case 0xC8:
@@ -649,15 +649,15 @@ public class CPU implements Notifier {
 				DEX();
 				break;
 			case 0xCC:
-				absolute();
+				absolute(true);
 				CPY();
 				break;
 			case 0xCD:
-				absolute();
+				absolute(true);
 				CMP();
 				break;
 			case 0xCE:
-				absolute();
+				absolute(true);
 				DEC();
 				break;
 			case 0xD0:
@@ -665,30 +665,30 @@ public class CPU implements Notifier {
 				BNE();
 				break;
 			case 0xD1:
-				indirectIndexed();
+				indirectIndexed(true);
 				CMP();
 				break;
 			case 0xD5:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				CMP();
 				break;
 			case 0xD6:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				DEC();
 				break;
 			case 0xD8:
 				CLD();
 				break;
 			case 0xD9:
-				absoluteIndexedY();
+				absoluteIndexedY(true);
 				CMP();
 				break;
 			case 0xDD:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				CMP();
 				break;
 			case 0xDE:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				DEC();
 				break;
 			case 0xE0:
@@ -696,19 +696,19 @@ public class CPU implements Notifier {
 				CPX();
 				break;
 			case 0xE1:
-				indexedIndirect();
+				indexedIndirect(true);
 				SBC();
 				break;
 			case 0xE4:
-				zeroPage();
+				zeroPage(true);
 				CPX();
 				break;
 			case 0xE5:
-				zeroPage();
+				zeroPage(true);
 				SBC();
 				break;
 			case 0xE6:
-				zeroPage();
+				zeroPage(true);
 				INC();
 				break;
 			case 0xE8:
@@ -722,15 +722,15 @@ public class CPU implements Notifier {
 				NOP();
 				break;
 			case 0xEC:
-				absolute();
+				absolute(true);
 				CPX();
 				break;
 			case 0xED:
-				absolute();
+				absolute(true);
 				SBC();
 				break;
 			case 0xEE:
-				absolute();
+				absolute(true);
 				INC();
 				break;
 			case 0xF0:
@@ -738,30 +738,30 @@ public class CPU implements Notifier {
 				BEQ();
 				break;
 			case 0xF1:
-				indirectIndexed();
+				indirectIndexed(true);
 				SBC();
 				break;
 			case 0xF5:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				SBC();
 				break;
 			case 0xF6:
-				zeroPageIndexed();
+				zeroPageIndexed(true);
 				INC();
 				break;
 			case 0xF8:
 				SED();
 				break;
 			case 0xF9:
-				absoluteIndexedY();
+				absoluteIndexedY(true);
 				SBC();
 				break;
 			case 0xFD:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				SBC();
 				break;
 			case 0xFE:
-				absoluteIndexedX();
+				absoluteIndexedX(true);
 				INC();
 				break;
 			case NMI:
@@ -1205,9 +1205,7 @@ public class CPU implements Notifier {
 				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
 					cyclesRemaining -= 1;
 				}
-				System.out.println("Branch Taken: BNE");
 			} else {
-				System.out.println("Branch Not Taken: BNE");
 				cyclesRemaining -= 2;
 			}
 		}
@@ -1221,9 +1219,7 @@ public class CPU implements Notifier {
 				if((programCounter & 0xFF00) == (postBranchPC & 0xFF00)) {
 					cyclesRemaining -= 1;
 				}
-				System.out.println("Branch Taken: BEQ");
 			} else {
-				System.out.println("Branch NOT Taken: BEQ");
 				cyclesRemaining -= 2;
 			}
 		}
@@ -1360,20 +1356,20 @@ public class CPU implements Notifier {
 		}
 	}
 	
-	private void absolute() {
+	private void absolute(boolean read) {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			dataCounter |= readMemory(programCounter++) << 8;
-		} else if(cyclesRemaining == instructionCycles - 3) {
+		} else if(cyclesRemaining == instructionCycles - 3 && read) {
 			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
-	private void zeroPage() {
+	private void zeroPage(boolean read) {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = readMemory(programCounter++);
-		} else if(cyclesRemaining == instructionCycles - 2) {
+		} else if(cyclesRemaining == instructionCycles - 2 && read) {
 			dataRegister = readMemory(dataCounter);
 		}
 	}
@@ -1393,7 +1389,7 @@ public class CPU implements Notifier {
 		}
 	}
 	
-	private void absoluteIndexedX() {
+	private void absoluteIndexedX(boolean read) {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
@@ -1405,13 +1401,15 @@ public class CPU implements Notifier {
 			} else {
 				pageBoundaryFlag = false;
 				dataCounter = dataCounter + indexX;
-				dataRegister = readMemory(dataCounter);
+				if(read) {
+					dataRegister = readMemory(dataCounter);
+				}
 			}
 		}
 		
 	}
 	
-	private void absoluteIndexedY() {
+	private void absoluteIndexedY(boolean read) {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
@@ -1423,32 +1421,34 @@ public class CPU implements Notifier {
 			} else {
 				pageBoundaryFlag = false;
 				dataCounter = dataCounter + indexY;
-				dataRegister = readMemory(dataCounter);
+				if(read) {
+					dataRegister = readMemory(dataCounter);
+				}
 			}
 		}
 	}
 	
-	private void zeroPageIndexed() {
+	private void zeroPageIndexed(boolean read) {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			dataCounter = (dataCounter + indexX) & 0xFF;
-		} else if(cyclesRemaining == instructionCycles - 3) {
+		} else if(cyclesRemaining == instructionCycles - 3 && read) {
 			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
-	private void zeroPageIndexedY() {
+	private void zeroPageIndexedY(boolean read) {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			dataCounter = (dataCounter + indexY) & 0xFF;
-		} else if(cyclesRemaining == instructionCycles - 3) {
+		} else if(cyclesRemaining == instructionCycles - 3 && read) {
 			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
-	private void indexedIndirect() {
+	private void indexedIndirect(boolean read) {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataCounter = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
@@ -1457,12 +1457,12 @@ public class CPU implements Notifier {
 			dataCounter = readMemory(dataRegister);
 		} else if(cyclesRemaining == instructionCycles - 4) {
 			dataCounter |= readMemory(dataRegister + 1) << 8;
-		} else if(cyclesRemaining == instructionCycles - 5) {
+		} else if(cyclesRemaining == instructionCycles - 5 && read) {
 			dataRegister = readMemory(dataCounter);
 		}
 	}
 	
-	private void indirectIndexed() {
+	private void indirectIndexed(boolean read) {
 		if(cyclesRemaining == instructionCycles - 1) {
 			dataRegister = readMemory(programCounter++);
 		} else if(cyclesRemaining == instructionCycles - 2) {
@@ -1476,7 +1476,9 @@ public class CPU implements Notifier {
 			} else {
 				pageBoundaryFlag = false;
 				dataCounter = dataCounter + indexY;
-				dataRegister = readMemory(dataCounter);
+				if(read) {
+					dataRegister = readMemory(dataCounter);
+				}
 			}
 		}
 	}
