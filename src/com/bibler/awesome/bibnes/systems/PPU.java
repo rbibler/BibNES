@@ -49,14 +49,12 @@ public class PPU implements Notifier {
 	private int bgShiftTwo;
 	private int paletteShiftOne;
 	private int paletteShiftTwo;
+	private int paletteLatchOne;
+	private int paletteLatchTwo;
 	
 	
 	private int vInc;
 	private int bgTileLocation;
-	
-	private boolean rendering;
-	private boolean bgOn;
-	private boolean spritesOn;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private BufferedWriter writer;
@@ -142,8 +140,6 @@ public class PPU implements Notifier {
 	
 	private void writePPUMask(int data) {
 		ppuMask = data;
-		bgOn = ((data >> 3 & 1) != 0);
-        spritesOn = ((data >> 4 & 1) != 0);
 	}
 	
 	private void writePPUStatus(int data) {}
@@ -215,7 +211,7 @@ public class PPU implements Notifier {
 	}
 	
 	private void incrementV() {
-		if(!rendering) {
+		if(!rendering()) {
 			v += vInc;
 			log("Increment v Not Rendering:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 		} else {
@@ -225,7 +221,6 @@ public class PPU implements Notifier {
 	}
 	
 	public void cycle() {
-		rendering = scanline < 240 && (ppuMask >> 3 & 3) > 0;
 		//rendering = (ppuMask >> 3 & 3) > 0;
 		renderPixel();
 		updateCycleAndScanLine();
@@ -251,12 +246,12 @@ public class PPU implements Notifier {
 		 //cycle based ppu stuff will go here
         if (scanline < 240 || scanline == (LINES_PER_FRAME - 1)) {
             //on all rendering lines
-            if (renderingOn()
+            if (rendering()
                     && ((cycle >= 1 && cycle <= 256)
                     || (cycle >= 321 && cycle <= 336))) {
                 //fetch background tiles, load shift registers
                 processVisibleScanlinePixel();
-            } else if (cycle == 257 && renderingOn()) {
+            } else if (cycle == 257 && rendering()) {
                 //x scroll reset
                 //horizontal bits of loopyV = loopyT
                 v &= ~0x41f;
@@ -266,16 +261,16 @@ public class PPU implements Notifier {
                 //clear the oam address from pxls 257-341 continuously
                 oamAddr = 0;
             }
-            if ((cycle == 340) && renderingOn()) {
+            if ((cycle == 340) && rendering()) {
                 //read the same nametable byte twice
                 //this signals the MMC5 to increment the scanline counter
                 fetchNTByte();
                 fetchNTByte();
             }
-            if (cycle == 65 && renderingOn()) {
+            if (cycle == 65 && rendering()) {
                 //oamstart = oamaddr;
             }
-            if (cycle == 260 && renderingOn()) {
+            if (cycle == 260 && rendering()) {
                 //evaluate sprites for NEXT scanline (as long as either background or sprites are enabled)
                 //this does in fact happen on scanine 261 but it doesn't do anything useful
                 //it's cycle 260 because that's when the first important sprite byte is read
@@ -288,7 +283,7 @@ public class PPU implements Notifier {
                     //vblankflag = false;
                     //sprite0hit = false;
                     //spriteoverflow = false;
-                } else if (cycle >= 280 && cycle <= 304 && renderingOn()) {
+                } else if (cycle >= 280 && cycle <= 304 && rendering()) {
                     //loopyV = (all of)loopyT for each of these cycles
                     v = t;
                 }
@@ -297,7 +292,7 @@ public class PPU implements Notifier {
             //handle vblank on / off
            // vblankflag = true;
         }
-        if (!renderingOn() || (scanline > 240 && scanline < (LINES_PER_FRAME - 1))) {
+        if (!rendering() || (scanline > 240 && scanline < (LINES_PER_FRAME - 1))) {
             //HACK ALERT
             //handle the case of MMC3 mapper watching A12 toggle
             //even when read or write aren't asserted on the bus
@@ -313,6 +308,8 @@ public class PPU implements Notifier {
 	}
 	
 	private void processVisibleScanlinePixel() {
+		paletteShiftOne |= ((atByte >> 1) & 1);
+        paletteShiftTwo |= (atByte & 1);
 		int cycleMod = cycle % 8; 
 		switch(cycleMod) {
 		case 2:
@@ -349,8 +346,11 @@ public class PPU implements Notifier {
 	}
 	
 	public void fetchATByte() {
-		atByte = 0x23C0 | (v & 0xC00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07);
-		atByte = nes.ppuBusRead(atByte);
+		//atByte = 0x23C0 | (v & 0xC00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07);
+		//atByte = nes.ppuBusRead(atByte);
+		atByte = getAttribute(((v & 0xc00) + 0x23c0),
+                (v) & 0x1f,
+                (((v) & 0x3e0) >> 5));
 	}
 	
 	public void fetchLowBGByte() {
@@ -416,13 +416,24 @@ public class PPU implements Notifier {
 	}
 	
 	private void renderPixelToScreen() {
-		//int offset = (scanline * 256) + cycle;
-		int offset = (scanline << 8) + (cycle);
+		int offset = (scanline * 256) + cycle;
 		int pixel = 0;
 		int fineX = x;
+		//pixel = (paletteShiftOne >> (7 - fineX) & 1) << 3 | (paletteShiftTwo >> (7 - fineX & 1)) << 2;
+		//pixel = (paletteLatchOne & 1) << 3 | (paletteLatchTwo & 1) << 2;
+		pixel = (((paletteShiftOne >> -x + 8) & 1) << 1)
+                + ((paletteShiftTwo >> -x + 8) & 1);
+		if(atByte > 0) {
+			System.out.println("AtByte: " + atByte);
+			System.out.println("psOne: " + paletteShiftOne);
+			System.out.println("psTwo: " + paletteShiftTwo);
+			System.out.println("Pixel: " + pixel);
+			
+		}
 		pixel |= ( (((bgShiftOne & 0xFF00) >> 8) >> (7 - fineX) & 1) << 1) | ( (((bgShiftTwo & 0xFF00) >> 8) >> (7 - fineX) & 1)) | (3 << 2);
-		if(offset < frameArray.length) {
-			frameArray[offset] = NESPalette.getPixel(nes.ppuBusRead(0x3F00 + pixel));
+		pixel += 0x3F00;
+		if(offset < frameArray.length && pixel > 0) {
+			frameArray[offset] = NESPalette.getPixel(nes.ppuBusRead(pixel));
 		}
 		shift();
 	}
@@ -432,6 +443,7 @@ public class PPU implements Notifier {
 		bgShiftTwo <<= 1;
 		paletteShiftOne <<= 1;
 		paletteShiftTwo <<= 1;
+		
 	}
 	
 	public int getT() {
@@ -451,9 +463,6 @@ public class PPU implements Notifier {
 	}
 	
 	private void nextFrame() {
-		if(rendering) {
-			//createFrame();
-		}
 		notify("FRAME");
 		frameCount++;
 	}
@@ -499,8 +508,8 @@ public class PPU implements Notifier {
 		}
 	}
 	
-	public boolean renderingOn() {
-		return bgOn || spritesOn;
+	public boolean rendering() {
+		return (ppuMask >> 3 & 1) == 1 || (ppuMask >> 4 & 1) == 1;
 	}
 	
 	private void checkForVBlankAndNMI() {
@@ -551,4 +560,21 @@ public class PPU implements Notifier {
 			e.printStackTrace();
 		}
 	}
+	
+	private int getAttribute(final int ntstart, final int tileX, final int tileY) {
+        final int base = nes.ppuBusRead(ntstart + (tileX >> 2) + 8 * (tileY >> 2));
+        if (((tileY >> 1 & 1) != 0)) {
+            if (((tileX >> 1 & 1) != 0)) {
+                return (base >> 6) & 3;
+            } else {
+                return (base >> 4) & 3;
+            }
+        } else {
+            if (((tileX >> 1 & 1) != 0)) {
+                return (base >> 2) & 3;
+            } else {
+                return base & 3;
+            }
+        }
+    }
 }
