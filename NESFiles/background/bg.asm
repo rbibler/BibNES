@@ -59,7 +59,7 @@ LoadPalettesLoop:
                           ; etc
   STA $2007             ; write to PPU
   INX                   ; X = X + 1
-  CPX #$20              ; Compare X to hex $10, decimal 16 - copying 16 bytes = 4 sprites
+  CPX #$1f              ; Compare X to hex $10, decimal 16 - copying 16 bytes = 4 sprites
   BNE LoadPalettesLoop  ; Branch to LoadPalettesLoop if compare was Not Equal to zero
                         ; if compare was equal to 32, keep going down
 
@@ -86,7 +86,7 @@ LoadBackground:
   LDX #$00              ; start out at 0
 LoadBackgroundLoop:
   LDA background, x     ; load data from address (background + the value in x)
-  STA $2007             ; write to PPU
+  STX $2007             ; write to PPU
   INX                   ; X = X + 1
   CPX #$80              ; Compare X to hex $80, decimal 128 - copying 128 bytes
   BNE LoadBackgroundLoop  ; Branch to LoadBackgroundLoop if compare was Not Equal to zero
@@ -166,7 +166,10 @@ ReadBDone:        ; handling this button is done
   STA $2000
   LDA #%00011110   ; enable sprites, enable background, no clipping on left side
   STA $2001
-  LDA #$00        ;;tell the ppu there is no background scrolling
+  LDA $41        ;;tell the ppu there is no background scrolling
+  CLC
+  ADC #$01
+  STA $41
   STA $2005
   STA $2005
   
@@ -223,4 +226,4 @@ attribute:
   
   .bank 2
   .org $0000
-  .incbin "C:/Users/rbibl/Documents/repos/BibNES/NESFiles/background/mario.chr"   ;includes 8KB graphics file from SMB1
+  .incbin "C:/Users/ryan/Documents/repos/BibNES/NESFiles/background/mario.chr"   ;includes 8KB graphics file from SMB1

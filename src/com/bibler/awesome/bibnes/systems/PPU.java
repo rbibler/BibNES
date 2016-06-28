@@ -1,5 +1,9 @@
 package com.bibler.awesome.bibnes.systems;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import com.bibler.awesome.bibnes.communications.Notifiable;
@@ -51,8 +55,11 @@ public class PPU implements Notifier {
 	private int bgTileLocation;
 	
 	private boolean rendering;
+	private boolean bgOn;
+	private boolean spritesOn;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
+	private BufferedWriter writer;
 		
 	private NES nes;
 	
@@ -75,7 +82,7 @@ public class PPU implements Notifier {
 	}
 	
 	public int readPalette(int addressToRead) {
-		return 0;
+		return palette.read(addressToRead % 0x3F00);
 	}
 	
 	
@@ -135,6 +142,8 @@ public class PPU implements Notifier {
 	
 	private void writePPUMask(int data) {
 		ppuMask = data;
+		bgOn = ((data >> 3 & 1) != 0);
+        spritesOn = ((data >> 4 & 1) != 0);
 	}
 	
 	private void writePPUStatus(int data) {}
@@ -149,15 +158,16 @@ public class PPU implements Notifier {
 	}
 	
 	private void writePPUScroll(int data) {
+		// Update vertical scroll
 		if(w == 1) {
-			ppuScroll |= (data & 0xFF);
 			t = (t & ~0b111001111100000) 
 					| ((data & 7) << 12) 
 					| ((data & 0x38) << 2) 
 					| ((data & 0xC0) << 2);
+			
 			w = 0;
+		// Update horizontal scroll
 		} else {
-			ppuScroll |= (data << 8);
 			t = (t & ~0x1F) | ((data >> 3) & 0x1F);
 			x = data & 0x7;
 			w = 1;
@@ -168,7 +178,8 @@ public class PPU implements Notifier {
 		if(w == 1) {
 			ppuAddr |= (data & 0xFF);
 			t = (t & ~0xFF) | ((data & 0xFF));
-			v  = t;
+			v = t;
+			log("V = T\n" + "   V: " + v + "\n" + "   T: " + t);
 			w = 0;
 		} else {
 			t = (t & ~0xFF00) | ((data & 0x3F) << 8);
@@ -206,6 +217,7 @@ public class PPU implements Notifier {
 	private void incrementV() {
 		if(!rendering) {
 			v += vInc;
+			log("Increment v Not Rendering:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 		} else {
 			incHorizV();
 			incVertV();
@@ -213,9 +225,9 @@ public class PPU implements Notifier {
 	}
 	
 	public void cycle() {
-		//rendering = scanline < 240 && (ppuMask >> 3 & 3) > 0;
-		rendering = (ppuMask >> 3 & 3) > 0;
-		//renderPixel();
+		rendering = scanline < 240 && (ppuMask >> 3 & 3) > 0;
+		//rendering = (ppuMask >> 3 & 3) > 0;
+		renderPixel();
 		updateCycleAndScanLine();
 		checkForVBlankAndNMI();
 	}
@@ -235,26 +247,69 @@ public class PPU implements Notifier {
 		}
 	}
 	
-	private void renderPixel() {
-		if(scanline <= 239) {
-			if(cycle < 257 || cycle > 320) {
-				processVisibleScanlinePixel();
-			} else if(cycle == 257) {
-				equalizeHorizV();
-			}
-		} else if(scanline == 261) {
-			if(cycle < 257 || cycle > 320) {
-				processVisibleScanlinePixel();
-			} else if(cycle == 257) {
-				equalizeHorizV();
-			} else if(cycle > 279 && cycle < 305) {
-				//equalizeVertV();
-				v = t;
-			}
-		} 
-		if(rendering) {
-			renderPixelToScreen();
-		}
+	private void renderPixel() {	
+		 //cycle based ppu stuff will go here
+        if (scanline < 240 || scanline == (LINES_PER_FRAME - 1)) {
+            //on all rendering lines
+            if (renderingOn()
+                    && ((cycle >= 1 && cycle <= 256)
+                    || (cycle >= 321 && cycle <= 336))) {
+                //fetch background tiles, load shift registers
+                processVisibleScanlinePixel();
+            } else if (cycle == 257 && renderingOn()) {
+                //x scroll reset
+                //horizontal bits of loopyV = loopyT
+                v &= ~0x41f;
+                v |= t & 0x41f;
+
+            } else if (cycle > 257 && cycle <= 341) {
+                //clear the oam address from pxls 257-341 continuously
+                oamAddr = 0;
+            }
+            if ((cycle == 340) && renderingOn()) {
+                //read the same nametable byte twice
+                //this signals the MMC5 to increment the scanline counter
+                fetchNTByte();
+                fetchNTByte();
+            }
+            if (cycle == 65 && renderingOn()) {
+                //oamstart = oamaddr;
+            }
+            if (cycle == 260 && renderingOn()) {
+                //evaluate sprites for NEXT scanline (as long as either background or sprites are enabled)
+                //this does in fact happen on scanine 261 but it doesn't do anything useful
+                //it's cycle 260 because that's when the first important sprite byte is read
+                //actually sprite overflow should be set by sprite eval somewhat before
+                //so this needs to be split into 2 parts, the eval and the data fetches
+                //evalSprites();
+            }
+            if (scanline == (LINES_PER_FRAME - 1)) {
+                if (cycle == 0) {// turn off vblank, sprite 0, sprite overflow flags
+                    //vblankflag = false;
+                    //sprite0hit = false;
+                    //spriteoverflow = false;
+                } else if (cycle >= 280 && cycle <= 304 && renderingOn()) {
+                    //loopyV = (all of)loopyT for each of these cycles
+                    v = t;
+                }
+            }
+        } else if (scanline == 241 && cycle == 1) {
+            //handle vblank on / off
+           // vblankflag = true;
+        }
+        if (!renderingOn() || (scanline > 240 && scanline < (LINES_PER_FRAME - 1))) {
+            //HACK ALERT
+            //handle the case of MMC3 mapper watching A12 toggle
+            //even when read or write aren't asserted on the bus
+            //needed to pass Blargg's mmc3 tests
+            //mapper.checkA12(loopyV & 0x3fff);
+        }
+        if (scanline < 240) {
+            if (cycle >= 1 && cycle <= 256) {
+                renderPixelToScreen();
+            }
+        }
+		
 	}
 	
 	private void processVisibleScanlinePixel() {
@@ -281,12 +336,16 @@ public class PPU implements Notifier {
 			} 
 			break;
 		}
+		if (cycle >= 321 && cycle <= 336) {
+            shift();
+        }
 	}
 	
 	public void fetchNTByte() {
 		ntByte = 0x2000 | (v & 0xFFF);
 		ntByte = nes.ppuBusRead(ntByte);
-		System.out.println("Fetch: " + "V: " + Integer.toHexString(v) + " NTBYTE: " + Integer.toHexString(ntByte));
+		log("Fetch:\n" + "   V: " + Integer.toHexString(v) + "\n" +"   NTBYTE: " + Integer.toHexString(ntByte)
+				+ "\n" + "   Scanline: " + scanline + "\n" + "   Cycle: " + cycle);
 	}
 	
 	public void fetchATByte() {
@@ -297,14 +356,16 @@ public class PPU implements Notifier {
 	public void fetchLowBGByte() {
 		int col = ntByte % 16;
 		int row = ntByte / 16;
-		int address = (bgTileLocation << 0xC) | (row << 8) | (col << 4) | (v >> 12) & 7; 
+		int fineY = ((v & 0x7000) >> 12) & 7;
+		int address = (bgTileLocation << 0xC) | (row << 8) | (col << 4) | fineY; 
 		lowBGByte = nes.ppuBusRead(address);
 	}
 	
 	public void fetchHighBGByte() {
 		int col = ntByte % 16;
 		int row = ntByte / 16;
-		int address = (bgTileLocation << 0xC) | (row << 8) | (col << 4) | (1 << 3) | (v >> 12) & 7; 
+		int fineY = ((v & 0x7000) >> 12) & 7;
+		int address = (bgTileLocation << 0xC) | (row << 8) | (col << 4) | (1 << 3) | fineY;
 		highBGByte = nes.ppuBusRead(address);
 	}
 	
@@ -312,14 +373,17 @@ public class PPU implements Notifier {
 		if ((v & 0x001F) == 31) { // if coarse X == 31
 			  v &= ~0x001F;          // coarse X = 0
 			  v ^= 0x0400;           // switch horizontal nametable
+			  log("incHorizV mod 31:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 		} else {
 			  v += 1;                // increment coarse X
+			  log("incHoirzV standard:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 		}
 	}
 	
 	private void incVertV() {
 		if ((v & 0x7000) != 0x7000) {        	// if fine Y < 7
 			  v += 0x1000;                      // increment fine Y
+			  log("incVertV Fine Y < 7:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 		} else {
 			  v &= ~0x7000;                     // fine Y = 0
 			  int y = (v & 0x03E0) >> 5;        // let y = coarse Y
@@ -332,38 +396,42 @@ public class PPU implements Notifier {
 			    y += 1;							// increment coarse Y
 			  }	
 			  v = (v & ~0x03E0) | (y << 5);     // put coarse Y back into v
+			  log("incVertV Fine Y > 7:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 		}
 	}
 	
 	private void equalizeHorizV() {
 		v = (v & ~0x41F) | (t & 0x41F);
+		log("Equalize horiz v:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 	}
 	
 	private void equalizeVertV() {
 		v = (v & ~ 0b111101111100000) | (t & 0b111101111100000);
+		log("Equalize Vert v:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 	}
 	
 	private void loadLatches() {
-		bgShiftOne = (bgShiftOne & ~0xFF00) | (highBGByte << 8 & 0xFF00);
-		bgShiftTwo = (bgShiftTwo & ~0xFF00) | (lowBGByte << 8 & 0xFF00);
+		bgShiftOne = (bgShiftOne & ~0xFF) | (highBGByte & 0xFF);
+		bgShiftTwo = (bgShiftTwo & ~0xFF) | (lowBGByte & 0xFF);
 	}
 	
 	private void renderPixelToScreen() {
-		int offset = (scanline * 256) + cycle;
+		//int offset = (scanline * 256) + cycle;
+		int offset = (scanline << 8) + (cycle);
 		int pixel = 0;
-		int fineX = 0;
-		pixel |= ((bgShiftOne >> fineX & 1) << 1) | ((bgShiftTwo >> fineX & 1)) | (3 << 2);
+		int fineX = x;
+		pixel |= ( (((bgShiftOne & 0xFF00) >> 8) >> (7 - fineX) & 1) << 1) | ( (((bgShiftTwo & 0xFF00) >> 8) >> (7 - fineX) & 1)) | (3 << 2);
 		if(offset < frameArray.length) {
-			frameArray[offset] = NESPalette.getPixel(pixel);
+			frameArray[offset] = NESPalette.getPixel(nes.ppuBusRead(0x3F00 + pixel));
 		}
 		shift();
 	}
 	
 	private void shift() {
-		bgShiftOne >>= 1;
-		bgShiftTwo >>= 1;
-		paletteShiftOne >>= 1;
-		paletteShiftTwo >>= 1;
+		bgShiftOne <<= 1;
+		bgShiftTwo <<= 1;
+		paletteShiftOne <<= 1;
+		paletteShiftTwo <<= 1;
 	}
 	
 	public int getT() {
@@ -384,7 +452,7 @@ public class PPU implements Notifier {
 	
 	private void nextFrame() {
 		if(rendering) {
-			createFrame();
+			//createFrame();
 		}
 		notify("FRAME");
 		frameCount++;
@@ -398,26 +466,41 @@ public class PPU implements Notifier {
 		int lowBg;
 		int highBg;
 		int ntByte;
-		int atByte;
 		int fineY;
+		int x;
+		int y;
+		int attrX;
+		int attrY;
+		int curAttr;
 		for(int i = 0; i < frameArray.length; i++) {
-			row = (i / 256) / 8;
-			col = i % 256 / 8;
+			x = i % 256;
+			y = (i / 256);
+			row = y / 8;
+			col = x / 8;
 			ntByte = nes.ppuBusRead(0x2000 + (row * 32) + col);
+			curAttr = nes.ppuBusRead(0x23C0 + (((y / 32) * 8) + (x / 32))) & 0xFF;
 			row = (ntByte / 16);
 			col = ntByte % 16;
-			fineY = ((i / 256) % 8);
+			fineY = (y % 8);
 			address = (bgTileLocation  << 0xC) | (row << 8) | (col << 4) | fineY & 7; 
 			lowBg = nes.ppuBusRead(address);
 			address = (bgTileLocation << 0xC) | (row << 8) | (col << 4) | (1 << 3) | fineY & 7;
 			highBg = nes.ppuBusRead(address);
-			row = (i / 256) / 32;
-			col = (i % 256) / 32;
-			atByte = nes.ppuBusRead(0x23C0 + (row * 8) + col);
-			System.out.println("ATBYTE: " + Integer.toBinaryString(atByte));
-			pixel = (atByte & 3) << 2 | ((highBg >> (7 - (i % 8)) & 1) << 1 | (lowBg >> (7 -(i % 8)) & 1));
-			frameArray[i] = NESPalette.getPixel(pixel);
+			int attrStart = (((y / 32) * 32) * 256) + (((x / 32) * 32));
+			attrX = (x / 32) * 4;
+			attrY = (y / 32) * 4;
+			int ntX = x / 8;
+			int ntY = y / 8;
+			attrStart = i - attrStart;
+			int attrBitShift = (((ntX - attrX) / 2) * 2) + (((ntY - attrY) / 2) * 4);
+			int palVal = ((curAttr >> attrBitShift) & 3) << 2;
+			pixel = ((highBg >> (7 - (i % 8)) & 1) << 1 | (lowBg >> (7 -(i % 8)) & 1));
+			frameArray[i] = NESPalette.getPixel(nes.ppuBusRead(0x3F00 + palVal + pixel));
 		}
+	}
+	
+	public boolean renderingOn() {
+		return bgOn || spritesOn;
 	}
 	
 	private void checkForVBlankAndNMI() {
@@ -450,4 +533,22 @@ public class PPU implements Notifier {
 		
 	}
 
+	private void log(String s) {
+		return; /*
+		if(writer == null) {
+			setupLogWriter();
+		}
+		try {
+			writer.write(s + "\n");
+		} catch(IOException e) {}
+		*/
+	}
+	
+	private void setupLogWriter() {
+		try {
+			writer = new BufferedWriter(new FileWriter(new File("C:/users/ryan/documents/repos/BibNes/NESFiles/background/log.txt")));
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+	}
 }
