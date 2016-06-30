@@ -139,7 +139,7 @@ palette:
 
 
 background:
-  .incbin "bg.bin"
+  .incbin "C:/users/rbibl/git/bibnes/nesfiles/test/bg.bin"
 
 attribute:
   .db $E4
@@ -159,4 +159,4 @@ attribute:
   
   .bank 2
   .org $0000
-  .incbin "mario.chr"   ;includes 8KB graphics file from SMB1
+  .incbin "C:/users/rbibl/git/bibnes/nesfiles/test/mario.chr"   ;includes 8KB graphics file from SMB1
