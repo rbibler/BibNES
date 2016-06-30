@@ -811,7 +811,7 @@ public class CPU implements Notifier {
 	private void CMP() {
 		if(cyclesRemaining == 1) {
 			SEC();
-			final int result = accumulator - dataRegister - (~statusRegister & 1);
+			final int result = accumulator - dataRegister; //- (~statusRegister & 1);
 			int carryFlag = 0;
 			if(result >= 0 && result <= 0xFF) {
 				carryFlag = 1;
@@ -824,7 +824,7 @@ public class CPU implements Notifier {
 	
 	private void CPX() {
 		if(cyclesRemaining == 1) {
-			final int result = indexX - dataRegister - (~statusRegister & 1);
+			final int result = indexX - dataRegister; //- (~statusRegister & 1);
 			int carryFlag = 0;
 			if(result >= 0 && result <= 0xFF) {
 				carryFlag = 1;
@@ -837,7 +837,7 @@ public class CPU implements Notifier {
 	
 	private void CPY() {
 		if(cyclesRemaining == 1) {
-			final int result = indexY - dataRegister - (~statusRegister & 1);
+			final int result = indexY - dataRegister; //- (~statusRegister & 1);
 			int carryFlag = 0;
 			if(result >= 0 && result <= 0xFF) {
 				carryFlag = 1;

@@ -56,10 +56,7 @@ public class MessageBox extends JPanel {
 	public void writeNewLineToBox(String lineToWrite) {
 		try {
 			doc.insertString(doc.getLength(), lineToWrite + "\n", attributeSet);
-		} catch (BadLocationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} catch (BadLocationException e) {}
 	}
 	
 	public void writeNewStringToBox(String stringToWrite, int offset, boolean replace) {
@@ -75,7 +72,7 @@ public class MessageBox extends JPanel {
 		} 
 		try {
 			doc.insertString(offset, stringToWrite, attributeSet);
-		} catch (BadLocationException e) { e.printStackTrace(); }
+		} catch (BadLocationException e) {}
 	}
 	
 	public int getCaretPos() {

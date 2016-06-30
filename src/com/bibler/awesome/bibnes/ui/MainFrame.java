@@ -1,6 +1,7 @@
 package com.bibler.awesome.bibnes.ui;
 
 import java.awt.BorderLayout;
+import java.io.File;
 
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -9,8 +10,10 @@ import javax.swing.UnsupportedLookAndFeelException;
 import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
+import com.bibler.awesome.bibnes.io.FileUtils;
 import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Memory;
+import com.bibler.awesome.bibnes.systems.MosBoard;
 import com.bibler.awesome.bibnes.systems.Motherboard;
 import com.bibler.awesome.bibnes.ui.menus.MainFrameMenu;
 import com.bibler.awesome.bibnes.utils.NESProducer;
@@ -71,10 +74,21 @@ public class MainFrame extends JFrame {
 	
 	public void debug() {
 		Memory machineCode = assemble();
-		CPU cpu = new CPU();
-		cpu.registerObjectToNotify(messageHandler);
-		cpu.powerOn();
+		board = new MosBoard();
+		board.setROM(machineCode);
+		board.power();
+		board.registerObjectToNotify(messageHandler);
 		mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
+	}
+	
+	public void loadNesFileAndRun(boolean debug) {
+		File f = FileUtils.loadFile(this);
+		NESProducer producer = new NESProducer();
+		board = producer.produceNES(f, messageHandler);
+		board.power();
+		if(!debug) {
+			board.runSystem();
+		}
 	}
 	
 	public void emulateNES(boolean debug) {
@@ -84,6 +98,10 @@ public class MainFrame extends JFrame {
 		if(!debug) {
 			board.runSystem();
 		}
+	}
+	
+	public void screenshot() {
+		mainPanel.screenshot();
 	}
 	
 	public void step() {

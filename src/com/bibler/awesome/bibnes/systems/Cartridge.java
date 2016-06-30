@@ -21,6 +21,7 @@ public class Cartridge {
 	public static Cartridge createCartridge(int mapper, int prgSize, int chrSize, Memory rawMem) {
 		switch(mapper) {
 			case 0:
+			case 64:
 				Memory prg = new Memory(prgSize);
 				Memory chr = new Memory(chrSize);
 				for(int i = 0; i < prgSize; i++) {

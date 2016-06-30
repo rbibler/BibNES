@@ -16,6 +16,9 @@ public class PPU implements Notifier {
 	private final int LINES_PER_FRAME = 261;
 	private final int REGISTER_ADDRESS_WIDTH = 0x07;
 	
+	private final int X_HIGHLIGHT = 0;
+	private final int Y_HIGHLIGHT = 2;
+	
 	private Memory oamMem = new Memory(0x100);
 	private Memory palette = new Memory(0x20);
 	
@@ -43,6 +46,7 @@ public class PPU implements Notifier {
 	
 	private int ntByte;
 	private int atByte;
+	private int nextAtByte;
 	private int lowBGByte;
 	private int highBGByte;
 	private int bgShiftOne;
@@ -224,7 +228,6 @@ public class PPU implements Notifier {
 		//rendering = (ppuMask >> 3 & 3) > 0;
 		renderPixel();
 		updateCycleAndScanLine();
-		checkForVBlankAndNMI();
 	}
 	
 	private void updateCycleAndScanLine() {
@@ -280,9 +283,9 @@ public class PPU implements Notifier {
             }
             if (scanline == (LINES_PER_FRAME - 1)) {
                 if (cycle == 0) {// turn off vblank, sprite 0, sprite overflow flags
-                    //vblankflag = false;
-                    //sprite0hit = false;
-                    //spriteoverflow = false;
+                    clearVBlankFlag();
+                    clearSprite0HitFlag();
+                    clearSpriteOverflowFlag();
                 } else if (cycle >= 280 && cycle <= 304 && rendering()) {
                     //loopyV = (all of)loopyT for each of these cycles
                     v = t;
@@ -290,7 +293,7 @@ public class PPU implements Notifier {
             }
         } else if (scanline == 241 && cycle == 1) {
             //handle vblank on / off
-           // vblankflag = true;
+            setVBlankFlag();
         }
         if (!rendering() || (scanline > 240 && scanline < (LINES_PER_FRAME - 1))) {
             //HACK ALERT
@@ -301,8 +304,16 @@ public class PPU implements Notifier {
         }
         if (scanline < 240) {
             if (cycle >= 1 && cycle <= 256) {
-                renderPixelToScreen();
+            	if(rendering()) {
+            		renderPixelToScreen();
+            	}
             }
+        }
+        if (((ppuStatus >> 7 & 1) == 1) && (ppuCtrl >> 7 & 1) == 1) {
+            //pull NMI line on when conditions are right
+            nes.NMI();
+        } else {
+           // mapper.cpu.setNMI(false);
         }
 		
 	}
@@ -324,12 +335,14 @@ public class PPU implements Notifier {
 		case 0:
 			if(cycle != 0) {
 				fetchHighBGByte();
+				atByte = nextAtByte;
 				if(cycle == 256) {
 					incVertV();
 				} else {
 					incHorizV();
 				}
 				loadLatches();
+				
 			} 
 			break;
 		}
@@ -346,11 +359,9 @@ public class PPU implements Notifier {
 	}
 	
 	public void fetchATByte() {
-		//atByte = 0x23C0 | (v & 0xC00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07);
-		//atByte = nes.ppuBusRead(atByte);
-		atByte = getAttribute(((v & 0xc00) + 0x23c0),
-                (v) & 0x1f,
-                (((v) & 0x3e0) >> 5));
+		int atAddress = 0x23C0 | (v & 0xC00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07);
+		nextAtByte = nes.ppuBusRead(atAddress);
+		
 	}
 	
 	public void fetchLowBGByte() {
@@ -419,21 +430,19 @@ public class PPU implements Notifier {
 		int offset = (scanline * 256) + cycle;
 		int pixel = 0;
 		int fineX = x;
-		//pixel = (paletteShiftOne >> (7 - fineX) & 1) << 3 | (paletteShiftTwo >> (7 - fineX & 1)) << 2;
-		//pixel = (paletteLatchOne & 1) << 3 | (paletteLatchTwo & 1) << 2;
-		pixel = (((paletteShiftOne >> -x + 8) & 1) << 1)
-                + ((paletteShiftTwo >> -x + 8) & 1);
-		if(atByte > 0) {
-			System.out.println("AtByte: " + atByte);
-			System.out.println("psOne: " + paletteShiftOne);
-			System.out.println("psTwo: " + paletteShiftTwo);
-			System.out.println("Pixel: " + pixel);
-			
-		}
-		pixel |= ( (((bgShiftOne & 0xFF00) >> 8) >> (7 - fineX) & 1) << 1) | ( (((bgShiftTwo & 0xFF00) >> 8) >> (7 - fineX) & 1)) | (3 << 2);
+		int x = (v & 0x1F);
+		int y = ((v >> 5) & 0x1F);
+		int shift = (x & 2) | ((y & 2) << 1);
+		int pal = (atByte & (3 << shift)) >> shift;
+		pixel = pal << 2; 
+		pixel |= ( (((bgShiftOne & 0xFF00) >> 8) >> (7 - fineX) & 1) << 1) | ( (((bgShiftTwo & 0xFF00) >> 8) >> (7 - fineX) & 1));
 		pixel += 0x3F00;
+		int val  = nes.ppuBusRead(pixel);
+		if(x == X_HIGHLIGHT && y == Y_HIGHLIGHT) {
+			val = 5;
+		}
 		if(offset < frameArray.length && pixel > 0) {
-			frameArray[offset] = NESPalette.getPixel(nes.ppuBusRead(pixel));
+			frameArray[offset] = NESPalette.getPixel(val);
 		}
 		shift();
 	}
@@ -512,18 +521,20 @@ public class PPU implements Notifier {
 		return (ppuMask >> 3 & 1) == 1 || (ppuMask >> 4 & 1) == 1;
 	}
 	
-	private void checkForVBlankAndNMI() {
-		if(cycle == 1) { 
-			if(scanline == 241) {
-				setVBlankFlag();
-				if((ppuCtrl >> 7 & 1) == 1) {
-					nes.NMI();
-				}
-				
-			} else if(scanline == 261) {
-				clearVBlankFlag();
-			}
-		} 
+	private void setSprite0HitFlag() {
+		ppuStatus |= (1 << 6);
+	}
+	
+	private void clearSprite0HitFlag() {
+		ppuStatus &= ~(1 << 6);
+	}
+	
+	private void setSpriteOverflowFlag() {
+		ppuStatus |= (1 << 5);
+	}
+	
+	private void clearSpriteOverflowFlag() {
+		ppuStatus &= ~(1 << 5);
 	}
 	
 	private void setVBlankFlag() {
@@ -561,20 +572,4 @@ public class PPU implements Notifier {
 		}
 	}
 	
-	private int getAttribute(final int ntstart, final int tileX, final int tileY) {
-        final int base = nes.ppuBusRead(ntstart + (tileX >> 2) + 8 * (tileY >> 2));
-        if (((tileY >> 1 & 1) != 0)) {
-            if (((tileX >> 1 & 1) != 0)) {
-                return (base >> 6) & 3;
-            } else {
-                return (base >> 4) & 3;
-            }
-        } else {
-            if (((tileX >> 1 & 1) != 0)) {
-                return (base >> 2) & 3;
-            } else {
-                return base & 3;
-            }
-        }
-    }
 }

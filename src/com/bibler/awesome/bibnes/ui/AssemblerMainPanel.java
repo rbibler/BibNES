@@ -84,6 +84,10 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	public EmulatorPanel getEmulatorPanel() {
 		return emulatorPanel;
 	}
+	
+	public void screenshot() {
+		nesScreen.screenshot();
+	}
 
 	@Override
 	public void takeNotice(String message, Object notifier) {

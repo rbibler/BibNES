@@ -91,7 +91,8 @@ public class RunMenu extends JMenu implements Notifier {
 				mainFrame.step();
 				break;
 			case "DEBUG":
-				mainFrame.emulateNES(true);
+				mainFrame.debug();
+				//mainFrame.emulateNES(true);
 				break;
 			case "EMULATE":
 				mainFrame.emulateNES(false);

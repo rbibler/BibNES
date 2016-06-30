@@ -3,7 +3,14 @@ package com.bibler.awesome.bibnes.ui;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 public class NESScreen extends JPanel {
@@ -13,6 +20,9 @@ public class NESScreen extends JPanel {
 	private int height;
 	double scaleX;
 	double scaleY;
+	int screenshotCount;
+	
+	boolean flash; 
 	
 	public NESScreen(int width, int height) {
 		super();
@@ -22,6 +32,28 @@ public class NESScreen extends JPanel {
 		screenImage = new  BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
 		scaleX = 256.0 / width;
 		scaleY = 240.0 / height;
+	}
+	
+	public void screenshot() {
+		DateFormat df = new SimpleDateFormat("MM-dd-yyyy");
+		Date today = Calendar.getInstance().getTime();
+		String date = df.format(today);
+		String fileName = "C:/users/ryan/desktop/test/screens/" +
+				date + "_" + screenshotCount++ + ".png";
+		File f = new File(fileName);
+		if(!f.getParentFile().exists()) {
+			f.getParentFile().mkdirs();
+		}
+		try {
+			flash = ImageIO.write(screenImage, "png", f);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if(flash) {
+			System.out.println("Screenshot took and saved to: " + fileName);
+		} else {
+			System.out.println("Error! No save");
+		}
 	}
 	
 	public void updateFrame(int[] frameArray) {

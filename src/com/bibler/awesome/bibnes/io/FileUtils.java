@@ -4,7 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+
 public class FileUtils {
+	
+	private static JFileChooser fileChooser;
 	
 	public static byte[] readFile(File f) {
 		byte[] fileBytes = new byte[(int) f.length()];
@@ -32,6 +37,22 @@ public class FileUtils {
 			f = new File(fileRoot.getAbsolutePath() + "/" + s);
 		}
 		return f;
+	}
+
+	public static File loadFile(JFrame frame) {
+		if(fileChooser == null) {
+			initiateFileChooser();
+		}
+		int retval = fileChooser.showOpenDialog(frame);
+		if(retval == JFileChooser.APPROVE_OPTION) {
+			return fileChooser.getSelectedFile();
+		} else {
+			return null;
+		}
+	}
+	
+	private static void initiateFileChooser() {
+		fileChooser = new JFileChooser(new File("C:/users/ryan/desktop/nes/roms"));
 	}
 
 }

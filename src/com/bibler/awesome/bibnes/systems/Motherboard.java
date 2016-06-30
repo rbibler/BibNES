@@ -34,6 +34,8 @@ public class Motherboard {
 	
 	public void resume() {}
 	
+	public void setROM(Memory rom) {}
+	
 	
 
 }
