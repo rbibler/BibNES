@@ -443,7 +443,7 @@ public class PPU implements Notifier {
 		int offset = (scanline * 256) + cycle;
 		int pixel = 0;
 		int fineX = x;
-		int x = (v & 0x1F);
+		int x = (v & 0x1F) - 2;
 		int y = ((v >> 5) & 0x1F);
 		int shift = (x & 2) | ((y & 2) << 1);
 		int pal = (atByte & (3 << shift)) >> shift;
@@ -451,9 +451,9 @@ public class PPU implements Notifier {
 		pixel |= ( (((bgShiftOne & 0xFF00) >> 8) >> (7 - fineX) & 1) << 1) | ( (((bgShiftTwo & 0xFF00) >> 8) >> (7 - fineX) & 1));
 		pixel += 0x3F00;
 		int val  = nes.ppuBusRead(pixel);
-		if(x == X_HIGHLIGHT && y == Y_HIGHLIGHT) {
-			val = 5;
-		}
+		//if(shift == 0) {
+			//val = 5;
+		//}
 		if(offset < frameArray.length && pixel > 0) {
 			frameArray[offset] = NESPalette.getPixel(val);
 		}
