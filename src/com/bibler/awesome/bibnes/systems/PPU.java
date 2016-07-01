@@ -362,9 +362,7 @@ public class PPU implements Notifier {
 		//int atAddress = 0x23C0 | (v & 0xC00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07);
 		int atAddress = calculateAtAddress();
 		nextAtByte = nes.ppuBusRead(atAddress);
-		if(nextAtByte == 0) {
-			System.out.println("Empty AT.\n V = " + v + "\n  Address: " + atAddress + "\n  X: " + cycle + "\n  Y: " + scanline);
-		}
+		
 	}
 	
 	private int calculateAtAddress() {

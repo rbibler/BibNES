@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.communications.Notifier;
+import com.bibler.awesome.bibnes.utils.AssemblyUtils;
 import com.bibler.awesome.bibnes.utils.StringUtils;
 
 public class CPU implements Notifier {
@@ -75,8 +76,10 @@ public class CPU implements Notifier {
 				NMIFlag = false;
 				cyclesRemaining = 6;
 				instruction = NMI;
+				System.out.println("NMI!!!!!!!!!!!!!!!!!!");
 			} else {
 				fetch();
+				System.out.println("Instruction: " + AssemblyUtils.getInstruction(instruction));
 			}
 		} else {
 			execute();

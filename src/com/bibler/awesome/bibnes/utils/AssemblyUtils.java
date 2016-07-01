@@ -3,6 +3,8 @@ package com.bibler.awesome.bibnes.utils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import com.bibler.awesome.bibnes.io.TextReader;
 
@@ -89,6 +91,64 @@ public class AssemblyUtils {
 		addressModePatterns.add("~,x");					// ZeroPage, X
 		addressModePatterns.add("~,y");					// ZeroPage, Y
 		
+	}
+	
+	public static String getInstruction(int instruction) {
+		if(immediateOpCodes == null) {
+			fillMaps();
+		}
+		String ret = checkMapForInstruction(immediateOpCodes, instruction);
+		if(ret == null) {
+			ret = checkMapForInstruction(accumulatorOpCodes, instruction);
+			if(ret == null) {
+				ret = checkMapForInstruction(impliedOpCodes, instruction);
+				if(ret == null) {
+					ret = checkMapForInstruction(zeroPageOpCodes, instruction);
+					if(ret == null) {
+						ret = checkMapForInstruction(zeroPageXOpCodes, instruction);
+						if(ret == null) {
+							ret = checkMapForInstruction(zeroPageYOpCodes, instruction);
+							if(ret == null) {
+								ret = checkMapForInstruction(absoluteOpCodes, instruction);
+								if(ret == null) {
+									ret = checkMapForInstruction(absoluteXOpCodes, instruction);
+									if(ret == null) {
+										ret = checkMapForInstruction(absoluteYOpCodes, instruction);
+										if(ret == null) {
+											ret = checkMapForInstruction(indirectOpCodes, instruction);
+											if(ret == null) {
+												ret = checkMapForInstruction(indirectXOpCodes, instruction);
+												if(ret == null) {
+													ret = checkMapForInstruction(indirectYOpCodes, instruction);
+													if(ret == null) {
+														ret = checkMapForInstruction(relativeOpCodes, instruction);
+													}
+												}
+											}
+										}
+									}	
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return ret;
+	}
+	
+	public static String checkMapForInstruction(HashMap<String, Integer> map, int instruction) {
+		String ret = null;
+		if(map.containsValue(instruction)) {
+			Set<Entry<String, Integer>> set = map.entrySet();
+			for(Entry<String, Integer> entry : set) {
+				if(entry.getValue() == instruction) {
+					ret = entry.getKey();
+					break;
+				}
+			}		
+		}
+		return ret;
 	}
 	
 	public static boolean noZeroPage(String instruction, int zpToCheck) {
