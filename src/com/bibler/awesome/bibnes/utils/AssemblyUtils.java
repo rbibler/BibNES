@@ -151,6 +151,23 @@ public class AssemblyUtils {
 		return ret;
 	}
 	
+	public static int lookupAddressMode(int opCode) {
+		int addressMode = -1;
+		int count = 0;
+		if(addressModes == null) {
+			fillMaps();
+		}
+		for(HashMap<String, Integer> map : addressModes) {
+			if(map.containsValue(opCode)) {
+				addressMode = count;
+				break;
+			} else {
+				count++;
+			}
+		}
+		return addressMode;
+	}
+	
 	public static boolean noZeroPage(String instruction, int zpToCheck) {
 		return !checkForAddressMode(zpToCheck, instruction);
 	}

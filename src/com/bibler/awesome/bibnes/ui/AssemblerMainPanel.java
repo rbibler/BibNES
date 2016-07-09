@@ -101,7 +101,11 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		} else if(notifier instanceof CPU || notifier instanceof Memory || notifier instanceof NES) {
 			emulatorPanel.sendMessageToEmulator(message, notifier);	
 		} else if(notifier instanceof NESProducer) {
-			outputPanel.displayMachineCode(((NESProducer) notifier).getMachineCode());
+			if(message.startsWith("LISTING")) {
+				outputPanel.displayListing(message.substring("LISTING".length()));
+			} else {
+				outputPanel.displayMachineCode(((NESProducer) notifier).getMachineCode());
+			}
 		} else if(notifier instanceof PPU) {
 			if(message.equalsIgnoreCase("Frame")) {
 				nesScreen.updateFrame(((PPU) notifier).getFrameForPainting());

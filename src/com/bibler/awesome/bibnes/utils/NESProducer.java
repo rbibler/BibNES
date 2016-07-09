@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
+import com.bibler.awesome.bibnes.assembler.Disassembler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifier;
 import com.bibler.awesome.bibnes.systems.Cartridge;
@@ -90,11 +91,14 @@ public class NESProducer {
 		machineCode = processRom(input);
 		Cartridge cart = Cartridge.createCartridge(inesMapper, inesPrgSize * PRG_BANK_SIZE, inesChrSize * CHR_BANK_SIZE, machineCode);
 		cart.getPrgMem().registerObject(messageHandler);
+		Disassembler disassembler = new Disassembler();
+		messageHandler.takeNotice("LISTING" + disassembler.disassemble(cart.getPrgMem(), 0), this);
 		NES nes = new NES();
 		nes.registerObjectToNotify(messageHandler);
 		nes.setCart(cart);
 		machineCode = cart.getCombinedRoms();
 		messageHandler.takeNotice("DONE", this);
+		
 		return nes;
 	}
 	
