@@ -53,7 +53,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		middlePane.add("Source", inputPanel);
 		middlePane.add("Emulator", nesScreen);
 		inputPanel.applyLookAndFeel(currentLF);
-		outputPanel = new AssemblerOutputPanel(900,200);
+		outputPanel = new AssemblerOutputPanel(900,200, bpManager);
 		emulatorPanel = new EmulatorPanel(200, 600);
 		projectPanel = new ProjectPanel(200, 600);
 		inputStatusPane.add(middlePane);

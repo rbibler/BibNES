@@ -29,10 +29,10 @@ public class StringUtils {
 		String digits = Integer.toString(intToPad, radix);
 		int diff = stringLength - digits.length() - 1;
 		String ret = "";
-		for(int i = 0; i < diff; i++) {
+		for(int i = 0; i <= diff; i++) {
 			ret += "0";
 		}
-		return ret + digits;
+		return (ret + digits).toUpperCase();
 	}
 	
 	public static String trimComments(String s) {

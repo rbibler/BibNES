@@ -22,7 +22,7 @@ public class MessageBox extends JPanel {
 	private static final long serialVersionUID = -2694446203282724161L;
 	
 	private JScrollPane scrollPane;
-	private JTextPane messageArea;
+	protected JTextPane messageArea;
 	private StyleContext styleContext;
 	private AttributeSet attributeSet;
 	private StyledDocument doc;

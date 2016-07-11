@@ -82,9 +82,11 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void loadNesFileAndRun(boolean debug) {
+		bpManager.clearAllBreakpoints();
 		File f = FileUtils.loadFile(this);
 		NESProducer producer = new NESProducer();
 		board = producer.produceNES(f, messageHandler);
+		board.setBreakpointManager(bpManager);
 		board.power();
 		if(!debug) {
 			board.runSystem();
@@ -92,12 +94,12 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void emulateNES(boolean debug) {
-		NESProducer producer = new NESProducer();
-		board = producer.produceNES(mainPanel.getInputLines(), messageHandler);
-		board.power();
-		if(!debug) {
+		//NESProducer producer = new NESProducer();
+		//board = producer.produceNES(mainPanel.getInputLines(), messageHandler);
+		//board.power();
+		//if(!debug) {
 			board.runSystem();
-		}
+		//}
 	}
 	
 	public void screenshot() {
@@ -105,7 +107,7 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void step() {
-		board.step();
+		board.stepNext();
 	}
 	
 	

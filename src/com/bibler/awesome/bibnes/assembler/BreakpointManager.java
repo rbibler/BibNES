@@ -11,6 +11,7 @@ public class BreakpointManager {
 	public void addBreakPoint(int breakpointLocation) {
 		if(!breakpoints.contains(breakpointLocation)) {
 			breakpoints.add(breakpointLocation);
+			System.out.println("Adding breakpoint: " + Integer.toHexString(breakpointLocation));
 		}
 	}
 	
@@ -18,7 +19,7 @@ public class BreakpointManager {
 		breakpoints.remove(breakpoints.indexOf(breakpointLocation));
 	}
 	
-	public boolean checkForBreakPoint(int currentLocation) {
+	public boolean contains(int currentLocation) {
 		return breakpoints.contains(currentLocation);
 	}
 	
@@ -29,6 +30,10 @@ public class BreakpointManager {
 			addBreakPoint(lineNum);
 		}
 		return verify;
+	}
+	
+	public void clearAllBreakpoints() {
+		breakpoints.clear();
 	}
 
 }

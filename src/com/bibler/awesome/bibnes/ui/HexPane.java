@@ -74,7 +74,7 @@ public class HexPane extends JPanel {
 			fillSpaceAndAdd(index, valueToUpdate);
 		}
 		currentIndex = index;
-		if(index % 16 == 0) {
+		if(index % 16 == 0 && index >= memory.size()) {
 			String s = StringUtils.intToPaddedString(index, 9, DigitUtils.HEX).toUpperCase() + "  ";
 			hexText.writeNewStringToBox("\n" + s, hexText.getLength(), true);
 		} 

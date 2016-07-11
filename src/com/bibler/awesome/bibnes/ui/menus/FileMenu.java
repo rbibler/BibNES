@@ -49,7 +49,7 @@ public class FileMenu extends JMenu {
 			String command = arg0.getActionCommand();
 			switch(command) {
 			case "LOAD":
-				mainFrame.loadNesFileAndRun(false);
+				mainFrame.loadNesFileAndRun(true);
 				break;
 			}
 		}

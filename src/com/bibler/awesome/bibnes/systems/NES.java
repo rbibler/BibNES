@@ -2,8 +2,11 @@ package com.bibler.awesome.bibnes.systems;
 
 import java.util.ArrayList;
 
+import com.bibler.awesome.bibnes.assembler.BreakpointManager;
+import com.bibler.awesome.bibnes.assembler.Disassembler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.communications.Notifier;
+import com.bibler.awesome.bibnes.io.LogWriter;
 
 public class NES extends Motherboard implements Notifier, Runnable {
 	
@@ -18,7 +21,12 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private int cycleCount;
 	private boolean running;
 	private boolean pause;
+	private boolean breakpointEngaged;
+	private boolean stepped;
 	private Object pauseLock = new Object();
+	
+	private Disassembler disassembler = new Disassembler();
+	private LogWriter logWriter = new LogWriter("C:/users/ryan/desktop/logs/NESLog");
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
@@ -102,11 +110,41 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	@Override
 	public void cycle() {
-		ppu.cycle();
-		if(cycleCount % 3 == 0) {
-			cpu.cycle();
+		checkCPUCycle();
+		if(breakpointEngaged) {
+			return;
 		}
+		ppu.cycle();
 		cycleCount++;
+	}
+
+	private void checkCPUCycle() {
+		if(cycleCount % 3 == 0) {
+			checkForNewCPUInstruction();
+			cpu.cycle();
+			if(breakpointEngaged) {
+				return;
+			}
+			
+		}
+	}
+
+	private void checkForNewCPUInstruction() {
+		if(cpu.getCyclesRemaining() == 0) {
+			breakpointEngaged = checkForBreakpoint(cpu.getProgramCounter());
+			logCPU();
+		}
+	}
+
+	private void logCPU() {
+		String s = disassembler.disassembleInstruction(cart.getPrgMem(), cpu.getProgramCounter());
+		System.out.println(s);
+		logWriter.log(s);
+	}
+	
+	
+	private boolean checkForBreakpoint(int pc) {
+		return breakpoints.contains(pc % 0x2000);
 	}
 	
 	@Override
@@ -114,9 +152,23 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		do {
 			cycle();
 		} while(cpu.getCyclesRemaining() > 0);
-		cycle();
-		cycle();
-		cycle();
+		 while(cycleCount % 3 != 0) {
+			cycle();
+		};
+		if(stepped) {
+			breakpointEngaged = true;
+			stepped = false;
+		}
+		
+	}
+	
+	@Override
+	public void stepNext() {
+		stepped = true;
+		breakpointEngaged = false;
+		if(!running) {
+			runSystem();
+		}
 	}
 	
 	public void writeToRam(int addressToWrite, int data) {
@@ -154,8 +206,8 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		return cart.readPrg(addressToRead);
 	}
 	
-	public void NMI() {
-		cpu.setNMI();
+	public void NMI(boolean NMIFlag) {
+		cpu.setNMI(NMIFlag);
 	}
 	
 	public void ppuBusWrite(int addressToWrite, int data) {
@@ -219,7 +271,13 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	@Override
 	public void run() {
 		while(running) {
-			cycle();
+			if(!breakpointEngaged) {
+				step();
+			} else {
+				try {
+					Thread.sleep(10);
+				} catch(InterruptedException e) {}
+			}
 		}
 		
 	}

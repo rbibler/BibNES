@@ -311,9 +311,9 @@ public class PPU implements Notifier {
         }
         if (((ppuStatus >> 7 & 1) == 1) && (ppuCtrl >> 7 & 1) == 1) {
             //pull NMI line on when conditions are right
-            nes.NMI();
+            nes.NMI(true);
         } else {
-           // mapper.cpu.setNMI(false);
+           nes.NMI(false);
         }
 		
 	}

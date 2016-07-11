@@ -2,6 +2,7 @@ package com.bibler.awesome.bibnes.systems;
 
 import java.util.ArrayList;
 
+import com.bibler.awesome.bibnes.assembler.Disassembler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.communications.Notifier;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
@@ -37,6 +38,8 @@ public class CPU implements Notifier {
 	private int instructionCycles;
 	private boolean pageBoundaryFlag;
 	private boolean NMIFlag;
+	private boolean NMINext;
+	private boolean NMIPrev;
 	
 	//Debug
 	private int totalCycles;
@@ -50,6 +53,7 @@ public class CPU implements Notifier {
 	public CPU(Motherboard board) {
 		this.board = board;
 	}
+	
 	
 	public void registerObjectToNotify(Notifiable objectToNotify) {
 		if(!objectsToNotify.contains(objectToNotify)) {
@@ -72,28 +76,24 @@ public class CPU implements Notifier {
 
 	public void cycle() {
 		if(cyclesRemaining == 0) {
-			if(NMIFlag) {
-				NMIFlag = false;
+			if(NMINext) {
+				NMINext = false;
 				cyclesRemaining = 6;
 				instruction = NMI;
-				System.out.println("NMI!!!!!!!!!!!!!!!!!!");
 			} else {
 				fetch();
-				System.out.println("Instruction: " + AssemblyUtils.getInstruction(instruction));
 			}
+			if(NMIFlag && !NMIPrev) {
+				NMINext = true;
+			}
+			NMIPrev = NMIFlag;
 		} else {
 			execute();
 		}
+		
 		cyclesRemaining--;
 		totalCycles++;
 		notify("STEP");
-	}
-	
-	private void printStatus() {
-		System.out.println(StringUtils.intToHexString(programCounter) +  ": OpCode: " +
-				StringUtils.intToHexString(instruction) + " A: " + StringUtils.intToHexString(accumulator) + " X: " +
-				StringUtils.intToHexString(getXIndex()) + " Y: " + StringUtils.intToHexString(getYIndex()) + 
-				" Total Cycles: " + totalCycles);
 	}
 	
 	public void powerOn() {
@@ -174,8 +174,8 @@ public class CPU implements Notifier {
 		statusRegister = 0xFF;
 	}
 	
-	public void setNMI() {
-		NMIFlag = true;
+	public void setNMI(boolean NMIFlag) {
+		this.NMIFlag = NMIFlag;
 	}
 	
 	protected void writeMemory(int addressToWrite, int data) {
@@ -769,6 +769,7 @@ public class CPU implements Notifier {
 				break;
 			case NMI:
 				NMI();
+				
 				break;
 		}	
 		
@@ -1277,6 +1278,7 @@ public class CPU implements Notifier {
 			stackPointer = (stackPointer - 1) & 0xFF;
 			int lowByte = readMemory(0xFFFA);
 			programCounter = lowByte | board.read(0xFFFB) << 8;
+			System.out.println("NMI!!!!!!!!!!!!!!!!!!");
 		}
 	}
 	/* 
@@ -1285,8 +1287,7 @@ public class CPU implements Notifier {
 	 */
 	private void BRK() {
 		if(cyclesRemaining == 1) {
-			//NMIFlag = true;
-			//programCounter++;
+			
 		}
 	}
 	
