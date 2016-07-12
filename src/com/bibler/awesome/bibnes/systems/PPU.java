@@ -198,6 +198,7 @@ public class PPU implements Notifier {
 	private void writePPUData(int data) {
 		nes.ppuBusWrite(v, data);
 		incrementV();
+		notify("NT");
 	}
 	
 	private int readPPUStatus() {
@@ -489,12 +490,16 @@ public class PPU implements Notifier {
 		return frameArray;
 	}
 	
+	public int[] getCurrentNameTable() {
+		return createFrame();
+	}
+	
 	private void nextFrame() {
 		notify("FRAME");
 		frameCount++;
 	}
 	
-	private void createFrame() {
+	private int[] createFrame() {
 		int pixel;
 		int row;
 		int col;
@@ -508,7 +513,8 @@ public class PPU implements Notifier {
 		int attrX;
 		int attrY;
 		int curAttr;
-		for(int i = 0; i < frameArray.length; i++) {
+		int[] frame = new int[256 * 240];
+		for(int i = 0; i < frame.length; i++) {
 			x = i % 256;
 			y = (i / 256);
 			row = y / 8;
@@ -518,9 +524,9 @@ public class PPU implements Notifier {
 			row = (ntByte / 16);
 			col = ntByte % 16;
 			fineY = (y % 8);
-			address = (bgTileLocation  << 0xC) | (row << 8) | (col << 4) | fineY & 7; 
+			address = (1  << 0xC) | (row << 8) | (col << 4) | fineY & 7; 
 			lowBg = nes.ppuBusRead(address);
-			address = (bgTileLocation << 0xC) | (row << 8) | (col << 4) | (1 << 3) | fineY & 7;
+			address = (1 << 0xC) | (row << 8) | (col << 4) | (1 << 3) | fineY & 7;
 			highBg = nes.ppuBusRead(address);
 			int attrStart = (((y / 32) * 32) * 256) + (((x / 32) * 32));
 			attrX = (x / 32) * 4;
@@ -531,8 +537,9 @@ public class PPU implements Notifier {
 			int attrBitShift = (((ntX - attrX) / 2) * 2) + (((ntY - attrY) / 2) * 4);
 			int palVal = ((curAttr >> attrBitShift) & 3) << 2;
 			pixel = ((highBg >> (7 - (i % 8)) & 1) << 1 | (lowBg >> (7 -(i % 8)) & 1));
-			frameArray[i] = NESPalette.getPixel(nes.ppuBusRead(0x3F00 + palVal + pixel));
+			frame[i] = NESPalette.getPixel(nes.ppuBusRead(0x3F00 + palVal + pixel));
 		}
+		return frame;
 	}
 	
 	public boolean rendering() {
