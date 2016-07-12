@@ -26,7 +26,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private Object pauseLock = new Object();
 	
 	private Disassembler disassembler = new Disassembler();
-	private LogWriter logWriter = new LogWriter("C:/users/ryan/desktop/logs/NESLog");
+	private LogWriter logWriter = new LogWriter("C:/users/rbibl/desktop/logs/NESLog");
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
@@ -167,6 +167,16 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		stepped = true;
 		breakpointEngaged = false;
 		if(!running) {
+			runSystem();
+		}
+	}
+	
+	@Override
+	public void runEmulator() {
+		if(running) {
+			breakpointEngaged = false;
+			stepped = false;
+		} else {
 			runSystem();
 		}
 	}

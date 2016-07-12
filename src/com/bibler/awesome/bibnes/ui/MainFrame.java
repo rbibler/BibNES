@@ -102,6 +102,10 @@ public class MainFrame extends JFrame {
 		//}
 	}
 	
+	public void runEmulator() {
+		board.runEmulator();
+	}
+	
 	public void screenshot() {
 		mainPanel.screenshot();
 	}

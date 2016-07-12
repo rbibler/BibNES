@@ -84,7 +84,8 @@ public class RunMenu extends JMenu implements Notifier {
 			case "RUN":
 				
 				if(mainFrame != null) {
-					mainFrame.runAssembler();
+					//mainFrame.runAssembler();
+					mainFrame.runEmulator();
 				}
 				break;
 			case "STEP":

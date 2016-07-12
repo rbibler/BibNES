@@ -34,6 +34,8 @@ public class Motherboard {
 	
 	public void runSystem() {}
 	
+	public void runEmulator() {}
+	
 	public void pause() {}
 	
 	public void resume() {}
