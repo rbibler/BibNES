@@ -48,10 +48,14 @@ public class AssemblerOutputPanel extends JPanel {
 		consolePanel.displayErrorMessage(errorMessage);
 	}
 	
+	public void updateStep(int pc) {
+		listingPanel.updateCurrentLine(pc);
+	}
+	
 	public void displayListing(String listing) {
 		listingPanel.deleteAll();
 		listingPanel.setTextColor(Color.BLACK);
-		listingPanel.writeNewLineToBox(listing);
+		listingPanel.displayListing(listing);
 	}
 	
 	public void displayMachineCode(Memory machineCode) {

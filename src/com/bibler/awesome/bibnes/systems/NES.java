@@ -26,7 +26,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private Object pauseLock = new Object();
 	
 	private Disassembler disassembler = new Disassembler();
-	private LogWriter logWriter = new LogWriter("C:/users/rbibl/desktop/logs/NESLog");
+	private LogWriter logWriter = new LogWriter("C:/users/ryan/desktop/logs/NESLog");
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
@@ -133,6 +133,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		if(cpu.getCyclesRemaining() == 0) {
 			breakpointEngaged = checkForBreakpoint(cpu.getProgramCounter());
 			logCPU();
+			notify("STEP" + cpu.getProgramCounter() % 0x2000);
 		}
 	}
 

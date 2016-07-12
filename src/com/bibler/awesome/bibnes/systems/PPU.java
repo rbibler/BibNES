@@ -56,6 +56,8 @@ public class PPU implements Notifier {
 	private int paletteLatchOne;
 	private int paletteLatchTwo;
 	
+	private boolean NMIFlag;
+	
 	
 	private int vInc;
 	private int bgTileLocation;
@@ -140,6 +142,11 @@ public class PPU implements Notifier {
 		ppuCtrl = data;
 		vInc = (ppuCtrl >> 2 & 1) == 0 ? 1 : 32;
 		bgTileLocation = ppuCtrl >> 4 & 1;
+		if((data >> 7 & 1) == 1) {
+			NMIFlag = true;
+		} else {
+			NMIFlag = false;
+		}
 	}
 	
 	private void writePPUMask(int data) {
@@ -309,7 +316,7 @@ public class PPU implements Notifier {
             	}
             }
         }
-        if (((ppuStatus >> 7 & 1) == 1) && (ppuCtrl >> 7 & 1) == 1) {
+        if (((ppuStatus >> 7 & 1) == 1) && NMIFlag) {
             //pull NMI line on when conditions are right
             nes.NMI(true);
         } else {

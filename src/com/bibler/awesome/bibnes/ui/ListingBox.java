@@ -26,7 +26,10 @@ public class ListingBox extends MessageBox {
 	
 	private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
 	private ArrayList<Object> highlights = new ArrayList<Object>();
+	private HashMap<Integer, Integer> pcToLines = new HashMap<Integer, Integer>();
 	private BreakpointManager manager;
+	
+	private Object lastHighlight;
 	
 	public ListingBox() {
 		super();
@@ -56,8 +59,43 @@ public class ListingBox extends MessageBox {
 		
 	}
 	
+	public void displayListing(String listing) {
+		String[] lines = listing.split("\n");
+		String line;
+		int offset = 0;
+		for(int i = 0; i < lines.length; i++) {
+			line = lines[i];
+			pcToLines.put(Integer.parseInt(line.substring(0,4), 16), offset);
+			offset += line.length() + 1;
+			writeNewLineToBox(line);
+		}
+	}
+	
+	public void updateCurrentLine(int pc) {
+		if(pcToLines.containsKey(pc)) {
+			int offset = pcToLines.get(pc);
+			messageArea.setCaretPosition(offset);
+			highlightLine(Color.RED);
+		}
+	}
+	
+	
 	public void setBreakpointManager(BreakpointManager manager) {
 		this.manager = manager;
+	}
+	
+	private void highlightLine(Color color) {
+		if(lastHighlight != null) {
+			messageArea.getHighlighter().removeHighlight(lastHighlight);
+		}
+		int start = -1;
+		int end = -1;
+		try {
+			start = Utilities.getRowStart(messageArea, messageArea.getCaretPosition());	
+			end = Utilities.getRowEnd(messageArea, start);
+			lastHighlight = messageArea.getHighlighter().addHighlight(start, end, painters.get(color.getRGB()));
+		} catch (BadLocationException e) {}
+		
 	}
 	
 	private void highlightLine() {

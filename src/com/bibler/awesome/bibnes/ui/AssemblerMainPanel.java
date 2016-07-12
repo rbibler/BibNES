@@ -99,6 +99,9 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		} else if(notifier instanceof ErrorHandler) {
 			outputPanel.registerError(message);
 		} else if(notifier instanceof CPU || notifier instanceof Memory || notifier instanceof NES) {
+			if(message.startsWith("STEP") && notifier instanceof NES) {
+				outputPanel.updateStep(Integer.parseInt(message.substring(4)));
+			}
 			emulatorPanel.sendMessageToEmulator(message, notifier);	
 		} else if(notifier instanceof NESProducer) {
 			if(message.startsWith("LISTING")) {
