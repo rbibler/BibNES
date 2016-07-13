@@ -116,7 +116,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			if(message.equalsIgnoreCase("Frame")) {
 				nesScreen.updateFrame(((PPU) notifier).getFrameForPainting());
 			} else if(message.equalsIgnoreCase("NT")) {
-				nametable.updateFrame(((PPU) notifier).getCurrentNameTable());
+				//nametable.updateFrame(((PPU) notifier).getCurrentNameTable());
 			}
 		}
 	}

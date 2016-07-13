@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -24,11 +25,11 @@ public class HexPane extends JPanel {
 	private JScrollPane hexPane;
 	private MessageBox hexText;
 	
-	private final String HEADER = "Offset(h) 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
-	private ArrayList<Integer> memory = new ArrayList<Integer>();
+	private final String HEADER = "Offset(h)  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F";
+	private int[] memory;
 	
 	private final int ROW_WIDTH_IN_CHARS = 59;
-	private final int ROW_START_WIDTH = 10;
+	private final int ROW_START_WIDTH = 11;
 	private final int BYTE_WIDTH = 3;
 	
 	private int currentIndex;
@@ -54,6 +55,8 @@ public class HexPane extends JPanel {
 	}
 	
 	public void fillInValues(Memory memory) {
+		this.memory = new int[memory.size()];
+		Arrays.fill(this.memory, -1);
 		for(int i = 0; i < memory.size(); i++) {
 			updateHexValue(i, memory.read(i));
 		}
@@ -65,32 +68,18 @@ public class HexPane extends JPanel {
 	}
 	
 	public void updateHexValue(int index, int valueToUpdate) {
-		if(index < memory.size()) {
-			memory.remove(index);
-			memory.add(index, valueToUpdate);
-		} else if(index == memory.size()) {
-			memory.add(valueToUpdate);
-		} else {
-			fillSpaceAndAdd(index, valueToUpdate);
-		}
+		
 		currentIndex = index;
-		if(index % 16 == 0 && index >= memory.size()) {
-			String s = StringUtils.intToPaddedString(index, 9, DigitUtils.HEX).toUpperCase() + "  ";
-			hexText.writeNewStringToBox("\n" + s, hexText.getLength(), true);
-		} 
+		//if(index % 16 == 0 && memory[index] == -1) {
+			//String s = StringUtils.intToPaddedString(index, 8, DigitUtils.HEX).toUpperCase() + "  ";
+			//hexText.writeNewStringToBox("\n" + s, hexText.getLength(), true);
+		//} 
 		int row = index / 16;
 		int col = index % 16;
 		int offset = (row + 1) * ROW_WIDTH_IN_CHARS;
 		offset += ((col * BYTE_WIDTH) + ROW_START_WIDTH);
-		hexText.writeNewStringToBox(StringUtils.intToHexString(valueToUpdate).toUpperCase() + " ", offset, true);
+		//hexText.writeNewStringToBox(StringUtils.intToHexString(valueToUpdate).toUpperCase() + " ", offset, memory[index] != - 1);
+		//memory[index] = valueToUpdate;
 		
-	}
-	
-	private void fillSpaceAndAdd(int index, int valueToAdd) {
-		int diff = index - memory.size();
-		for(int i = 0; i < diff; i++) {
-			memory.add(0);
-		}
-		memory.add(valueToAdd);
 	}
 }

@@ -30,6 +30,7 @@ public class ListingBox extends MessageBox {
 	private BreakpointManager manager;
 	
 	private Object lastHighlight;
+	private boolean debug = false;
 	
 	public ListingBox() {
 		super();
@@ -72,6 +73,9 @@ public class ListingBox extends MessageBox {
 	}
 	
 	public void updateCurrentLine(int pc) {
+		if(!debug) {
+			return;
+		}
 		if(pcToLines.containsKey(pc)) {
 			int offset = pcToLines.get(pc);
 			messageArea.setCaretPosition(offset);

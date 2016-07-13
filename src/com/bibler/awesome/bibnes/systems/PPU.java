@@ -196,6 +196,10 @@ public class PPU implements Notifier {
 	}
 	
 	private void writePPUData(int data) {
+		if(data == 0x27) {
+			System.out.println("HERE is 44");
+			notify("CONSOLE" + v);
+		}
 		nes.ppuBusWrite(v, data);
 		incrementV();
 		notify("NT");
@@ -225,7 +229,6 @@ public class PPU implements Notifier {
 	private void incrementV() {
 		if(!rendering()) {
 			v += vInc;
-			log("Increment v Not Rendering:\n" + "  v = " + v + "\n   Scanline: " + scanline + "\n   Cycle: " + cycle);
 		} else {
 			incHorizV();
 			incVertV();

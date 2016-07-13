@@ -875,6 +875,7 @@ public class CPU implements Notifier {
 	private void AND() {
 		if(cyclesRemaining == 1) {
 			accumulator &= dataRegister;
+			accumulator &= 0xFF;
 			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 		}
@@ -886,6 +887,7 @@ public class CPU implements Notifier {
 			statusRegister ^= (-((dataRegister >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(dataRegister == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 			statusRegister ^= (-((dataRegister >> 8) & 1) ^ statusRegister) & 1;					// set carry flag
+			dataRegister = dataRegister & 0xFF;
 			if(instruction == 0x0A) {
 				accumulator = dataRegister;
 			} else {
@@ -1061,6 +1063,7 @@ public class CPU implements Notifier {
 	private void EOR() {
 		if(cyclesRemaining == 1) {
 			accumulator ^= dataRegister;
+			accumulator &= 0xFF;
 			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 		}
@@ -1069,6 +1072,7 @@ public class CPU implements Notifier {
 	private void ORA() {
 		if(cyclesRemaining == 1) {
 			accumulator |= dataRegister;
+			accumulator &= 0xFF;
 			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 		}

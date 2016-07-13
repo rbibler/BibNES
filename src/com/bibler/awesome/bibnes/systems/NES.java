@@ -132,14 +132,14 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private void checkForNewCPUInstruction() {
 		if(cpu.getCyclesRemaining() == 0) {
 			breakpointEngaged = checkForBreakpoint(cpu.getProgramCounter());
-			logCPU();
+			//logCPU();
 			notify("STEP" + cpu.getProgramCounter() % 0x2000);
 		}
 	}
 
 	private void logCPU() {
 		String s = disassembler.disassembleInstruction(cart.getPrgMem(), cpu.getProgramCounter());
-		System.out.println(s);
+		//System.out.println(s);
 		logWriter.log(s);
 	}
 	
