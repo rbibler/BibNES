@@ -20,6 +20,7 @@ public class PPU implements Notifier {
 	private final int Y_HIGHLIGHT = 2;
 	
 	private Memory oamMem = new Memory(0x100);
+	private Memory secondaryOAM = new Memory(0x20);
 	private Memory palette = new Memory(0x20);
 	
 	private int[] frameArray = new int[256 * 240];
@@ -33,6 +34,8 @@ public class PPU implements Notifier {
 	private int ppuMask;
 	private int ppuStatus;
 	private int oamAddr;
+	private int oam2Index;
+	private int oamMode;
 	private int oamData;
 	private int ppuScroll;
 	private int ppuAddr;
@@ -260,6 +263,38 @@ public class PPU implements Notifier {
 		 //cycle based ppu stuff will go here
         if (scanline < 240 || scanline == (LINES_PER_FRAME - 1)) {
             //on all rendering lines
+        	if(rendering()) {
+        		if(cycle < 64) {
+        			if(cycle % 2 == 1) {			// Even cycles, write
+        				secondaryOAM.write(oam2Index++, 0xFF);
+        			}
+        		} else if(cycle <= 256) {
+        			if(oamMode == 0) {
+        				if((cycle & 1) == 1) {
+        					oamData = oamMem.read(oamAddr++);
+        				} else {
+        					secondaryOAM.write(oam2Index, oamData);
+        				}
+        				final int spriteHeight = oamData + (8 << (ppuCtrl & 0x20) >> 5);
+        				if(scanline >= oamData && scanline < spriteHeight) {
+        					oamMode++;
+        					oam2Index++;
+        				}
+        			} else if(oamMode == 1) {
+        				if((cycle & 1) == 1) {
+        					oamData = oamMem.read(oamAddr++);
+        				} else {
+        					secondaryOAM.write(oam2Index++, oamData);
+        					if((oam2Index & 3) == 0) {
+        						if(oam2Index == 32)
+        							oamMode++;
+        						else
+        							oamMode = 0;
+        					}
+        				}
+        			}
+        		}
+        	}
             if (rendering()
                     && ((cycle >= 1 && cycle <= 256)
                     || (cycle >= 321 && cycle <= 336))) {
@@ -267,13 +302,14 @@ public class PPU implements Notifier {
                 processVisibleScanlinePixel();
             } else if (cycle == 257 && rendering()) {
                 //x scroll reset
-                //horizontal bits of loopyV = loopyT
+                //horizontal bits of lif(oopyV = loopyT
                 v &= ~0x41f;
                 v |= t & 0x41f;
 
             } else if (cycle > 257 && cycle <= 341) {
                 //clear the oam address from pxls 257-341 continuously
                 oamAddr = 0;
+                oam2Index = 0;
             }
             if ((cycle == 340) && rendering()) {
                 //read the same nametable byte twice
