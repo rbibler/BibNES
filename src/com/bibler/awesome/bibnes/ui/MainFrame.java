@@ -1,6 +1,9 @@
 package com.bibler.awesome.bibnes.ui;
 
 import java.awt.BorderLayout;
+import java.awt.KeyboardFocusManager;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 
 import javax.swing.JFrame;
@@ -12,6 +15,7 @@ import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.io.FileUtils;
 import com.bibler.awesome.bibnes.systems.CPU;
+import com.bibler.awesome.bibnes.systems.Controller;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.systems.MosBoard;
 import com.bibler.awesome.bibnes.systems.Motherboard;
@@ -33,8 +37,7 @@ public class MainFrame extends JFrame {
 	public MainFrame() {
 		super();
 		initialize();
-		
-		
+		KeyboardFocusManager focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();	
 	}
 
 	private void initialize() {
@@ -82,10 +85,13 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void loadNesFileAndRun(boolean debug) {
+		Controller controller = new Controller();
+		mainPanel.setController(controller);
 		bpManager.clearAllBreakpoints();
 		File f = FileUtils.loadFile(this);
 		NESProducer producer = new NESProducer();
 		board = producer.produceNES(f, messageHandler);
+		board.setPeripheral(controller);
 		board.setBreakpointManager(bpManager);
 		board.power();
 		if(!debug) {

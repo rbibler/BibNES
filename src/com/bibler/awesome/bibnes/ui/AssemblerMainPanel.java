@@ -6,10 +6,17 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
 
+import javax.swing.ActionMap;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.KeyStroke;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.assembler.BreakpointManager;
@@ -17,6 +24,7 @@ import com.bibler.awesome.bibnes.assembler.ErrorHandler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.systems.CPU;
+import com.bibler.awesome.bibnes.systems.Controller;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.systems.NES;
 import com.bibler.awesome.bibnes.systems.PPU;
@@ -42,11 +50,13 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		super(JSplitPane.HORIZONTAL_SPLIT);
 		handler.registerObjectToNotify(this);
 		initialize(bpManager);
+		
 	}
 	
 	private void initialize(BreakpointManager bpManager) {
 		inputStatusPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		inputOutputPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		
 		LookAndFeel currentLF = setupLookAndFeel();
 		inputPanel = new AssemblerInputPanel(900,600, bpManager);
 		nesScreen = new NESScreen(256, 240);
@@ -55,6 +65,23 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		middlePane.add("Source", inputPanel);
 		middlePane.add("Emulator", nesScreen);
 		middlePane.add("Debug", nametable);
+		middlePane.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent arg0) {
+				Object source = arg0.getSource();
+				if(source instanceof JTabbedPane) {
+					if(middlePane.getSelectedIndex() == 1) {
+						nesScreen.requestFocus();
+					}
+				}
+			}
+			
+		});
+		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "none");
+		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "none");
+		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("UP"), "none");
+		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("DOWN"), "none");
 		inputPanel.applyLookAndFeel(currentLF);
 		outputPanel = new AssemblerOutputPanel(900,200, bpManager);
 		emulatorPanel = new EmulatorPanel(200, 600);
@@ -78,6 +105,10 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		retLF.setCurrentFont(new Font("COURIER", Font.PLAIN, 14));
 		retLF.setStandardTextColor(Color.BLACK);
 		return retLF;
+	}
+	
+	public void setController(Controller controller) {
+		nesScreen.addKeyListener(controller);
 	}
 	
 	public String[] getInputLines() {

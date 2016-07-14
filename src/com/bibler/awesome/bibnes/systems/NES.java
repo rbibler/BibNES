@@ -27,6 +27,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	private Disassembler disassembler = new Disassembler();
 	private LogWriter logWriter = new LogWriter("C:/users/ryan/desktop/logs/NESLog");
+	private Peripheral controller;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
@@ -36,6 +37,11 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		apu = new APU();
 		cpuRam = new Memory(0x800);
 		ppuRam = new Memory(0x800);
+	}
+	
+	@Override
+	public void setPeripheral(Peripheral controller) {
+		this.controller = controller;
 	}
 	
 	@Override
@@ -193,6 +199,9 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	}
 	
 	public void writeToAPU(int addressToWrite, int data) {
+		if(addressToWrite == 0x4016) {
+			controller.write();
+		}
 		apu.write(addressToWrite, data);
 	}
 	
@@ -210,6 +219,9 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	}
 	
 	public int readFromAPU(int addressToRead) {
+		if(addressToRead == 0x4016) {
+			return controller.read();
+		}
 		return apu.read(addressToRead);
 	}
 	

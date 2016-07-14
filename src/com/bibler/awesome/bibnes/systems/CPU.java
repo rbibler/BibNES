@@ -1282,7 +1282,6 @@ public class CPU implements Notifier {
 			stackPointer = (stackPointer - 1) & 0xFF;
 			int lowByte = readMemory(0xFFFA);
 			programCounter = lowByte | board.read(0xFFFB) << 8;
-			System.out.println("NMI!!!!!!!!!!!!!!!!!!");
 		}
 	}
 	/* 

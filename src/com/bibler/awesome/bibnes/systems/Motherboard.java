@@ -18,6 +18,8 @@ public class Motherboard {
 		return 0;
 	}
 	
+	public void setPeripheral(Peripheral p) {}
+	
 	public void step() {}
 	
 	public void stepNext() {}
