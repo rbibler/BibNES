@@ -255,6 +255,7 @@ public class PPU implements Notifier {
 	public void cycle() {
 		//rendering = (ppuMask >> 3 & 3) > 0;
 		renderPixel();
+		evaluateSprites();
 		updateCycleAndScanLine();
 	}
 	
@@ -449,6 +450,55 @@ public class PPU implements Notifier {
 	private void loadLatches() {
 		bgShiftOne = (bgShiftOne & ~0xFF) | (highBGByte & 0xFF);
 		bgShiftTwo = (bgShiftTwo & ~0xFF) | (lowBGByte & 0xFF);
+	}
+	
+	private void evaluateSprites() {
+		if(scanline < LINES_PER_FRAME) {
+			if(cycle == 1) {
+				sprite0Found = false;
+				spriteRangeCount = 0;
+				Arrays.fill(spriteTempMem, 0xFF);
+			} else if(cycle == 65) {
+				findSprites();
+			} else if(cycle == 257) {
+				fetchSprites();
+			}
+		}
+	}
+	
+	private void findSprites() {
+		for(int i = 0; i < 64; i++) {
+			spriteRange = scanline - (OAM[i * 4] + 1);
+			if(Math.abs(spriteRange) <= ((ppuCtrl >> 5 & 1) == 1 ? 15 : 7)) {
+				if(i == 0) {
+					sprite0Found = true;
+				}
+				if(spriteRangeCount >= 8) {
+					 ppuStatus |= 1 << 5;
+				} else {
+					spriteTempMem[spriteRangeCount] = OAM[i * 4] + 1;
+					spriteTempMem[spriteRangeCount] = OAM[i * 4] + 2;
+					spriteTempMem[spriteRangeCount] = OAM[i * 4] + 3;
+					spriteTempMem[spriteRangeCount] = spriteRange;
+					spriteRangeCount++;
+				}
+			}
+		}
+	}
+	
+	private void fetchSprites() {
+		final int patternTableOffset = 0x1000 * (ppuCtrl >> 3) & 1;
+		int lowAddress = 0;
+		int highAddress = 0;
+		int index = 0;
+		for(int i = 0; i < spriteTempMem.length; i += 4) {
+			lowAddress = patternTableOffset + (spriteTempMem[i] * 0x10) + spriteTempMem[i + 3];
+			highAddress = patternTableOffset + (spriteTempMem[i] * 0x10) + spriteTempMem[i + 3] + 8;
+			lowSpriteShift[index] = nes.ppuBusRead(lowAddress);
+			highSpriteShift[index] = nes.ppuBusRead(highAddress);
+			spriteAttr[index] = spriteTempMem[i + 2];
+			spriteXLatch[index++] = spriteTempMem[i + 1];
+		}
 	}
 	
 	private void renderPixelToScreen() {
