@@ -1,0 +1,49 @@
+Sprites:
+Evaluation:
+	- 8bit comparator
+		- Calculates 9bit difference between current scanline and y-coordinate+1 of every object in OAM
+		- Objects in range if difference is in range of 0-7 when $2000.5 == 0 or 0-15 when $2000.5 == 1
+	-If object in range, then:
+		- Tile index, x-coord, attribute info (4 bits) plus range difference stored in sprite temporary memory
+		- Logical inversion applied to 4-bit range difference if vertical inversion bit set
+	- 4bit in range counter tallies found objects
+		- serves as index pointer into sprite temporary memory
+		- Counter is reset at the beginning of object evaluation
+		- post-incremented each time object found in-range
+		- After 8 objects found, subsequent data is discarded and $2002.5 is set to 1
+	- If sprite 0 is found in range, a flag is set
+Fetching: (cycles 129 through 160)
+	1. Garbage NT byte
+	2. Garbage NT byte
+	3. Pattern table bitmap #0 (for next scanline)
+	4. Pattern table bitmap #1 (for next scanline)
+	- If less than 8 objects found, dummy pattern table fetches occur. Data discarded and replaced with transparent bitmap patterns
+	- If $2005.1 == 1, the MSB of range result value becomes LSB of the indexed tile
+		- LSB of the tile index value determines pattern table selection
+	- Lower 3 bits of range result are always used as find vertical offset into the pattern
+	
+Rendering:
+	- Horizontal inversion is applied if indicated in sprite temporary memory element
+	- fetched PT data (2 bytes) plus 3 attr bits (palette select & priority), and x coordinate byte loaded into sprite buffer memory
+	- Sprite buffer element is:
+		- 2 8bit shift registers for fetched PT data
+		- 3bit latch (color & priority data)
+		- 8bit down counter (x-coordinate)
+	- counter decremented every time PPU renders a pixel (first 256 cc of scanline)
+	- when counter == 0, pattern table data starts serializing (1 shift per clock)
+	- data for first sprite buffer entry enters multiplexer if output is nontransparent (i.e. non-zero)
+		- Continues through sprite buffer entries until non-zero pixel found.
+			- If non found, 8th object entry is automatically passed in
+			
+			
+Fields:
+	int[] OAM (256 bytes)
+	int[] spriteTempMem (32 bytes)
+	int range
+	int rangeCounter
+	boolean sprite0Found
+	int[] lowSpriteShift
+	int[] highSpriteShift
+	int[] spriteAttributes
+	int[] spriteXCounters
+	
