@@ -202,7 +202,10 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		if(addressToWrite == 0x4016) {
 			controller.write();
 		} else if(addressToWrite == 0x4014) {
-			writeOAMData(data);
+			int n = data * 0x100;
+			for(int i = 0; i < 0x100; i++) {
+				ppu.write(0x2004, cpuRam.read(i + n));
+			}
 		}
 		apu.write(addressToWrite, data);
 	}
@@ -256,13 +259,6 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			ret = ppu.readPalette(addressToRead);
 		}
 		return ret;
-	}
-	
-	private void writeOAMData(int n) {
-		int ramAddress = n * 0x100;
-		for(int i = 0; i < 0x100; i++) {
-			ppu.write(0x2004, cpuRam.read(ramAddress++));
-		}
 	}
 	
 	@Override

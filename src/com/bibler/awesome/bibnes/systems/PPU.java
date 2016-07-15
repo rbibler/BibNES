@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.communications.Notifier;
@@ -19,8 +20,13 @@ public class PPU implements Notifier {
 	private final int X_HIGHLIGHT = 0;
 	private final int Y_HIGHLIGHT = 2;
 	
-	private Memory oamMem = new Memory(0x100);
-	private Memory secondaryOAM = new Memory(0x20);
+	private final int[] OAM = new int[256];
+	private final int[] spriteTempMem = new int[32];
+	private final int[] lowSpriteShift = new int[8];
+	private final int[] highSpriteShift = new int[8];
+	private final int[] spriteAttr = new int[8];
+	private final int[] spriteXLatch = new int[8];
+	private final boolean[] spritebgflags = new boolean[8];
 	private Memory palette = new Memory(0x20);
 	
 	private int[] frameArray = new int[256 * 240];
@@ -34,13 +40,15 @@ public class PPU implements Notifier {
 	private int ppuMask;
 	private int ppuStatus;
 	private int oamAddr;
-	private int oam2Index;
-	private int oamMode;
+	private int oamstart;
 	private int oamData;
 	private int ppuScroll;
 	private int ppuAddr;
 	private int ppuData;
 	private int oamDMA;
+	
+	private int spriteRange;
+	private int spriteRangeCount;
 	
 	private int v;
 	private int t;
@@ -60,6 +68,12 @@ public class PPU implements Notifier {
 	private int paletteLatchTwo;
 	
 	private boolean NMIFlag;
+	private boolean spriteSize;
+	private boolean spriteOverflow;
+	private boolean sprite0Found;
+	private boolean even = true, bgpattern = true, sprpattern, nmicontrol,
+	            grayscale, bgClip, spriteClip, bgOn, spritesOn,
+	            vblankflag, sprite0hit;
 	
 	
 	private int vInc;
@@ -163,7 +177,7 @@ public class PPU implements Notifier {
 	}
 	
 	private void writeOAMData(int data) {
-		oamMem.write(oamAddr, data);
+		OAM[oamAddr] = data;
 		oamAddr++;
 	}
 	
@@ -219,7 +233,7 @@ public class PPU implements Notifier {
 		
 		//ToDo should make sure this is correct.
 		
-		return oamMem.read(oamAddr);
+		return OAM[oamAddr];
 	}
 	private int readPPUData() {
 		int ret = 0;
@@ -263,38 +277,6 @@ public class PPU implements Notifier {
 		 //cycle based ppu stuff will go here
         if (scanline < 240 || scanline == (LINES_PER_FRAME - 1)) {
             //on all rendering lines
-        	if(rendering()) {
-        		if(cycle < 64) {
-        			if(cycle % 2 == 1) {			// Even cycles, write
-        				secondaryOAM.write(oam2Index++, 0xFF);
-        			}
-        		} else if(cycle <= 256) {
-        			if(oamMode == 0) {
-        				if((cycle & 1) == 1) {
-        					oamData = oamMem.read(oamAddr++);
-        				} else {
-        					secondaryOAM.write(oam2Index, oamData);
-        				}
-        				final int spriteHeight = oamData + (8 << (ppuCtrl & 0x20) >> 5);
-        				if(scanline >= oamData && scanline < spriteHeight) {
-        					oamMode++;
-        					oam2Index++;
-        				}
-        			} else if(oamMode == 1) {
-        				if((cycle & 1) == 1) {
-        					oamData = oamMem.read(oamAddr++);
-        				} else {
-        					secondaryOAM.write(oam2Index++, oamData);
-        					if((oam2Index & 3) == 0) {
-        						if(oam2Index == 32)
-        							oamMode++;
-        						else
-        							oamMode = 0;
-        					}
-        				}
-        			}
-        		}
-        	}
             if (rendering()
                     && ((cycle >= 1 && cycle <= 256)
                     || (cycle >= 321 && cycle <= 336))) {
@@ -302,31 +284,16 @@ public class PPU implements Notifier {
                 processVisibleScanlinePixel();
             } else if (cycle == 257 && rendering()) {
                 //x scroll reset
-                //horizontal bits of lif(oopyV = loopyT
+                //horizontal bits of loopyV = loopyT
                 v &= ~0x41f;
                 v |= t & 0x41f;
 
-            } else if (cycle > 257 && cycle <= 341) {
-                //clear the oam address from pxls 257-341 continuously
-                oamAddr = 0;
-                oam2Index = 0;
-            }
+            } 
             if ((cycle == 340) && rendering()) {
                 //read the same nametable byte twice
                 //this signals the MMC5 to increment the scanline counter
                 fetchNTByte();
                 fetchNTByte();
-            }
-            if (cycle == 65 && rendering()) {
-                //oamstart = oamaddr;
-            }
-            if (cycle == 260 && rendering()) {
-                //evaluate sprites for NEXT scanline (as long as either background or sprites are enabled)
-                //this does in fact happen on scanine 261 but it doesn't do anything useful
-                //it's cycle 260 because that's when the first important sprite byte is read
-                //actually sprite overflow should be set by sprite eval somewhat before
-                //so this needs to be split into 2 parts, the eval and the data fetches
-                //evalSprites();
             }
             if (scanline == (LINES_PER_FRAME - 1)) {
                 if (cycle == 0) {// turn off vblank, sprite 0, sprite overflow flags
