@@ -16,7 +16,7 @@ public class NESPalette {
 	};
 		
 	public static int getPixel(int pixelIndex) {
-		return pixels[pixelIndex];
+		return pixels[pixelIndex % pixels.length];
 	}
 
 	

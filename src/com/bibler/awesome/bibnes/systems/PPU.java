@@ -256,6 +256,7 @@ public class PPU implements Notifier {
 		//rendering = (ppuMask >> 3 & 3) > 0;
 		renderPixel();
 		evaluateSprites();
+		renderSprites();
 		updateCycleAndScanLine();
 	}
 	
@@ -452,52 +453,106 @@ public class PPU implements Notifier {
 		bgShiftTwo = (bgShiftTwo & ~0xFF) | (lowBGByte & 0xFF);
 	}
 	
+	private int spriteTempIndex;
+	private int spriteMode;
+	private int spriteData;
+	private int spriteIndex;
+	private int spriteEvalIndex;
+	private int spriteFoundCount;
+	private int spriteShiftIndex;
+	
 	private void evaluateSprites() {
-		if(scanline < LINES_PER_FRAME) {
-			if(cycle == 1) {
-				sprite0Found = false;
-				spriteRangeCount = 0;
-				Arrays.fill(spriteTempMem, 0xFF);
-			} else if(cycle == 65) {
-				findSprites();
-			} else if(cycle == 257) {
-				fetchSprites();
+		if(rendering()) {
+			if(scanline < 240) {
+				if(cycle == 0) {
+					spriteTempIndex = 0;
+					spriteMode = 0;
+					spriteIndex = 0;
+					spriteEvalIndex = 0;
+					spriteFoundCount = 0;
+					spriteShiftIndex = 0;
+				}
+				if(cycle <= 64) {
+					if(cycle % 2 == 0 && spriteTempIndex < spriteTempMem.length) {											// write on even cycles
+						spriteTempMem[spriteTempIndex++] = 0xFF;
+					}
+				} else if(cycle < 257 && spriteIndex < 64) {
+					if(cycle % 2 == 1) {											// read on odd cycles
+						spriteData = OAM[(spriteIndex * 4) + spriteEvalIndex];
+					} else if(spriteFoundCount < 8) {
+						if(spriteMode == 0) {										// If in range evaluation mode
+							spriteRange = (scanline + 1) - (spriteData + 1);		// check range
+							if(spriteRange >= 0 && spriteRange <=					// If in range 
+									((ppuCtrl >> 5 & 1) == 1 ? 15 : 7)) {
+								spriteMode = 1;		
+								try {// Set to sprite data copy mode
+								spriteTempMem[(spriteFoundCount * 4) + spriteEvalIndex++] = spriteRange;
+								} catch(ArrayIndexOutOfBoundsException e ) {
+									System.out.println("Out of bounds:\n    spriteIndex: " + spriteIndex + "\n    spriteEvalIndex: " + spriteEvalIndex);
+								}
+								spriteFoundCount++;
+							} else {
+								spriteIndex++;										// If not in range, go to next sprite
+							}
+						} else if(spriteMode == 1) {								// Sprite data copy mode
+							spriteTempMem[(spriteFoundCount * 4) + spriteEvalIndex++] = spriteData;
+							if(spriteEvalIndex >= 4) {								// if all data for this sprite is copied, go to next sprite
+								spriteIndex++;
+								spriteMode = 0;
+								spriteEvalIndex = 0;
+							}
+						}
+					}
+				} else if(cycle < 321) {
+					if(spriteShiftIndex < 8) {	
+						int address = 0x1000 * (ppuCtrl >> 3) & 1;
+						int tileNum = spriteTempMem[(spriteShiftIndex * 4) + 1];
+						int range = spriteTempMem[spriteShiftIndex * 4];
+						//System.out.println("SpriteIndex: " + spriteIndex + " SpriteShiftIndex: " + spriteShiftIndex);
+						spriteAttr[spriteShiftIndex] = spriteTempMem[(spriteShiftIndex * 4) + 2];
+						spriteXLatch[spriteShiftIndex] = spriteTempMem[(spriteShiftIndex * 4) + 3];
+						if(cycle % 8 == 5) {								// low tile byte
+							lowSpriteShift[spriteShiftIndex] = nes.ppuBusRead(address + (tileNum * 16) + range);
+						} else if(cycle % 8 == 7) {							// high tile byte
+							highSpriteShift[spriteShiftIndex++] = nes.ppuBusRead(address + (tileNum * 16) + 8 + range);
+							/*System.out.println("Sprite " + (spriteShiftIndex - 1) + "\n    Tile: " + tileNum 
+									+ "\n    x: " + Integer.toHexString(spriteXLatch[spriteShiftIndex - 1]) 
+									+ "\n    low byte: " + Integer.toBinaryString(lowSpriteShift[spriteShiftIndex - 1]) 
+									+ "\n    high byte: " + Integer.toBinaryString(highSpriteShift[spriteShiftIndex -1]));*/
+						}
+					}
+				}
 			}
 		}
 	}
 	
-	private void findSprites() {
-		for(int i = 0; i < 64; i++) {
-			spriteRange = scanline - (OAM[i * 4] + 1);
-			if(Math.abs(spriteRange) <= ((ppuCtrl >> 5 & 1) == 1 ? 15 : 7)) {
-				if(i == 0) {
-					sprite0Found = true;
-				}
-				if(spriteRangeCount >= 8) {
-					 ppuStatus |= 1 << 5;
-				} else {
-					spriteTempMem[spriteRangeCount] = OAM[i * 4] + 1;
-					spriteTempMem[spriteRangeCount] = OAM[i * 4] + 2;
-					spriteTempMem[spriteRangeCount] = OAM[i * 4] + 3;
-					spriteTempMem[spriteRangeCount] = spriteRange;
-					spriteRangeCount++;
+	private void renderSprites() {
+		if(rendering() && scanline < 240 && cycle < 256) {
+			for(int i = 0; i < 8; i++) {
+				if(cycle >= spriteXLatch[i] && cycle < (spriteXLatch[i] + 8)) {
+					renderSprite(i);
 				}
 			}
 		}
 	}
 	
-	private void fetchSprites() {
-		final int patternTableOffset = 0x1000 * (ppuCtrl >> 3) & 1;
-		int lowAddress = 0;
-		int highAddress = 0;
-		int index = 0;
-		for(int i = 0; i < spriteTempMem.length; i += 4) {
-			lowAddress = patternTableOffset + (spriteTempMem[i] * 0x10) + spriteTempMem[i + 3];
-			highAddress = patternTableOffset + (spriteTempMem[i] * 0x10) + spriteTempMem[i + 3] + 8;
-			lowSpriteShift[index] = nes.ppuBusRead(lowAddress);
-			highSpriteShift[index] = nes.ppuBusRead(highAddress);
-			spriteAttr[index] = spriteTempMem[i + 2];
-			spriteXLatch[index++] = spriteTempMem[i + 1];
+	private void renderSprite(int index) {
+		int shift = cycle - spriteXLatch[index];
+		int pixel = (lowSpriteShift[index] >> (7 - shift)) & 1;
+		pixel |= ((highSpriteShift[index] >> (7 - shift)) & 1) << 1;
+		pixel |= (spriteAttr[index] & 3) << 2;
+		final int bufferIndex = (scanline * 256) + cycle;
+		final int bgPixel = frameArray[bufferIndex];
+		final int spritePixel = NESPalette.getPixel(nes.ppuBusRead(0x3F10 + pixel));
+		
+		if(bgPixel == NESPalette.getPixel(nes.ppuBusRead(0x3F00))) {
+			if((pixel & 3) != 0) {
+				frameArray[bufferIndex] = spritePixel;
+			}
+		} else {
+			if((pixel & 3) != 0) {
+				frameArray[bufferIndex] = spritePixel;
+			}
 		}
 	}
 	
