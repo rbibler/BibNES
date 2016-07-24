@@ -46,6 +46,7 @@ public class PPU implements Notifier {
 	private int ppuAddr;
 	private int ppuData;
 	private int oamDMA;
+	private int bgColorIndex;
 	
 	private int spriteRange;
 	private int spriteRangeCount;
@@ -213,10 +214,6 @@ public class PPU implements Notifier {
 	}
 	
 	private void writePPUData(int data) {
-		if(data == 0x27) {
-			System.out.println("HERE is 44");
-			notify("CONSOLE" + v);
-		}
 		nes.ppuBusWrite(v, data);
 		incrementV();
 		notify("NT");
@@ -260,6 +257,8 @@ public class PPU implements Notifier {
 		updateCycleAndScanLine();
 	}
 	
+	private long lastFrame;
+	
 	private void updateCycleAndScanLine() {
 		cycle++;
 		if(cycle > CYCLES_PER_LINE) {
@@ -272,6 +271,8 @@ public class PPU implements Notifier {
 			scanline = 0;
 			cycle = 0;
 			nextFrame();
+			System.out.println("frame time: " + (System.currentTimeMillis() - lastFrame));
+			lastFrame = System.currentTimeMillis();
 		}
 	}
 	
@@ -471,6 +472,7 @@ public class PPU implements Notifier {
 					spriteEvalIndex = 0;
 					spriteFoundCount = 0;
 					spriteShiftIndex = 0;
+					sprite0Found = false;
 				}
 				if(cycle <= 64) {
 					if(cycle % 2 == 0 && spriteTempIndex < spriteTempMem.length) {											// write on even cycles
@@ -485,12 +487,14 @@ public class PPU implements Notifier {
 							if(spriteRange >= 0 && spriteRange <=					// If in range 
 									((ppuCtrl >> 5 & 1) == 1 ? 15 : 7)) {
 								spriteMode = 1;		
+								if(spriteIndex == 0) {
+									sprite0Found = true;
+								}
 								try {// Set to sprite data copy mode
-								spriteTempMem[(spriteFoundCount * 4) + spriteEvalIndex++] = spriteRange;
+									spriteTempMem[(spriteFoundCount * 4) + spriteEvalIndex++] = spriteRange;
 								} catch(ArrayIndexOutOfBoundsException e ) {
 									System.out.println("Out of bounds:\n    spriteIndex: " + spriteIndex + "\n    spriteEvalIndex: " + spriteEvalIndex);
 								}
-								spriteFoundCount++;
 							} else {
 								spriteIndex++;										// If not in range, go to next sprite
 							}
@@ -500,26 +504,25 @@ public class PPU implements Notifier {
 								spriteIndex++;
 								spriteMode = 0;
 								spriteEvalIndex = 0;
+								spriteFoundCount++;
 							}
 						}
 					}
 				} else if(cycle < 321) {
-					if(spriteShiftIndex < 8) {	
+					if(spriteShiftIndex < 8) {
+						
 						int address = 0x1000 * (ppuCtrl >> 3) & 1;
 						int tileNum = spriteTempMem[(spriteShiftIndex * 4) + 1];
 						int range = spriteTempMem[spriteShiftIndex * 4];
-						//System.out.println("SpriteIndex: " + spriteIndex + " SpriteShiftIndex: " + spriteShiftIndex);
 						spriteAttr[spriteShiftIndex] = spriteTempMem[(spriteShiftIndex * 4) + 2];
 						spriteXLatch[spriteShiftIndex] = spriteTempMem[(spriteShiftIndex * 4) + 3];
-						if(cycle % 8 == 5) {								// low tile byte
+						//if(cycle % 8 == 5) {								// low tile byte
+							
 							lowSpriteShift[spriteShiftIndex] = nes.ppuBusRead(address + (tileNum * 16) + range);
-						} else if(cycle % 8 == 7) {							// high tile byte
+						//} else if(cycle % 8 == 7) {							// high tile byte
 							highSpriteShift[spriteShiftIndex++] = nes.ppuBusRead(address + (tileNum * 16) + 8 + range);
-							/*System.out.println("Sprite " + (spriteShiftIndex - 1) + "\n    Tile: " + tileNum 
-									+ "\n    x: " + Integer.toHexString(spriteXLatch[spriteShiftIndex - 1]) 
-									+ "\n    low byte: " + Integer.toBinaryString(lowSpriteShift[spriteShiftIndex - 1]) 
-									+ "\n    high byte: " + Integer.toBinaryString(highSpriteShift[spriteShiftIndex -1]));*/
-						}
+							
+						//}
 					}
 				}
 			}
@@ -536,22 +539,42 @@ public class PPU implements Notifier {
 		}
 	}
 	
+	/*
+	 * Priority Decision Table
+	 * BG Pixel | Sprite Pixel | Priority | Output
+	 * 0			0				X		BG ($3F00)
+	 * 0			1-3				X		Sprite
+	 * 1-3			0				X		BG
+	 * 1-3			1-3				0		Sprite
+	 * 1-3			1-3				1		BG
+	 */
+	
 	private void renderSprite(int index) {
 		int shift = cycle - spriteXLatch[index];
-		int pixel = (lowSpriteShift[index] >> (7 - shift)) & 1;
-		pixel |= ((highSpriteShift[index] >> (7 - shift)) & 1) << 1;
+		if((spriteAttr[index] >> 6 & 1) == 0) {
+			shift = 7 - shift; 
+		} 
+		
+		int pixel = (lowSpriteShift[index] >> (shift)) & 1;
+		pixel |= ((highSpriteShift[index] >> (shift)) & 1) << 1;
 		pixel |= (spriteAttr[index] & 3) << 2;
 		final int bufferIndex = (scanline * 256) + cycle;
-		final int bgPixel = frameArray[bufferIndex];
 		final int spritePixel = NESPalette.getPixel(nes.ppuBusRead(0x3F10 + pixel));
+		final int pixelIndex = pixel & 0x03;
 		
-		if(bgPixel == NESPalette.getPixel(nes.ppuBusRead(0x3F00))) {
-			if((pixel & 3) != 0) {
+		final int priority = spriteAttr[index] >> 5 & 1;
+		if(bgColorIndex == 0) {							// If BG Pixel = 0
+			if((pixelIndex) != 0) {																// If Sprite Pixel is not 0, sprite pixel wins
 				frameArray[bufferIndex] = spritePixel;
 			}
-		} else {
-			if((pixel & 3) != 0) {
-				frameArray[bufferIndex] = spritePixel;
+		} else {																				// If BG Pixel is not 0
+			if((pixelIndex) != 0) {																// If Sprite Pixel is not 0, sprite pixel wins
+				if(sprite0Found && index == 0) {
+					setSprite0HitFlag();
+				}
+				if(priority == 0) {
+					frameArray[bufferIndex] = spritePixel;
+				}
 			}
 		}
 	}
@@ -567,10 +590,9 @@ public class PPU implements Notifier {
 		pixel = pal << 2; 
 		pixel |= ( (((bgShiftOne & 0xFF00) >> 8) >> (7 - fineX) & 1) << 1) | ( (((bgShiftTwo & 0xFF00) >> 8) >> (7 - fineX) & 1));
 		pixel += 0x3F00;
-		int val  = nes.ppuBusRead(pixel);
-		//if(shift == 0) {
-			//val = 5;
-		//}
+		bgColorIndex = pixel & 0x03;
+		//int val  = nes.ppuBusRead(pixel);
+		int val = nes.ppuBusRead(0x3F00);
 		if(offset < frameArray.length && pixel > 0) {
 			frameArray[offset] = NESPalette.getPixel(val);
 		}
