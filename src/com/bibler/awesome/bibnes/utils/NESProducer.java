@@ -18,6 +18,7 @@ public class NESProducer {
 	
 	private Assembler assembler;
 	private Memory machineCode;
+	private NES nes;
 	private int inesPrgSize;
 	private int inesChrSize;
 	private int inesMapper;
@@ -35,7 +36,7 @@ public class NESProducer {
 		machineCode = assembler.passOne(lines);
 		Cartridge cart = Cartridge.createCartridge(inesMapper, inesPrgSize * PRG_BANK_SIZE, inesChrSize * CHR_BANK_SIZE, machineCode);
 		cart.getPrgMem().registerObject(messageHandler);
-		nes.setCart(cart);
+		//nes.setCart(cart);
 		machineCode = cart.getCombinedRoms();
 		messageHandler.takeNotice("DONE", this);
 		return nes;
@@ -44,6 +45,16 @@ public class NESProducer {
 	public Memory getMachineCode() {
 		return machineCode;
 	}
+	
+	public int[] getCPUMem() {
+		return nes.getCPUMem();
+	}
+	
+	public int[] getPPUMem() {
+		return nes.getPPUMem();
+	}
+	
+
 	
 	private void checkForINESHeaderInfo(String[] lines) {
 		for(String line : lines) {
@@ -88,17 +99,13 @@ public class NESProducer {
 		}
 		BufferedInputStream input = openStream(f);
 		processHeaderInfo(input);
-		machineCode = processRom(input);
-		Cartridge cart = Cartridge.createCartridge(inesMapper, inesPrgSize * PRG_BANK_SIZE, inesChrSize * CHR_BANK_SIZE, machineCode);
-		cart.getPrgMem().registerObject(messageHandler);
-		Disassembler disassembler = new Disassembler();
-		messageHandler.takeNotice("LISTING" + disassembler.disassemble(cart.getPrgMem(), 0), this);
-		NES nes = new NES();
+		nes = new NES();
+		nes.setMirror(inesMirror);
+		processRom(input, nes);
+		//Disassembler disassembler = new Disassembler();
+		//messageHandler.takeNotice("LISTING" + disassembler.disassemble(cart.getPrgMem(), 0), this);
 		nes.registerObjectToNotify(messageHandler);
-		nes.setCart(cart);
-		machineCode = cart.getCombinedRoms();
 		messageHandler.takeNotice("DONE", this);
-		
 		return nes;
 	}
 	
@@ -121,20 +128,27 @@ public class NESProducer {
 		inesMirror = headerBytes[6] & 1;
 	}
 	
-	private Memory processRom(BufferedInputStream input) {
-		Memory mem = new Memory((inesPrgSize * PRG_BANK_SIZE) + (inesChrSize * CHR_BANK_SIZE));
+	private void processRom(BufferedInputStream input, NES nes) {
 		int index = 0;
 		int read = 0;
-		while(read != -1 && index < mem.size()) {
+		final int prgSize = inesPrgSize * 16384;
+		while(read != -1) {
 			try {
 				read = input.read();
-				mem.write(index++, read);
+				if(index < prgSize) {
+					nes.cpuWrite(index + 0x8000, read);
+					if(inesPrgSize == 1) {
+						nes.cpuWrite(index + 0xC000, read);
+					}
+				} else {
+					nes.ppuWrite(index - prgSize, read);
+				}
+				index++;
 			} catch(IOException e) {}
 		}
 		try {
 			input.close();
 		} catch(IOException e) {}
-		return mem;
 	}
 
 }

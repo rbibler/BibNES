@@ -12,11 +12,8 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	private PPU ppu;
 	private APU apu;
-	private Memory cpuRam;
-	private Memory ppuRam;
-	private Memory cpuMem;
-	private Memory ppuMem;
-	private Cartridge cart;
+	private int[] cpuMem;
+	private int[] ppuMem;
 	
 	private int cycleCount;
 	private boolean running;
@@ -24,6 +21,11 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private boolean breakpointEngaged;
 	private boolean stepped;
 	private Object pauseLock = new Object();
+	
+	private int mirrorType;
+	
+	private final int HORIZ = 0;
+	private final int VERT = 1;
 	
 	private Disassembler disassembler = new Disassembler();
 	private LogWriter logWriter = new LogWriter("C:/users/ryan/desktop/logs/NESLog");
@@ -35,8 +37,8 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		cpu = new CPU(this);
 		ppu = new PPU(this);
 		apu = new APU();
-		cpuRam = new Memory(0x800);
-		ppuRam = new Memory(0x800);
+		cpuMem = new int[0x10000];
+		ppuMem = new int[0x4000];
 	}
 	
 	@Override
@@ -58,44 +60,12 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			objectsToNotify.add(objectToNotify);
 		}
 	}
-	
-	public void setCart(Cartridge cart) {
-		this.cart = cart;
-		setupCPUMem();
-		setupPPUMem();
-	}
-	
-	private void setupCPUMem() {
-		Memory prgMem = cart.getPrgMem();
-		cpuMem = new Memory(0x8000 + prgMem.size());
-		for(int i = 0; i < cpuRam.size(); i++) {
-			cpuMem.write(i, cpuRam.read(i));
-		}
-		for(int i = 0; i < prgMem.size(); i++) {
-			cpuMem.write(0x8000 + i, prgMem.read(i));
-		}
-		notify("FILL_CPU_MEM");
-	}
-	
-	private void setupPPUMem() {
-		Memory chrMem = cart.getChrMem();
-		int chrSize = chrMem.size();
-		ppuMem = new Memory(0x4000);
-		for(int i = 0; i < chrMem.size(); i++) {
-			ppuMem.write(i, chrMem.read(i));
-		}
-		for(int i = 0; i < ppuRam.size(); i++) {
-			ppuMem.write(i + chrSize, ppuRam.read(i));
-		}
-		
-		notify("FILL_PPU_MEM");
-	}
-	
-	public Memory getCPUMem() {
+
+	public int[] getCPUMem() {
 		return cpuMem;
 	}
 	
-	public Memory getPPUMem() {
+	public int[] getPPUMem() {
 		return ppuMem;
 	}
 	
@@ -138,17 +108,9 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private void checkForNewCPUInstruction() {
 		if(cpu.getCyclesRemaining() == 0) {
 			breakpointEngaged = checkForBreakpoint(cpu.getProgramCounter());
-			//logCPU();
 			notify("STEP" + cpu.getProgramCounter() % 0x2000);
 		}
 	}
-
-	private void logCPU() {
-		String s = disassembler.disassembleInstruction(cart.getPrgMem(), cpu.getProgramCounter());
-		//System.out.println(s);
-		logWriter.log(s);
-	}
-	
 	
 	private boolean checkForBreakpoint(int pc) {
 		return breakpoints.contains(pc % 0x2000);
@@ -188,10 +150,6 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		}
 	}
 	
-	public void writeToRam(int addressToWrite, int data) {
-		cpuRam.write(addressToWrite, data);
-		notify("MEM" + addressToWrite + "," + data);
-	}
 	
 	public void writeToPPU(int addressToWrite, int data) {
 		ppu.write(addressToWrite, data);
@@ -204,19 +162,10 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		} else if(addressToWrite == 0x4014) {
 			int n = data * 0x100;
 			for(int i = 0; i < 0x100; i++) {
-				ppu.write(0x2004, cpuRam.read(i + n));
+				ppu.write(0x2004, cpuMem[i + n]);
 			}
 		}
 		apu.write(addressToWrite, data);
-	}
-	
-	public void writeToCart(int addressToWrite, int data) {
-		cart.writePrg(addressToWrite, data);
-		notify("CPUMEM" + addressToWrite + "," + data);
-	}
-	
-	public int readFromRam(int addressToRead) {
-		return cpuRam.read(addressToRead);
 	}
 	
 	public int readFromPPU(int addressToRead) {
@@ -230,63 +179,80 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		return apu.read(addressToRead);
 	}
 	
-	public int readFromCart(int addressToRead) {
-		return cart.readPrg(addressToRead);
-	}
-	
 	public void NMI(boolean NMIFlag) {
 		cpu.setNMI(NMIFlag);
 	}
 	
-	public void ppuBusWrite(int addressToWrite, int data) {
-		if(addressToWrite < 0x2000) {
-			cart.writeCHR(addressToWrite, data);
-		} else if(addressToWrite < 0x3F00) {
-			ppuRam.write(addressToWrite % 0x2000, data);
-		} else if(addressToWrite < 0x4000) {
-			ppu.writePalette(addressToWrite, data);
-		}
-		notify("PPUMEM" + addressToWrite + "," + data);
+	public void setMirror(int mirrorType) {
+		this.mirrorType = mirrorType;
 	}
 	
-	public int ppuBusRead(int addressToRead) {
-		int ret = 0;
-		if(addressToRead < 0x2000) {
-			ret = cart.readCHR(addressToRead);
-		} else if(addressToRead < 0x3F00) {
-			ret = ppuRam.read(addressToRead % 0x2000);
-		} else if(addressToRead < 0x4000) {
-			ret = ppu.readPalette(addressToRead);
-		}
-		return ret;
-	}
-	
-	@Override
-	public void write(int addressToWrite, int data) {
-		if(addressToWrite < 0x1000) {
-			writeToRam(addressToWrite, data);
-		} else if(addressToWrite >= 0x2000 && addressToWrite < 0x4000) {
-			writeToPPU(addressToWrite, data);
-		} else if(addressToWrite >= 0x4000 && addressToWrite < 0x4020) {
-			writeToAPU(addressToWrite, data);
+	public void cpuWrite(int address, int data) {
+		if(address < 0x2000) {														// Write to CPU Ram
+			address %= 0x800;
+			cpuMem[address] = data;
+			cpuMem[address + 0x800] = data;
+			cpuMem[address + 0x1000] = data;
+			cpuMem[address + 0x1800] = data;
+			
+			notify("CPUMEM" + address + "," + data);
+			notify("CPUMEM" + (address + 0x800) + "," + data);
+			notify("CPUMEM" + (address + 0x1000) + "," + data);
+			notify("CPUMEM" + (address + 0x1800) + "," + data);
+			
+		} else if(address < 0x4000) {
+			writeToPPU(address, data);
+		} else if(address < 0x4020) {
+			writeToAPU(address, data);
 		} else {
-			writeToCart(addressToWrite, data);
+			cpuMem[address % 0x10000] = data;
+			notify("CPUMEM" + (address % 0x10000) + "," + data);
 		}
 	}
 	
-	@Override
-	public int read(int addressToRead) {
-		int retVal = 0;
-		if(addressToRead < 0x1000) {
-			retVal = readFromRam(addressToRead);
-		} else if(addressToRead >= 0x2000 && addressToRead < 0x4000) {
-			retVal = readFromPPU(addressToRead);
-		} else if(addressToRead >= 0x4000 && addressToRead < 0x4020) {
-			retVal = readFromAPU(addressToRead);
+	public int cpuRead(int address) {
+		int readData = 0;
+		if(address < 0x2000) {														// Write to CPU Ram
+			address %= 0x800;
+			readData = cpuMem[address];
+			
+		} else if(address < 0x4000) {
+			readData = readFromPPU(address);
+		} else if(address < 0x4020) {
+			readData = readFromAPU(address);
 		} else {
-			retVal = readFromCart(addressToRead);
+			readData = cpuMem[address % 0x10000];
 		}
-		return retVal;
+		return readData;
+	}
+	
+	public void ppuWrite(int address, int data) {
+		if(address < 0x2000) {
+			ppuMem[address] = data;
+			notify("PPUMEM" + address + "," + data);
+		} else if(address < 0x3000) {
+			if(mirrorType == HORIZ) {
+				ppuMem[address] = data;
+				ppuMem[address + 0x400] = data;
+				notify("PPUMEM" + address + "," + data);
+				notify("PPUMEM" + (address + 0x400) +  "," + data);
+			} else if(mirrorType == VERT) {
+				ppuMem[address] = data;
+				ppuMem[address + 0x800] = data; 
+				notify("PPUMEM" + address + "," + data);
+				notify("PPUMEM" + (address + 0x800) + "," + data);
+			}
+		} else if(address < 0x4000) {
+			address = (0x3F00 + (address % 0x20));
+			for(int i = 0; i < 8; i++) {
+				ppuMem[address + (i * 0x20)] = data;
+				notify("PPUM_MEM" + (address + (i * 0x20)) + "," + data);
+			}
+		}
+	}
+	
+	public int ppuRead(int address) {
+		return ppuMem[address % 0x4000];
 	}
 
 	@Override

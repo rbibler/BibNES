@@ -17,7 +17,6 @@ import com.bibler.awesome.bibnes.io.FileUtils;
 import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Controller;
 import com.bibler.awesome.bibnes.systems.Memory;
-import com.bibler.awesome.bibnes.systems.MosBoard;
 import com.bibler.awesome.bibnes.systems.Motherboard;
 import com.bibler.awesome.bibnes.ui.menus.MainFrameMenu;
 import com.bibler.awesome.bibnes.utils.NESProducer;
@@ -77,7 +76,7 @@ public class MainFrame extends JFrame {
 	
 	public void debug() {
 		Memory machineCode = assemble();
-		board = new MosBoard();
+		//board = new MosBoard();
 		board.setROM(machineCode);
 		board.power();
 		board.registerObjectToNotify(messageHandler);

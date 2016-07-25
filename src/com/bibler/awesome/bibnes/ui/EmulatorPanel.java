@@ -5,6 +5,7 @@ import java.awt.Dimension;
 
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 
 import com.bibler.awesome.bibnes.systems.NES;
 
@@ -38,18 +39,24 @@ public class EmulatorPanel extends JPanel {
 		return cpuPane;
 	}
 	
+	
+	
+	public void fillCPUMem(int[] cpuMem) {
+		cpuPane.fillInValues(cpuMem);
+	}
+	
+	public void fillPPUMem(int[] ppuMem) {
+		ppuPane.fillInValues(ppuMem);
+	}
+	
 	public void sendMessageToEmulator(String message, Object notifier) {
 		if(message.startsWith("STEP")) {
 			statusPanel.handleMessage(message, notifier);
 		} else if(message.startsWith("CPUMEM")) {
 			cpuPane.parseMemUpdate(message.substring(6));
-		} else if(message.equalsIgnoreCase("FILL_CPU_MEM")) {
-			cpuPane.fillInValues(((NES) notifier).getCPUMem());
 		} else if(message.startsWith("PPUMEM")) {
 			ppuPane.parseMemUpdate(message.substring(6));
-		} else if(message.equalsIgnoreCase("FILL_PPU_MEM")) {
-			ppuPane.fillInValues(((NES) notifier).getPPUMem());
-		}
+		} 
 	}
 
 }

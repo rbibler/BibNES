@@ -138,10 +138,12 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			}
 			emulatorPanel.sendMessageToEmulator(message, notifier);	
 		} else if(notifier instanceof NESProducer) {
+			final NESProducer prod = (NESProducer) notifier;
 			if(message.startsWith("LISTING")) {
 				outputPanel.displayListing(message.substring("LISTING".length()));
-			} else {
-				outputPanel.displayMachineCode(((NESProducer) notifier).getMachineCode());
+			} else if(message.startsWith("DONE")){
+				emulatorPanel.fillCPUMem(prod.getCPUMem());
+				emulatorPanel.fillPPUMem(prod.getPPUMem());
 			}
 		} else if(notifier instanceof PPU) {
 			if(message.equalsIgnoreCase("Frame")) {

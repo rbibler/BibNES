@@ -31,7 +31,7 @@ public class CPU implements Notifier {
 	private int stackPointer;
 	private int statusRegister;
 
-	private Motherboard board;
+	private NES board;
 	
 	//Control variables
 	private int cyclesRemaining;
@@ -50,7 +50,7 @@ public class CPU implements Notifier {
 		
 	}
 	
-	public CPU(Motherboard board) {
+	public CPU(NES board) {
 		this.board = board;
 	}
 	
@@ -97,7 +97,7 @@ public class CPU implements Notifier {
 	}
 	
 	public void powerOn() {
-		programCounter = board.read(0xFFFC) | board.read(0xFFFD) << 8;
+		programCounter =board.cpuRead(0xFFFC) |board.cpuRead(0xFFFD) << 8;
 		resetCPU();
 	}
 	
@@ -179,11 +179,11 @@ public class CPU implements Notifier {
 	}
 	
 	protected void writeMemory(int addressToWrite, int data) {
-		board.write(addressToWrite, data);
+		board.cpuWrite(addressToWrite, data);
 	}
 	
 	protected int readMemory(int addressToRead) {
-		return board.read(addressToRead);
+		return board.cpuRead(addressToRead);
 	}
 	
 	private void execute() {
@@ -1281,7 +1281,7 @@ public class CPU implements Notifier {
 			writeMemory(0x100 | stackPointer, statusRegister);
 			stackPointer = (stackPointer - 1) & 0xFF;
 			int lowByte = readMemory(0xFFFA);
-			programCounter = lowByte | board.read(0xFFFB) << 8;
+			programCounter = lowByte |board.cpuRead(0xFFFB) << 8;
 		}
 	}
 	/* 
