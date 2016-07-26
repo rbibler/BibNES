@@ -573,6 +573,7 @@ public class PPU implements Notifier {
 	
 	private void nextFrame() {
 		notify("FRAME");
+		nes.frame();
 	}
 	
 	private int[] createFrame() {

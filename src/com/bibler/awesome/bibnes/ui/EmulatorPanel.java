@@ -9,6 +9,10 @@ import javax.swing.JTable;
 
 import com.bibler.awesome.bibnes.systems.NES;
 
+import tv.porst.jhexview.JHexView;
+import tv.porst.jhexview.SimpleDataProvider;
+import tv.porst.jhexview.JHexView.DefinitionStatus;
+
 public class EmulatorPanel extends JPanel {
 
 	/**
@@ -18,8 +22,9 @@ public class EmulatorPanel extends JPanel {
 	
 	private EmulatorStatusPanel statusPanel;
 	private JTabbedPane tabPane;
-	private HexPane cpuPane;
-	private HexPane ppuPane;
+	private JHexView cpuPane;
+	private JHexView ppuPane;
+	private boolean running;
 	
 	public EmulatorPanel(int width, int height) {
 		super();
@@ -27,36 +32,56 @@ public class EmulatorPanel extends JPanel {
 		tabPane = new JTabbedPane();
 		statusPanel = new EmulatorStatusPanel();
 		tabPane.add("Status", statusPanel);
-		cpuPane = new HexPane();
+		cpuPane = new JHexView();
 		tabPane.add("CPU Memory", cpuPane);
-		ppuPane = new HexPane();
+		ppuPane = new JHexView();
 		tabPane.add("PPU Memory", ppuPane);
 		setLayout(new BorderLayout());
 		add(tabPane, BorderLayout.CENTER);
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				while(running) {
+					update();
+					try {
+						Thread.sleep(10);
+					} catch(InterruptedException e) {}
+				}
+				
+			}
+			
+		});
+		running = true;
+		t.start();
+		
 	}
 	
-	public HexPane getHexPane() {
+	public JHexView getHexPane() {
 		return cpuPane;
 	}
 	
-	
+	private void update() {
+		cpuPane.repaint();
+		ppuPane.repaint();
+	}
 	
 	public void fillCPUMem(int[] cpuMem) {
-		cpuPane.fillInValues(cpuMem);
+		cpuPane.setData(new SimpleDataProvider(cpuMem));
+		cpuPane.setDefinitionStatus(DefinitionStatus.DEFINED);
+		cpuPane.setEnabled(true);
+		cpuPane.setBytesPerColumn(1);
+		cpuPane.repaint();
 	}
 	
 	public void fillPPUMem(int[] ppuMem) {
-		ppuPane.fillInValues(ppuMem);
+		ppuPane.setData(new SimpleDataProvider(ppuMem));
+		ppuPane.setDefinitionStatus(DefinitionStatus.DEFINED);
+		ppuPane.setEnabled(true);
+		ppuPane.setBytesPerColumn(1);
+		ppuPane.repaint();
 	}
 	
-	public void sendMessageToEmulator(String message, Object notifier) {
-		if(message.startsWith("STEP")) {
-			statusPanel.handleMessage(message, notifier);
-		} else if(message.startsWith("CPUMEM")) {
-			cpuPane.parseMemUpdate(message.substring(6));
-		} else if(message.startsWith("PPUMEM")) {
-			ppuPane.parseMemUpdate(message.substring(6));
-		} 
-	}
+	
 
 }

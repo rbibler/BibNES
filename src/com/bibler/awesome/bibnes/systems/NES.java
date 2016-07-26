@@ -20,6 +20,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private boolean pause;
 	private boolean breakpointEngaged;
 	private boolean stepped;
+	private boolean frameByFrame;
 	private Object pauseLock = new Object();
 	
 	private int mirrorType;
@@ -79,10 +80,19 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	}
 	
 	@Override
-	public void pause() {}
+	public void pause() {
+		synchronized(pauseLock) {
+			pause = true;
+		}
+	}
 	
 	@Override
-	public void resume() {}
+	public void resume() {
+		synchronized (pauseLock) {
+            pause = false;
+            pauseLock.notifyAll();
+        }
+	}
 	
 	@Override
 	public void cycle() {
@@ -127,7 +137,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		if(stepped) {
 			breakpointEngaged = true;
 			stepped = false;
-		}
+		} 
 		
 	}
 	
@@ -147,6 +157,20 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			stepped = false;
 		} else {
 			runSystem();
+		}
+	}
+	
+	public void nextFrame() {
+		frameByFrame = true;
+		resume();
+		if(!running) {
+			runSystem();
+		}
+	}
+	
+	public void frame() {
+		if(frameByFrame) {
+			pause();
 		}
 	}
 	
@@ -265,6 +289,15 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	@Override
 	public void run() {
 		while(running) {
+			synchronized(pauseLock) {
+                if (pause) {
+                    while (pause) {
+                        try {
+                        	pauseLock.wait();
+                        } catch (InterruptedException e) {}
+                    }
+                }
+            }
 			if(!breakpointEngaged) {
 				step();
 			} else {

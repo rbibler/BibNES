@@ -26,6 +26,7 @@ public class RunMenu extends JMenu implements Notifier {
 	private JMenuItem debugItem;
 	private JMenuItem stepItem;
 	private JMenuItem emulateItem;
+	private JMenuItem frameItem;
 	private RunMenuActionListener actionListener = new RunMenuActionListener();
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private MainFrame mainFrame;
@@ -56,6 +57,12 @@ public class RunMenu extends JMenu implements Notifier {
 		stepItem.setActionCommand("STEP");
 		stepItem.addActionListener(actionListener);
 		stepItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
+		
+		frameItem = new JMenuItem("Next Frame");
+		add(frameItem);
+		frameItem.setActionCommand("FRAME");
+		frameItem.addActionListener(actionListener);
+		frameItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0));
 	}
 	
 	public void registerObjectToNotify(MessageHandler handler) {
@@ -98,6 +105,8 @@ public class RunMenu extends JMenu implements Notifier {
 			case "EMULATE":
 				mainFrame.emulateNES(true);
 				break;
+			case "FRAME":
+				mainFrame.frame();
 			}
 			
 		}

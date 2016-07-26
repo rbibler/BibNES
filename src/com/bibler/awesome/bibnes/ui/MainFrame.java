@@ -18,6 +18,7 @@ import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Controller;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.systems.Motherboard;
+import com.bibler.awesome.bibnes.systems.NES;
 import com.bibler.awesome.bibnes.ui.menus.MainFrameMenu;
 import com.bibler.awesome.bibnes.utils.NESProducer;
 
@@ -30,7 +31,7 @@ public class MainFrame extends JFrame {
 	
 	private AssemblerMainPanel mainPanel;
 	private MessageHandler messageHandler = new MessageHandler();
-	private Motherboard board;
+	private NES board;
 	private BreakpointManager bpManager;
 	
 	public MainFrame() {
@@ -59,7 +60,7 @@ public class MainFrame extends JFrame {
 	public void runAssembler() {
 		Memory machineCode = assemble();
 		CPU cpu = new CPU();
-		mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
+		//mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
 		cpu.registerObjectToNotify(messageHandler);
 		cpu.powerOn();
 		cpu.resetCPU();
@@ -80,7 +81,7 @@ public class MainFrame extends JFrame {
 		board.setROM(machineCode);
 		board.power();
 		board.registerObjectToNotify(messageHandler);
-		mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
+		//mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
 	}
 	
 	public void loadNesFileAndRun(boolean debug) {
@@ -89,7 +90,7 @@ public class MainFrame extends JFrame {
 		bpManager.clearAllBreakpoints();
 		File f = FileUtils.loadFile(this);
 		NESProducer producer = new NESProducer();
-		board = producer.produceNES(f, messageHandler);
+		board = (NES) producer.produceNES(f, messageHandler);
 		board.setPeripheral(controller);
 		board.setBreakpointManager(bpManager);
 		board.power();
@@ -117,6 +118,10 @@ public class MainFrame extends JFrame {
 	
 	public void step() {
 		board.stepNext();
+	}
+	
+	public void frame() {
+		board.nextFrame();
 	}
 	
 	
