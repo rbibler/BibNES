@@ -39,7 +39,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	private JTabbedPane middlePane;
 	private AssemblerInputPanel inputPanel;
 	private NESScreen nesScreen;
-	private NESScreen nametable;
+	private NametableScreen nametable;
 	private AssemblerOutputPanel outputPanel;
 	private ProjectPanel projectPanel;
 	private EmulatorPanel emulatorPanel;
@@ -60,7 +60,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		LookAndFeel currentLF = setupLookAndFeel();
 		inputPanel = new AssemblerInputPanel(900,600, bpManager);
 		nesScreen = new NESScreen(256, 240);
-		nametable = new NESScreen(256, 240);
+		nametable = new NametableScreen();
 		middlePane = new JTabbedPane();
 		middlePane.add("Source", inputPanel);
 		middlePane.add("Emulator", nesScreen);
@@ -144,6 +144,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			} else if(message.startsWith("DONE")){
 				emulatorPanel.fillCPUMem(prod.getCPUMem());
 				emulatorPanel.fillPPUMem(prod.getPPUMem());
+				nametable.setPPUMem(prod.getPPUMem());
 			}
 		} else if(notifier instanceof PPU) {
 			if(message.equalsIgnoreCase("Frame")) {

@@ -184,7 +184,6 @@ public class PPU implements Notifier {
 	private void writePPUData(int data) {
 		nes.ppuWrite(v, data);
 		incrementV();
-		notify("NT");
 	}
 	
 	private int readPPUStatus() {

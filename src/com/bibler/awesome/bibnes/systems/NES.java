@@ -253,25 +253,28 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	public void ppuWrite(int address, int data) {
 		if(address < 0x2000) {
 			ppuMem[address] = data;
-			notify("PPUMEM" + address + "," + data);
 		} else if(address < 0x3000) {
 			if(mirrorType == HORIZ) {
 				ppuMem[address] = data;
-				ppuMem[address + 0x400] = data;
-				notify("PPUMEM" + address + "," + data);
-				notify("PPUMEM" + (address + 0x400) +  "," + data);
+				if(address < 0x2400) {
+					ppuMem[address + 0x400] = data;
+				} else {
+					ppuMem[address - 0x400] = data;
+				}
 			} else if(mirrorType == VERT) {
 				ppuMem[address] = data;
-				ppuMem[address + 0x800] = data; 
-				notify("PPUMEM" + address + "," + data);
-				notify("PPUMEM" + (address + 0x800) + "," + data);
+				if(address < 0x2800) {
+					ppuMem[address + 0x800] = data;
+				} else {
+					ppuMem[address - 0x800] = data;
+				}
 			}
 		} else if(address < 0x4000) {
-			address = (0x3F00 + (address % 0x20));
-			for(int i = 0; i < 8; i++) {
-				ppuMem[address + (i * 0x20)] = data;
-				notify("PPUM_MEM" + (address + (i * 0x20)) + "," + data);
-			}
+			//address = (0x3F00 + (address % 0x20));
+			//for(int i = 0; i < 8; i++) {
+				//ppuMem[address + (i * 0x20)] = data;
+			//}
+			ppuMem[address] = data;
 		}
 	}
 	
