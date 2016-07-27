@@ -29,8 +29,11 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private final int VERT = 1;
 	
 	private Disassembler disassembler = new Disassembler();
-	private LogWriter logWriter = new LogWriter("C:/users/ryan/desktop/logs/NESLog");
 	private Peripheral controller;
+	
+	private long averageFrameRate;
+	private long lastFrameTime;
+	private long frameRate = 1000 / 60;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
@@ -118,7 +121,6 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private void checkForNewCPUInstruction() {
 		if(cpu.getCyclesRemaining() == 0) {
 			breakpointEngaged = checkForBreakpoint(cpu.getProgramCounter());
-			notify("STEP" + cpu.getProgramCounter() % 0x2000);
 		}
 	}
 	
@@ -169,6 +171,13 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	}
 	
 	public void frame() {
+		final long frameTime = System.currentTimeMillis() - lastFrameTime;
+		lastFrameTime = System.currentTimeMillis();
+		if(frameTime < frameRate) {
+			try {
+				Thread.sleep((long) (frameRate - frameTime));
+			} catch(InterruptedException e) {}
+		}
 		if(frameByFrame) {
 			pause();
 		}
@@ -219,18 +228,12 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			cpuMem[address + 0x1000] = data;
 			cpuMem[address + 0x1800] = data;
 			
-			notify("CPUMEM" + address + "," + data);
-			notify("CPUMEM" + (address + 0x800) + "," + data);
-			notify("CPUMEM" + (address + 0x1000) + "," + data);
-			notify("CPUMEM" + (address + 0x1800) + "," + data);
-			
 		} else if(address < 0x4000) {
 			writeToPPU(address, data);
 		} else if(address < 0x4020) {
 			writeToAPU(address, data);
 		} else {
 			cpuMem[address % 0x10000] = data;
-			notify("CPUMEM" + (address % 0x10000) + "," + data);
 		}
 	}
 	
@@ -256,7 +259,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		} else if(address < 0x3000) {
 			if(mirrorType == HORIZ) {
 				ppuMem[address] = data;
-				if(address < 0x2400) {
+				if(address < 0x2400 || (address >= 0x2800 && address < 0x2C00)) {
 					ppuMem[address + 0x400] = data;
 				} else {
 					ppuMem[address - 0x400] = data;

@@ -35,10 +35,13 @@ public class PPU implements Notifier {
 	private int t;
 	private int fineX;
 	private int w;
+	private int ppuData;
+	private int ppuBuffer;
 	
 	private int ntByte;
 	private int atByte;
 	private int nextAtByte;
+	private int penultimateattr;
 	private int lowBGByte;
 	private int highBGByte;
 	private int bgShiftOne;
@@ -69,16 +72,9 @@ public class PPU implements Notifier {
 		//ppuStatus = 0x80;
 	}
 	
-	public void writePalette(int addressToWrite, int data) {
-		palette.write(addressToWrite % 0x3F00, data);
-	}
-	
-	public int readPalette(int addressToRead) {
-		return palette.read(addressToRead % 0x3F00);
-	}
-	
 	
 	public void write(int addressToWrite, int data) {
+		ppuData = data;
 		switch(addressToWrite % 8) {
 		case 0:
 			writePPUCtrl(data);
@@ -108,21 +104,34 @@ public class PPU implements Notifier {
 	}
 	
 	public int read(int addressToRead) {
-		int ret = 0;
 		switch (addressToRead % 0x2000) {
-		case 0:
-			break;
-		case 1:
-			break;
-		case 2:
-			ret = readPPUStatus();
-			break;
-		case 4:
-			ret = readOAMData();
-		case 7:
-			ret = readPPUData();
+			case 2:
+				ppuData = readPPUStatus();
+				break;
+			case 4:
+				ppuData = readOAMData();
+			case 7:
+				final int temp;
+                if ((v & 0x3fff) < 0x3f00) {
+                    temp = ppuBuffer;
+                    ppuBuffer = nes.ppuRead(v & 0x3fff);
+                } else {
+                    ppuBuffer = nes.ppuRead((v & 0x3fff) - 0x1000);
+                    temp = nes.ppuRead(v);
+                }
+                if (!rendering() || (scanline > 240 && scanline < (LINES_PER_FRAME - 1))) {
+                    v += vInc;
+                } else {
+                    //if 2007 is read during rendering PPU increments both horiz
+                    //and vert counters erroneously.
+                    incHorizV();
+                    incVertV();
+                }
+                ppuData = temp;
+			default:
+				return ppuData;
 		}
-		return ret;
+		return ppuData;
 	}
 	
 	private void writePPUCtrl(int data) {
@@ -148,8 +157,10 @@ public class PPU implements Notifier {
 	}
 	
 	private void writeOAMData(int data) {
-		OAM[oamAddr] = data;
-		oamAddr++;
+		try {
+			OAM[oamAddr] = data;
+			oamAddr++;
+		} catch(ArrayIndexOutOfBoundsException e) {}
 	}
 	
 	private void writePPUScroll(int data) {
@@ -183,7 +194,24 @@ public class PPU implements Notifier {
 	
 	private void writePPUData(int data) {
 		nes.ppuWrite(v, data);
-		incrementV();
+		if (!rendering() || (scanline > 240 && scanline < (LINES_PER_FRAME - 1))) {
+            v += vInc;
+        } else {
+            // while rendering, it seems to drop by 1 scanline, regardless of increment mode
+            if ((v & 0x7000) == 0x7000) {
+                int YScroll = v & 0x3E0;
+                v &= 0xFFF;
+                if (YScroll == 0x3A0) {
+                    v ^= 0xBA0;
+                } else if (YScroll == 0x3E0) {
+                    v ^= 0x3E0;
+                } else {
+                    v += 0x20;
+                }
+            } else {
+                v += 0x1000;
+            }
+        }
 	}
 	
 	private int readPPUStatus() {
@@ -199,13 +227,7 @@ public class PPU implements Notifier {
 		
 		return OAM[oamAddr];
 	}
-	private int readPPUData() {
-		int ret = 0;
-		ret = nes.ppuRead(v);
-		incrementV();
-		
-		return ret;
-	}
+	
 	
 	private void incrementV() {
 		if(!rendering()) {
@@ -224,6 +246,8 @@ public class PPU implements Notifier {
 	}
 	
 	private long lastFrame;
+	private int bgAttrShiftRegH;
+	private int bgAttrShiftRegL;
 	
 	private void updateCycleAndScanLine() {
 		cycle++;
@@ -237,8 +261,6 @@ public class PPU implements Notifier {
 			scanline = 0;
 			cycle = 0;
 			nextFrame();
-			//System.out.println("frame time: " + (System.currentTimeMillis() - lastFrame));
-			//lastFrame = System.currentTimeMillis();
 		}
 	}
 	
@@ -303,17 +325,22 @@ public class PPU implements Notifier {
 	
 	private void processVisibleScanlinePixel() {
 		int cycleMod = cycle % 8; 
+		bgAttrShiftRegH |= ((atByte >> 1) & 1);
+        bgAttrShiftRegL |= (atByte & 1);
 		switch(cycleMod) {
 		case 2:
 			fetchNTByte();
 			break;
 		case 4:
-			fetchATByte();
+			 penultimateattr = getAttribute(((v & 0xc00) + 0x23c0),
+                     (v) & 0x1f,
+                     (((v) & 0x3e0) >> 5));
 			break;
 		case 6:
 			fetchLowBGByte();
 			break;
 		case 0:
+			 atByte = penultimateattr;
 			if(cycle != 0) {
 				fetchHighBGByte();
 				
@@ -337,20 +364,11 @@ public class PPU implements Notifier {
 		ntByte = nes.ppuRead(ntByte);
 	}
 	
-	public void fetchATByte() {
-		int atAddress = calculateAtAddress();
-		atByte = nes.ppuRead(atAddress);
+	public int fetchATByte() {
+		//int atAddress = calculateAtAddress();
+		int atAddress = 0x23C0 | (v & 0xC00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x7);
+		return nes.ppuRead(atAddress);
 		
-	}
-	
-	private int calculateAtAddress() {
-		final int x = v & 0b00011111;
-		final int y = (v >> 5) & 0b00011111;
-        final int row = (v >> 12) & 0b00000111;
-
-        final int attributeX = x / 4;
-        final int attributeY = ((y * 8) + row) / 32;
-        return 32*30 + (attributeY * (256 / 32)) + attributeX + 0x2000;
 	}
 	
 	public void fetchLowBGByte() {
@@ -430,7 +448,7 @@ public class PPU implements Notifier {
 						spriteData = OAM[(spriteIndex * 4) + spriteEvalIndex];
 					} else if(spriteFoundCount < 8) {
 						if(spriteMode == 0) {										// If in range evaluation mode
-							spriteRange = (scanline + 1) - (spriteData + 1);		// check range
+							spriteRange = (scanline + 1) - (spriteData);		// check range
 							if(spriteRange >= 0 && spriteRange <=					// If in range 
 									((ppuCtrl >> 5 & 1) == 1 ? 15 : 7)) {
 								spriteMode = 1;		
@@ -463,13 +481,24 @@ public class PPU implements Notifier {
 						int range = spriteTempMem[spriteShiftIndex * 4];
 						spriteAttr[spriteShiftIndex] = spriteTempMem[(spriteShiftIndex * 4) + 2];
 						spriteXLatch[spriteShiftIndex] = spriteTempMem[(spriteShiftIndex * 4) + 3];
-						//if(cycle % 8 == 5) {								// low tile byte
-							
-							lowSpriteShift[spriteShiftIndex] = nes.ppuRead(address + (tileNum * 16) + range);
-						//} else if(cycle % 8 == 7) {							// high tile byte
-							highSpriteShift[spriteShiftIndex++] = nes.ppuRead(address + (tileNum * 16) + 8 + range);
-							
-						//}
+						final boolean big = (ppuCtrl >> 5 & 1) == 1;
+						if((spriteAttr[spriteShiftIndex] >> 7 & 1) == 1) {
+							range = (big ? 15 : 7) - range;
+							if(big) {
+								if(range > 7) {
+									range += 8;
+								}
+							}
+						}
+						if(big) {
+							address = ((tileNum & 1) * 0x1000) + (tileNum & 0xfe) * 16;
+						} else {
+							address += (tileNum * 16);
+						}
+						address += range;
+						
+						lowSpriteShift[spriteShiftIndex] = nes.ppuRead(address );
+						highSpriteShift[spriteShiftIndex++] = nes.ppuRead(address + 8);
 					}
 				}
 			}
@@ -529,15 +558,26 @@ public class PPU implements Notifier {
 	private void renderPixelToScreen() {
 		int offset = (scanline * 256) + cycle;
 		int pixel = 0;
-		int x = (v & 0x1F);
-		int y = ((v >> 5) & 0x1F);
+		//int x = (v & 0x1F) + (7 - fineX) + 8;
+		//int y = ((v >> 5) & 0x1F);
+		int x = cycle + (7 - fineX);
+		int y = scanline;
 		int shift = (x & 2) | ((y & 2) << 1);
 		int pal = (atByte & (3 << shift)) >> shift;
 		pixel = pal << 2; 
 		pixel |= ( (((bgShiftOne & 0xFF00) >> 8) >> (7 - fineX) & 1) << 1) | ( (((bgShiftTwo & 0xFF00) >> 8) >> (7 - fineX) & 1));
 		pixel += 0x3F00;
 		bgColorIndex = pixel & 0x03;
-		int val  = nes.ppuRead(pixel);
+		
+		final int bgPix = (((bgShiftOne >> -fineX + 16) & 1) << 1)
+                + ((bgShiftTwo >> -fineX + 16) & 1);
+        final int bgPal = (((bgAttrShiftRegH >> -fineX + 8) & 1) << 1)
+                + ((bgAttrShiftRegL >> -fineX + 8) & 1);
+		
+		
+		
+		//int val  = nes.ppuRead(pixel);
+        int val = nes.ppuRead(0x3F00 + (bgPal << 2 | bgPix));
 		if(offset < frameArray.length && pixel > 0) {
 			frameArray[offset] = NESPalette.getPixel(val);
 		}
@@ -547,6 +587,8 @@ public class PPU implements Notifier {
 	private void shift() {
 		bgShiftOne <<= 1;
 		bgShiftTwo <<= 1;
+		bgAttrShiftRegH <<= 1;
+	    bgAttrShiftRegL <<= 1;
 		
 	}
 	
@@ -566,56 +608,9 @@ public class PPU implements Notifier {
 		return frameArray;
 	}
 	
-	public int[] getCurrentNameTable() {
-		return createFrame();
-	}
-	
 	private void nextFrame() {
 		notify("FRAME");
 		nes.frame();
-	}
-	
-	private int[] createFrame() {
-		int pixel;
-		int row;
-		int col;
-		int address;
-		int lowBg;
-		int highBg;
-		int ntByte;
-		int fineY;
-		int x;
-		int y;
-		int attrX;
-		int attrY;
-		int curAttr;
-		int[] frame = new int[256 * 240];
-		for(int i = 0; i < frame.length; i++) {
-			x = i % 256;
-			y = (i / 256);
-			row = y / 8;
-			col = x / 8;
-			ntByte = nes.ppuRead(0x2000 + (row * 32) + col);
-			curAttr = nes.ppuRead(0x23C0 + (((y / 32) * 8) + (x / 32))) & 0xFF;
-			row = (ntByte / 16);
-			col = ntByte % 16;
-			fineY = (y % 8);
-			address = (1  << 0xC) | (row << 8) | (col << 4) | fineY & 7; 
-			lowBg = nes.ppuRead(address);
-			address = (1 << 0xC) | (row << 8) | (col << 4) | (1 << 3) | fineY & 7;
-			highBg = nes.ppuRead(address);
-			int attrStart = (((y / 32) * 32) * 256) + (((x / 32) * 32));
-			attrX = (x / 32) * 4;
-			attrY = (y / 32) * 4;
-			int ntX = x / 8;
-			int ntY = y / 8;
-			attrStart = i - attrStart;
-			int attrBitShift = (((ntX - attrX) / 2) * 2) + (((ntY - attrY) / 2) * 4);
-			int palVal = ((curAttr >> attrBitShift) & 3) << 2;
-			pixel = ((highBg >> (7 - (i % 8)) & 1) << 1 | (lowBg >> (7 -(i % 8)) & 1));
-			frame[i] = NESPalette.getPixel(nes.ppuRead(0x3F00 + palVal + pixel));
-		}
-		return frame;
 	}
 	
 	public boolean rendering() {
@@ -641,6 +636,23 @@ public class PPU implements Notifier {
 	private void clearVBlankFlag() {
 		ppuStatus &= ~(1 << 7);
 	}
+	
+	private int getAttribute(final int ntstart, final int tileX, final int tileY) {
+        final int base = nes.ppuRead(ntstart + (tileX >> 2) + 8 * (tileY >> 2));
+        if (((tileY >> 1 & 1) != 0)) {
+            if (((tileX >> 1 & 1) != 0)) {
+                return (base >> 6) & 3;
+            } else {
+                return (base >> 4) & 3;
+            }
+        } else {
+            if (((tileX >> 1 & 1) != 0)) {
+                return (base >> 2) & 3;
+            } else {
+                return base & 3;
+            }
+        }
+    }
 
 	@Override
 	public void notify(String messageToSend) {
