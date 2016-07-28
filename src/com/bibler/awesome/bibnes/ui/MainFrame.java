@@ -124,6 +124,10 @@ public class MainFrame extends JFrame {
 		board.nextFrame();
 	}
 	
+	public void pause() {
+		board.pause();
+	}
+	
 	
 	
 	

@@ -47,6 +47,8 @@ public class PPU implements Notifier {
 	private int bgShiftOne;
 	private int bgShiftTwo;
 	
+	private int frameCount;
+	
 	private boolean NMIFlag;
 	private boolean sprite0Found;
 
@@ -324,26 +326,26 @@ public class PPU implements Notifier {
 	}
 	
 	private void processVisibleScanlinePixel() {
-		int cycleMod = cycle % 8; 
+		int cycleMod = (cycle - 1) & 7; 
 		bgAttrShiftRegH |= ((atByte >> 1) & 1);
         bgAttrShiftRegL |= (atByte & 1);
 		switch(cycleMod) {
-		case 2:
+		case 1:
 			fetchNTByte();
 			break;
-		case 4:
+		case 3:
 			 penultimateattr = getAttribute(((v & 0xc00) + 0x23c0),
                      (v) & 0x1f,
                      (((v) & 0x3e0) >> 5));
 			break;
-		case 6:
+		case 5:
 			fetchLowBGByte();
 			break;
-		case 0:
-			 atByte = penultimateattr;
+		case 7:
+			
 			if(cycle != 0) {
 				fetchHighBGByte();
-				
+				atByte = penultimateattr;
 				if(cycle == 256) {
 					incVertV();
 				} else {
@@ -361,11 +363,13 @@ public class PPU implements Notifier {
 	
 	public void fetchNTByte() {
 		ntByte = 0x2000 | (v & 0xFFF);
+		if(ntByte > 0x2400) {
+			System.out.println("Second NT:\n    Address: " + Integer.toHexString(ntByte) + "\n    Scanline: " + scanline + "\n    Cycle: " + cycle);
+		}
 		ntByte = nes.ppuRead(ntByte);
 	}
 	
 	public int fetchATByte() {
-		//int atAddress = calculateAtAddress();
 		int atAddress = 0x23C0 | (v & 0xC00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x7);
 		return nes.ppuRead(atAddress);
 		
@@ -610,6 +614,7 @@ public class PPU implements Notifier {
 	
 	private void nextFrame() {
 		notify("FRAME");
+		frameCount++;
 		nes.frame();
 	}
 	

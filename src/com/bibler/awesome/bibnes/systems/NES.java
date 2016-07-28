@@ -157,6 +157,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		if(running) {
 			breakpointEngaged = false;
 			stepped = false;
+			resume();
 		} else {
 			runSystem();
 		}

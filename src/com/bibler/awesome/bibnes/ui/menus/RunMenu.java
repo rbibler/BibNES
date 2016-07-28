@@ -27,6 +27,7 @@ public class RunMenu extends JMenu implements Notifier {
 	private JMenuItem stepItem;
 	private JMenuItem emulateItem;
 	private JMenuItem frameItem;
+	private JMenuItem pauseItem;
 	private RunMenuActionListener actionListener = new RunMenuActionListener();
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private MainFrame mainFrame;
@@ -63,6 +64,12 @@ public class RunMenu extends JMenu implements Notifier {
 		frameItem.setActionCommand("FRAME");
 		frameItem.addActionListener(actionListener);
 		frameItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0));
+		
+		pauseItem = new JMenuItem("Pause");
+		add(pauseItem);
+		pauseItem.setActionCommand("PAUSE");
+		pauseItem.addActionListener(actionListener);
+		pauseItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0));
 	}
 	
 	public void registerObjectToNotify(MessageHandler handler) {
@@ -107,6 +114,9 @@ public class RunMenu extends JMenu implements Notifier {
 				break;
 			case "FRAME":
 				mainFrame.frame();
+				break;
+			case "PAUSE":
+				mainFrame.pause();
 			}
 			
 		}
