@@ -13,6 +13,7 @@ import com.bibler.awesome.bibnes.systems.Cartridge;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.systems.Motherboard;
 import com.bibler.awesome.bibnes.systems.NES;
+import com.bibler.awesome.bibnes.systems.PPU;
 
 public class NESProducer {
 	
@@ -136,12 +137,12 @@ public class NESProducer {
 			try {
 				read = input.read();
 				if(index < prgSize) {
-					nes.cpuWrite(index + 0x8000, read);
+					nes.fillCPU(index + 0x8000, read);
 					if(inesPrgSize == 1) {
-						nes.cpuWrite(index + 0xC000, read);
+						nes.fillCPU(index + 0xC000, read);
 					}
 				} else {
-					nes.ppuWrite(index - prgSize, read);
+					nes.fillPPURom(index - prgSize, read);
 				}
 				index++;
 			} catch(IOException e) {}
@@ -149,6 +150,10 @@ public class NESProducer {
 		try {
 			input.close();
 		} catch(IOException e) {}
+	}
+
+	public PPU getPPU() {
+		return nes.getPPU();
 	}
 
 }

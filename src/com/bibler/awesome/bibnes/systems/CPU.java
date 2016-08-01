@@ -61,6 +61,10 @@ public class CPU implements Notifier {
 		}
 	}
 	
+	public void unregisterAll() {
+		objectsToNotify.clear();
+	}
+	
 	public void run() {
 		Thread t = new Thread(new Runnable() {
 
@@ -1514,7 +1518,9 @@ public class CPU implements Notifier {
 	@Override
 	public void notify(String messageToSend) {
 		for(Notifiable notifiable : objectsToNotify) {
-			notifiable.takeNotice(messageToSend, this);
+			if(notifiable != null) {
+				notifiable.takeNotice(messageToSend, this);
+			}
 		}
 	}
 

@@ -55,8 +55,18 @@ public class PPU implements Notifier {
 	
 	private int vInc;
 	private int bgTileLocation;
+	public int currentXScroll;
+	
+	private boolean updateXScrollLine = true;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
+	
+	private int[] powerOnPalette = {
+			0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0D, 
+			0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2C, 
+			0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 
+			0x08, 0x3A, 0x00, 0x02, 0x00, 0x20, 0x2C, 0x08
+		};
 		
 	private NES nes;
 	
@@ -70,8 +80,18 @@ public class PPU implements Notifier {
 		}
 	}
 	
+	public void unregisterAll() {
+		objectsToNotify.clear();
+	}
+	
 	public void reset() {
-		//ppuStatus = 0x80;
+		writePowerOnPalette();
+	}
+	
+	private void writePowerOnPalette() {
+		for(int i = 0; i < powerOnPalette.length; i++) {
+			nes.ppuWrite(0x3F00 + i, powerOnPalette[i]);
+		}
 	}
 	
 	
@@ -137,7 +157,7 @@ public class PPU implements Notifier {
 	}
 	
 	private void writePPUCtrl(int data) {
-		t = (t & ~3) | ((data & 3) << 10);
+		t = (t & ~0xC00) | ((data & 3) << 10);
 		ppuCtrl = data;
 		vInc = (ppuCtrl >> 2 & 1) == 0 ? 1 : 32;
 		bgTileLocation = ppuCtrl >> 4 & 1;
@@ -159,10 +179,14 @@ public class PPU implements Notifier {
 	}
 	
 	private void writeOAMData(int data) {
-		try {
-			OAM[oamAddr] = data;
-			oamAddr++;
-		} catch(ArrayIndexOutOfBoundsException e) {}
+		 if ((oamAddr & 3) == 2) {
+             OAM[oamAddr++] = (data & 0xE3);
+         } else {
+             OAM[oamAddr++] = data;
+         }
+         oamAddr &= 0xff;
+         // games don't usually write this directly anyway, it's unreliable
+         
 	}
 	
 	private void writePPUScroll(int data) {
@@ -180,6 +204,7 @@ public class PPU implements Notifier {
 			fineX = data & 0x7;
 			w = 1;
 		}
+		
 	}
 	
 	private void writePPUAddr(int data) {
@@ -262,6 +287,7 @@ public class PPU implements Notifier {
 		} else if(scanline == 261 && cycle == 340) {
 			scanline = 0;
 			cycle = 0;
+			updateXScrollLine = true;
 			nextFrame();
 		}
 	}
@@ -280,6 +306,11 @@ public class PPU implements Notifier {
                 //horizontal bits of loopyV = loopyT
                 v &= ~0x41f;
                 v |= t & 0x41f;
+                if(updateXScrollLine) {
+                	currentXScroll = ((v & 0x1F) * 8) + fineX;
+                	currentXScroll += ((v >> 10 & 1) == 1) ? 256 : 0;
+                	updateXScrollLine = false;
+                }
 
             } 
             if ((cycle == 340) && rendering()) {
@@ -311,8 +342,14 @@ public class PPU implements Notifier {
         }
         if (scanline < 240) {
             if (cycle >= 1 && cycle <= 256) {
-            	if(rendering()) {
-            		renderPixelToScreen();
+            	if((ppuMask >> 3 & 1) == 1) {												//if BG on
+            		if(rendering()) {
+            			renderPixelToScreen();
+            		}
+            	} else {							
+            		final int bgPixel = ( (v > 0x3F00 && v < 0x3FFF) ? nes.ppuRead(v) : nes.ppuRead(0x3F00));
+            		frameArray[(scanline * 256) + (cycle - 1)] = NESPalette.getPixel(bgPixel);
+            		bgColorIndex = 0;
             	}
             }
         }
@@ -326,22 +363,22 @@ public class PPU implements Notifier {
 	}
 	
 	private void processVisibleScanlinePixel() {
-		int cycleMod = (cycle - 1) & 7; 
+		int cycleMod = cycle % 8; 
 		bgAttrShiftRegH |= ((atByte >> 1) & 1);
         bgAttrShiftRegL |= (atByte & 1);
 		switch(cycleMod) {
-		case 1:
+		case 2:
 			fetchNTByte();
 			break;
-		case 3:
+		case 4:
 			 penultimateattr = getAttribute(((v & 0xc00) + 0x23c0),
                      (v) & 0x1f,
                      (((v) & 0x3e0) >> 5));
 			break;
-		case 5:
+		case 6:
 			fetchLowBGByte();
 			break;
-		case 7:
+		case 0:
 			
 			if(cycle != 0) {
 				fetchHighBGByte();
@@ -363,9 +400,7 @@ public class PPU implements Notifier {
 	
 	public void fetchNTByte() {
 		ntByte = 0x2000 | (v & 0xFFF);
-		if(ntByte > 0x2400) {
-			System.out.println("Second NT:\n    Address: " + Integer.toHexString(ntByte) + "\n    Scanline: " + scanline + "\n    Cycle: " + cycle);
-		}
+		
 		ntByte = nes.ppuRead(ntByte);
 	}
 	
@@ -452,18 +487,15 @@ public class PPU implements Notifier {
 						spriteData = OAM[(spriteIndex * 4) + spriteEvalIndex];
 					} else if(spriteFoundCount < 8) {
 						if(spriteMode == 0) {										// If in range evaluation mode
-							spriteRange = (scanline + 1) - (spriteData);		// check range
+							spriteRange = (scanline ) - (spriteData);		// check range
 							if(spriteRange >= 0 && spriteRange <=					// If in range 
 									((ppuCtrl >> 5 & 1) == 1 ? 15 : 7)) {
 								spriteMode = 1;		
 								if(spriteIndex == 0) {
 									sprite0Found = true;
 								}
-								try {// Set to sprite data copy mode
-									spriteTempMem[(spriteFoundCount * 4) + spriteEvalIndex++] = spriteRange;
-								} catch(ArrayIndexOutOfBoundsException e ) {
-									System.out.println("Out of bounds:\n    spriteIndex: " + spriteIndex + "\n    spriteEvalIndex: " + spriteEvalIndex);
-								}
+								spriteTempMem[(spriteFoundCount * 4) + spriteEvalIndex++] = spriteRange;
+								
 							} else {
 								spriteIndex++;										// If not in range, go to next sprite
 							}
@@ -503,6 +535,7 @@ public class PPU implements Notifier {
 						
 						lowSpriteShift[spriteShiftIndex] = nes.ppuRead(address );
 						highSpriteShift[spriteShiftIndex++] = nes.ppuRead(address + 8);
+						
 					}
 				}
 			}
@@ -538,7 +571,7 @@ public class PPU implements Notifier {
 		int pixel = (lowSpriteShift[index] >> (shift)) & 1;
 		pixel |= ((highSpriteShift[index] >> (shift)) & 1) << 1;
 		pixel |= (spriteAttr[index] & 3) << 2;
-		final int bufferIndex = (scanline * 256) + cycle;
+		final int bufferIndex = (scanline * 256) + (cycle - 1);
 		final int spritePixel = NESPalette.getPixel(nes.ppuRead(0x3F10 + pixel));
 		final int pixelIndex = pixel & 0x03;
 		
@@ -560,7 +593,8 @@ public class PPU implements Notifier {
 	}
 	
 	private void renderPixelToScreen() {
-		int offset = (scanline * 256) + cycle;
+		int offset = (scanline * 256) + (cycle - 1)
+				;
 		int pixel = 0;
 		//int x = (v & 0x1F) + (7 - fineX) + 8;
 		//int y = ((v >> 5) & 0x1F);
@@ -582,7 +616,9 @@ public class PPU implements Notifier {
 		
 		//int val  = nes.ppuRead(pixel);
         int val = nes.ppuRead(0x3F00 + (bgPal << 2 | bgPix));
-		if(offset < frameArray.length && pixel > 0) {
+        if((ppuMask >> 1 & 1) == 0 && cycle < 8) {
+        	frameArray[offset] = NESPalette.getPixel(nes.ppuRead(0x3F00));
+        } else if(offset < frameArray.length && pixel > 0) {
 			frameArray[offset] = NESPalette.getPixel(val);
 		}
 		shift();
@@ -658,11 +694,17 @@ public class PPU implements Notifier {
             }
         }
     }
+	
+	public int[] getOamMem() {
+		return OAM;
+	}
 
 	@Override
 	public void notify(String messageToSend) {
 		for(Notifiable notifiable : objectsToNotify) {
-			notifiable.takeNotice(messageToSend, this);
+			if(notifiable != null) {
+				notifiable.takeNotice(messageToSend, this);
+			}
 		}
 		
 	}

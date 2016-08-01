@@ -31,9 +31,11 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private Disassembler disassembler = new Disassembler();
 	private Peripheral controller;
 	
-	private long averageFrameRate;
+	public double averageFrameRate;
 	private long lastFrameTime;
 	private long frameRate = 1000 / 60;
+	private long totalFrameTime;
+	private long frameCount;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
@@ -63,6 +65,12 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		if(!objectsToNotify.contains(objectToNotify)) {
 			objectsToNotify.add(objectToNotify);
 		}
+	}
+	
+	public void unregisterAll() {
+		cpu.unregisterAll();
+		ppu.unregisterAll();
+		objectsToNotify.clear();
 	}
 
 	public int[] getCPUMem() {
@@ -173,12 +181,21 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public void frame() {
 		final long frameTime = System.currentTimeMillis() - lastFrameTime;
-		lastFrameTime = System.currentTimeMillis();
 		if(frameTime < frameRate) {
 			try {
 				Thread.sleep((long) (frameRate - frameTime));
 			} catch(InterruptedException e) {}
 		}
+		if(lastFrameTime != 0) {
+			final long fullTime = System.currentTimeMillis() - lastFrameTime;
+			totalFrameTime += fullTime;
+			frameCount++;
+			averageFrameRate = 1000.0 / (totalFrameTime / frameCount);
+			
+		}
+		lastFrameTime = System.currentTimeMillis();
+		
+		
 		if(frameByFrame) {
 			pause();
 		}
@@ -221,6 +238,10 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		this.mirrorType = mirrorType;
 	}
 	
+	public void fillCPU(int address, int data) {
+		cpuMem[address] = data;
+	}
+	
 	public void cpuWrite(int address, int data) {
 		if(address < 0x2000) {														// Write to CPU Ram
 			address %= 0x800;
@@ -234,16 +255,14 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		} else if(address < 0x4020) {
 			writeToAPU(address, data);
 		} else {
-			cpuMem[address % 0x10000] = data;
+			//cpuMem[address % 0x10000] = data;
 		}
 	}
 	
 	public int cpuRead(int address) {
 		int readData = 0;
 		if(address < 0x2000) {														// Write to CPU Ram
-			address %= 0x800;
 			readData = cpuMem[address];
-			
 		} else if(address < 0x4000) {
 			readData = readFromPPU(address);
 		} else if(address < 0x4020) {
@@ -254,9 +273,16 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		return readData;
 	}
 	
+	public void fillPPURom(int address, int data) {
+		ppuMem[address] = data;
+	}
+	
 	public void ppuWrite(int address, int data) {
 		if(address < 0x2000) {
-			ppuMem[address] = data;
+			//ppuMem[address] = data;
+			//if(address < 16) {
+				//System.out.println("Writing " + Integer.toHexString(data) + " to " + Integer.toHexString(address));
+			//}
 		} else if(address < 0x3000) {
 			if(mirrorType == HORIZ) {
 				ppuMem[address] = data;
@@ -274,11 +300,11 @@ public class NES extends Motherboard implements Notifier, Runnable {
 				}
 			}
 		} else if(address < 0x4000) {
-			//address = (0x3F00 + (address % 0x20));
-			//for(int i = 0; i < 8; i++) {
-				//ppuMem[address + (i * 0x20)] = data;
-			//}
-			ppuMem[address] = data;
+			final int baseAddress = address % 0x20;
+			for(int i = 0; i < 8; i++) {
+				ppuMem[(i * 0x20) + baseAddress + 0x3F00] = data;
+			}
+			
 		}
 	}
 	
@@ -314,6 +340,10 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			}
 		}
 		
+	}
+
+	public PPU getPPU() {
+		return ppu;
 	}
 	
 	

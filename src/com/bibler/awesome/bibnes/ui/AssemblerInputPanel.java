@@ -8,7 +8,7 @@ import javax.swing.JTextPane;
 
 import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 
-public class AssemblerInputPanel extends JPanel {
+public class AssemblerInputPanel extends PopoutPanel {
 
 	/**
 	 * 
@@ -21,9 +21,8 @@ public class AssemblerInputPanel extends JPanel {
 	private JPanel mainPanel;
 	private LookAndFeel currentLookAndFeel;
 	
-	public AssemblerInputPanel(int width, int height, BreakpointManager bpManager) {
-		super();
-		setPreferredSize(new Dimension(width, height));
+	public AssemblerInputPanel(String title, int tabIndex, int width, int height, BreakpointManager bpManager) {
+		super(title, tabIndex, width, height);
 		initialize(width, height, bpManager);
 	}
 	

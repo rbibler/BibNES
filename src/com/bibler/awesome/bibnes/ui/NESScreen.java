@@ -1,5 +1,6 @@
 package com.bibler.awesome.bibnes.ui;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
@@ -13,22 +14,25 @@ import java.util.Date;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
-public class NESScreen extends JPanel {
+import com.bibler.awesome.bibnes.systems.NES;
+
+public class NESScreen extends PopoutPanel {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2850055628329603061L;
 	BufferedImage screenImage;
-	private int width;
-	private int height;
 	double scaleX;
 	double scaleY;
 	int screenshotCount;
 	
+	private NES nes;
+	
 	boolean flash; 
 	
-	public NESScreen(int width, int height) {
-		super();
-		this.width = width;
-		this.height = height;
-		setPreferredSize(new Dimension(width, height));
+	public NESScreen(String title, int tabIndex, int width, int height) {
+		super(title, tabIndex, width, height);
 		screenImage = new  BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
 		scaleX = 256.0 / width;
 		scaleY = 240.0 / height;
@@ -63,6 +67,10 @@ public class NESScreen extends JPanel {
 		repaint();
 	}
 	
+	public void setBoard(NES nes) {
+		this.nes = nes;
+	}
+	
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
@@ -73,6 +81,10 @@ public class NESScreen extends JPanel {
 		int h = this.getHeight() / 240;
 		int ratio = Math.min(w, h);
 		g.drawImage(screenImage, 0, 0, ratio * 256, ratio * 240, null);
+		g.setColor(Color.GREEN);
+		if(nes != null) {
+			g.drawString("FPS: " + nes.averageFrameRate, 200, 15);
+		}
 	}
 
 }

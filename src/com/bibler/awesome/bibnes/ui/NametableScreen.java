@@ -1,13 +1,15 @@
 package com.bibler.awesome.bibnes.ui;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JPanel;
 
+import com.bibler.awesome.bibnes.systems.PPU;
 import com.bibler.awesome.bibnes.utils.NESPalette;
 
-public class NametableScreen extends JPanel implements Runnable {
+public class NametableScreen extends PopoutPanel implements Runnable {
 	
 	/**
 	 * 
@@ -21,8 +23,10 @@ public class NametableScreen extends JPanel implements Runnable {
 	private boolean running;
 	
 	private int[] ppuMem;
+	private PPU ppu;
 	
-	public NametableScreen() {
+	public NametableScreen(String title, int tabIndex, int width, int height) {
+		super(title, tabIndex, width, height);
 		nt1 = new BufferedImage(256, 240, BufferedImage.TYPE_4BYTE_ABGR);
 		nt2 = new BufferedImage(256, 240, BufferedImage.TYPE_4BYTE_ABGR);
 		nt3 = new BufferedImage(256, 240, BufferedImage.TYPE_4BYTE_ABGR);
@@ -42,8 +46,9 @@ public class NametableScreen extends JPanel implements Runnable {
 		repaint();
 	}
 	
-	public void setPPUMem(int[] ppuMem) {
+	public void setPPUMem(int[] ppuMem, PPU ppu) {
 		this.ppuMem = ppuMem;
+		this.ppu = ppu;
 	}
 	
 	private void updateScreen(int ntAddress, BufferedImage img) {
@@ -99,6 +104,11 @@ public class NametableScreen extends JPanel implements Runnable {
 		g.drawImage(nt2, 256, 0, null);
 		g.drawImage(nt3, 0, 240, null);
 		g.drawImage(nt4, 256, 240, null);
+		if(ppu != null) {
+			g.setColor(Color.RED);
+			final int x = ppu.currentXScroll;
+			g.drawLine(x, 0, x, 480);
+		}
 	}
 
 	@Override

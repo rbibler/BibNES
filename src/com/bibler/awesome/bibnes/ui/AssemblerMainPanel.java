@@ -3,15 +3,8 @@ package com.bibler.awesome.bibnes.ui;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Toolkit;
-import java.awt.event.KeyEvent;
-
-import javax.swing.ActionMap;
-import javax.swing.InputMap;
 import javax.swing.JComponent;
-import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.KeyStroke;
@@ -36,7 +29,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	 * 
 	 */
 	private static final long serialVersionUID = -7673270466202998997L;
-	private JTabbedPane middlePane;
+	private PopoutPaneHolder middlePane;
 	private AssemblerInputPanel inputPanel;
 	private NESScreen nesScreen;
 	private NametableScreen nametable;
@@ -58,32 +51,38 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		inputOutputPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		
 		LookAndFeel currentLF = setupLookAndFeel();
-		inputPanel = new AssemblerInputPanel(900,600, bpManager);
-		nesScreen = new NESScreen(256, 240);
-		nametable = new NametableScreen();
-		middlePane = new JTabbedPane();
-		middlePane.add("Source", inputPanel);
-		middlePane.add("Emulator", nesScreen);
-		middlePane.add("Debug", nametable);
+		inputPanel = new AssemblerInputPanel("Source", 0, 900,600, bpManager);
+		nesScreen = new NESScreen("Emulator", 1, 256, 240);
+		nametable = new NametableScreen("Debug", 2, 512, 480);
+		middlePane = new PopoutPaneHolder(10);
+		middlePane.addPopoutPanel(inputPanel);
+		inputPanel.setParent(middlePane);
+		inputPanel.setPoppedStatus(false);
+		middlePane.addPopoutPanel(nesScreen);
+		nesScreen.setParent(middlePane);
+		nesScreen.setPoppedStatus(false);
+		middlePane.addPopoutPanel(nametable);
+		nametable.setParent(middlePane);
+		nametable.setPoppedStatus(false);
+		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "none");
+		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "none");
+		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("UP"), "none");
+		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("DOWN"), "none");
 		middlePane.addChangeListener(new ChangeListener() {
 
 			@Override
 			public void stateChanged(ChangeEvent arg0) {
 				Object source = arg0.getSource();
 				if(source instanceof JTabbedPane) {
-					if(middlePane.getSelectedIndex() == 1) {
+					if(middlePane.getComponentAt(middlePane.getSelectedIndex()) instanceof NESScreen) {
 						nesScreen.requestFocus();
 					}
 				}
 			}
 			
 		});
-		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "none");
-		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "none");
-		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("UP"), "none");
-		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("DOWN"), "none");
 		inputPanel.applyLookAndFeel(currentLF);
-		outputPanel = new AssemblerOutputPanel(900,200, bpManager);
+		outputPanel = new AssemblerOutputPanel("", 0, 900,200, bpManager);
 		emulatorPanel = new EmulatorPanel(200, 600);
 		projectPanel = new ProjectPanel(200, 600);
 		inputStatusPane.add(middlePane);
@@ -111,6 +110,10 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		nesScreen.addKeyListener(controller);
 	}
 	
+	public void setBoard(NES nes) {
+		nesScreen.setBoard(nes);
+	}
+	
 	public String[] getInputLines() {
 		return inputPanel.getInputLines();
 	}
@@ -136,22 +139,21 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			if(message.startsWith("STEP") && notifier instanceof NES) {
 				outputPanel.updateStep(Integer.parseInt(message.substring(4)));
 			}
-			//emulatorPanel.sendMessageToEmulator(message, notifier);	
 		} else if(notifier instanceof NESProducer) {
 			final NESProducer prod = (NESProducer) notifier;
 			if(message.startsWith("LISTING")) {
 				outputPanel.displayListing(message.substring("LISTING".length()));
 			} else if(message.startsWith("DONE")){
+				final PPU ppu = prod.getPPU();
 				emulatorPanel.fillCPUMem(prod.getCPUMem());
 				emulatorPanel.fillPPUMem(prod.getPPUMem());
-				nametable.setPPUMem(prod.getPPUMem());
+				emulatorPanel.fillOAMMem(ppu.getOamMem());
+				nametable.setPPUMem(prod.getPPUMem(), ppu);
 			}
 		} else if(notifier instanceof PPU) {
 			if(message.equalsIgnoreCase("Frame")) {
 				nesScreen.updateFrame(((PPU) notifier).getFrameForPainting());
-			} else if(message.equalsIgnoreCase("NT")) {
-				//nametable.updateFrame(((PPU) notifier).getCurrentNameTable());
-			}
+			} 
 		}
 	}
 

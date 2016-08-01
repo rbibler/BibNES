@@ -7,6 +7,7 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -38,7 +39,9 @@ public class MainFrame extends JFrame {
 		super();
 		initialize();
 		KeyboardFocusManager focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();	
+		
 	}
+	
 
 	private void initialize() {
 		try {
@@ -60,7 +63,6 @@ public class MainFrame extends JFrame {
 	public void runAssembler() {
 		Memory machineCode = assemble();
 		CPU cpu = new CPU();
-		//mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
 		cpu.registerObjectToNotify(messageHandler);
 		cpu.powerOn();
 		cpu.resetCPU();
@@ -77,11 +79,9 @@ public class MainFrame extends JFrame {
 	
 	public void debug() {
 		Memory machineCode = assemble();
-		//board = new MosBoard();
 		board.setROM(machineCode);
 		board.power();
 		board.registerObjectToNotify(messageHandler);
-		//mainPanel.getEmulatorPanel().getHexPane().fillInValues(machineCode);
 	}
 	
 	public void loadNesFileAndRun(boolean debug) {
@@ -90,22 +90,22 @@ public class MainFrame extends JFrame {
 		bpManager.clearAllBreakpoints();
 		File f = FileUtils.loadFile(this);
 		NESProducer producer = new NESProducer();
+		if(board != null) {
+			board.pause();
+			board.unregisterAll();
+			
+		}
 		board = (NES) producer.produceNES(f, messageHandler);
+		mainPanel.setBoard(board);
 		board.setPeripheral(controller);
 		board.setBreakpointManager(bpManager);
 		board.power();
-		if(!debug) {
-			board.runSystem();
-		}
+		board.runSystem();
+
 	}
 	
 	public void emulateNES(boolean debug) {
-		//NESProducer producer = new NESProducer();
-		//board = producer.produceNES(mainPanel.getInputLines(), messageHandler);
-		//board.power();
-		//if(!debug) {
-			board.runSystem();
-		//}
+		board.runSystem();
 	}
 	
 	public void runEmulator() {
@@ -127,9 +127,5 @@ public class MainFrame extends JFrame {
 	public void pause() {
 		board.pause();
 	}
-	
-	
-	
-	
 
 }

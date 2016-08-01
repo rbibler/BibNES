@@ -10,7 +10,7 @@ import javax.swing.JTabbedPane;
 import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 import com.bibler.awesome.bibnes.systems.Memory;
 
-public class AssemblerOutputPanel extends JPanel {
+public class AssemblerOutputPanel extends PopoutPanel {
 	
 	/**
 	 * 
@@ -21,8 +21,8 @@ public class AssemblerOutputPanel extends JPanel {
 	private ConsoleMessageBox consolePanel;
 	private JTabbedPane tabs;
 	
-	public AssemblerOutputPanel(int width, int height, BreakpointManager bpManager) {
-		super();
+	public AssemblerOutputPanel(String title, int tabIndex, int width, int height, BreakpointManager bpManager) {
+		super(title, tabIndex, width, height);
 		initialize(width, height, bpManager);
 	}
 	

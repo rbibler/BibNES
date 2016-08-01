@@ -24,6 +24,7 @@ public class EmulatorPanel extends JPanel {
 	private JTabbedPane tabPane;
 	private JHexView cpuPane;
 	private JHexView ppuPane;
+	private JHexView oamPane;
 	private boolean running;
 	
 	public EmulatorPanel(int width, int height) {
@@ -36,6 +37,8 @@ public class EmulatorPanel extends JPanel {
 		tabPane.add("CPU Memory", cpuPane);
 		ppuPane = new JHexView();
 		tabPane.add("PPU Memory", ppuPane);
+		oamPane = new JHexView();
+		tabPane.add("OAM Memory", oamPane);
 		setLayout(new BorderLayout());
 		add(tabPane, BorderLayout.CENTER);
 		Thread t = new Thread(new Runnable() {
@@ -57,13 +60,10 @@ public class EmulatorPanel extends JPanel {
 		
 	}
 	
-	public JHexView getHexPane() {
-		return cpuPane;
-	}
-	
 	private void update() {
 		cpuPane.repaint();
 		ppuPane.repaint();
+		oamPane.repaint();
 	}
 	
 	public void fillCPUMem(int[] cpuMem) {
@@ -80,6 +80,14 @@ public class EmulatorPanel extends JPanel {
 		ppuPane.setEnabled(true);
 		ppuPane.setBytesPerColumn(1);
 		ppuPane.repaint();
+	}
+	
+	public void fillOAMMem(int[] oamMem) {
+		oamPane.setData(new SimpleDataProvider(oamMem));
+		oamPane.setDefinitionStatus(DefinitionStatus.DEFINED);
+		oamPane.setEnabled(true);
+		oamPane.setBytesPerColumn(1);
+		oamPane.repaint();
 	}
 	
 	
