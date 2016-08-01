@@ -36,6 +36,8 @@ public class NESScreen extends PopoutPanel {
 		screenImage = new  BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
 		scaleX = 256.0 / width;
 		scaleY = 240.0 / height;
+		final Dimension screenDims = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+		setMaximumSize(new Dimension( (screenDims.width / 256) * 256, (screenDims.height / 240) * 240));
 	}
 	
 	public void screenshot() {

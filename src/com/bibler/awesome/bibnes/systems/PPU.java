@@ -58,6 +58,7 @@ public class PPU implements Notifier {
 	public int currentXScroll;
 	
 	private boolean updateXScrollLine = true;
+	private boolean oddFrame;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	
@@ -86,6 +87,7 @@ public class PPU implements Notifier {
 	
 	public void reset() {
 		writePowerOnPalette();
+		oddFrame = false;
 	}
 	
 	private void writePowerOnPalette() {
@@ -284,11 +286,14 @@ public class PPU implements Notifier {
 			if(scanline > LINES_PER_FRAME) {
 				scanline = 0;
 			}
-		} else if(scanline == 261 && cycle == 340) {
-			scanline = 0;
-			cycle = 0;
-			updateXScrollLine = true;
-			nextFrame();
+		} else if(scanline == 261) {
+			if(oddFrame) {
+				if(cycle == 339) {
+					nextFrame();
+				}
+			} else if(cycle == 340) {
+				nextFrame();
+			}
 		}
 	}
 	
@@ -572,7 +577,8 @@ public class PPU implements Notifier {
 		pixel |= ((highSpriteShift[index] >> (shift)) & 1) << 1;
 		pixel |= (spriteAttr[index] & 3) << 2;
 		final int bufferIndex = (scanline * 256) + (cycle - 1);
-		final int spritePixel = NESPalette.getPixel(nes.ppuRead(0x3F10 + pixel));
+		final int palVal = nes.ppuRead(0x3F10 + pixel);
+		final int spritePixel = NESPalette.getPixel(((ppuMask & 1) == 1) ? palVal & 0x30 : palVal);
 		final int pixelIndex = pixel & 0x03;
 		
 		final int priority = spriteAttr[index] >> 5 & 1;
@@ -616,6 +622,9 @@ public class PPU implements Notifier {
 		
 		//int val  = nes.ppuRead(pixel);
         int val = nes.ppuRead(0x3F00 + (bgPal << 2 | bgPix));
+        if((ppuMask & 1) == 1) {
+        	val &= 0x30;
+        }
         if((ppuMask >> 1 & 1) == 0 && cycle < 8) {
         	frameArray[offset] = NESPalette.getPixel(nes.ppuRead(0x3F00));
         } else if(offset < frameArray.length && pixel > 0) {
@@ -649,6 +658,10 @@ public class PPU implements Notifier {
 	}
 	
 	private void nextFrame() {
+		scanline = 0;
+		cycle = 0;
+		updateXScrollLine = true;
+		oddFrame = !oddFrame;
 		notify("FRAME");
 		frameCount++;
 		nes.frame();

@@ -74,9 +74,11 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			public void stateChanged(ChangeEvent arg0) {
 				Object source = arg0.getSource();
 				if(source instanceof JTabbedPane) {
-					if(middlePane.getComponentAt(middlePane.getSelectedIndex()) instanceof NESScreen) {
-						nesScreen.requestFocus();
-					}
+					try {
+						if(middlePane.getComponentAt(middlePane.getSelectedIndex()) instanceof NESScreen) {
+							nesScreen.requestFocus();
+						}
+					} catch(ArrayIndexOutOfBoundsException e) {}
 				}
 			}
 			
