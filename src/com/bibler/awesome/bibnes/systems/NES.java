@@ -304,12 +304,27 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			for(int i = 0; i < 8; i++) {
 				ppuMem[(i * 0x20) + baseAddress + 0x3F00] = data;
 			}
+			/*if(address == 0x3F10 || address == 0x3F14 || address == 0x3F18 || address == 0x3F1C) {
+				ppuMem[address - 0x10] = data;
+			} else if(address == 0x3F00 || address == 0x3F)
+			*/
+			if(address % 4 == 0) {
+				ppuMem[address & ~(1 << 4)] = data;
+				ppuMem[address | (1 << 4)] = data;
+			}
 			
 		}
 	}
 	
 	public int ppuRead(int address) {
-		return ppuMem[address % 0x4000];
+		int ret = ppuMem[address % 0x4000];
+		// Returns the background color for all palette 0 cases. Might not be the right place to do this. 
+		if(address >= 0x3F00) {
+			if(address % 4 == 0) {
+				ret = ppuMem[0x3F00];
+			}
+		} 
+		return ret;
 	}
 
 	@Override

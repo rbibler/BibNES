@@ -47,6 +47,8 @@ public class PPU implements Notifier {
 	private int bgShiftOne;
 	private int bgShiftTwo;
 	
+	private int emphBits;
+	
 	private int frameCount;
 	
 	private boolean NMIFlag;
@@ -172,6 +174,7 @@ public class PPU implements Notifier {
 	
 	private void writePPUMask(int data) {
 		ppuMask = data;
+		emphBits = (data & 0xe0) << 1;
 	}
 	
 	private void writePPUStatus(int data) {}
@@ -492,10 +495,13 @@ public class PPU implements Notifier {
 						spriteData = OAM[(spriteIndex * 4) + spriteEvalIndex];
 					} else if(spriteFoundCount < 8) {
 						if(spriteMode == 0) {										// If in range evaluation mode
-							spriteRange = (scanline ) - (spriteData);		// check range
+							spriteRange = (scanline) - (spriteData);		// check range Should be scanline + 1 ?
 							if(spriteRange >= 0 && spriteRange <=					// If in range 
 									((ppuCtrl >> 5 & 1) == 1 ? 15 : 7)) {
 								spriteMode = 1;		
+								if(spriteFoundCount >= 8) {
+									ppuStatus |= 1 << 5;							// Set sprite overflow
+								}
 								if(spriteIndex == 0) {
 									sprite0Found = true;
 								}
@@ -513,6 +519,11 @@ public class PPU implements Notifier {
 								spriteFoundCount++;
 							}
 						}
+					}
+				} else if(cycle == 257) {
+					for(int i = spriteFoundCount; i < 8; i++) {
+						lowSpriteShift[i] = 0;
+						highSpriteShift[i] = 0;
 					}
 				} else if(cycle < 321) {
 					if(spriteShiftIndex < 8) {
@@ -548,10 +559,12 @@ public class PPU implements Notifier {
 	}
 	
 	private void renderSprites() {
-		if(rendering() && scanline < 240 && cycle < 256) {
+		if((ppuMask >> 4 & 1) == 1 && scanline < 240 && cycle < 256) {
 			for(int i = 0; i < 8; i++) {
 				if(cycle >= spriteXLatch[i] && cycle < (spriteXLatch[i] + 8)) {
-					renderSprite(i);
+					if(!((ppuMask >> 2 & 1) == 1 && cycle < 8)) {
+						renderSprite(i);
+					}
 				}
 			}
 		}
@@ -578,7 +591,7 @@ public class PPU implements Notifier {
 		pixel |= (spriteAttr[index] & 3) << 2;
 		final int bufferIndex = (scanline * 256) + (cycle - 1);
 		final int palVal = nes.ppuRead(0x3F10 + pixel);
-		final int spritePixel = NESPalette.getPixel(((ppuMask & 1) == 1) ? palVal & 0x30 : palVal);
+		final int spritePixel = NESPalette.getPixel( (((ppuMask & 1) == 1) ? palVal & 0x30 : palVal) & 0x3F | emphBits);
 		final int pixelIndex = pixel & 0x03;
 		
 		final int priority = spriteAttr[index] >> 5 & 1;
@@ -625,6 +638,7 @@ public class PPU implements Notifier {
         if((ppuMask & 1) == 1) {
         	val &= 0x30;
         }
+        val = (val & 0x3F) | emphBits;
         if((ppuMask >> 1 & 1) == 0 && cycle < 8) {
         	frameArray[offset] = NESPalette.getPixel(nes.ppuRead(0x3F00));
         } else if(offset < frameArray.length && pixel > 0) {
