@@ -9,6 +9,7 @@ import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.assembler.Disassembler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifier;
+import com.bibler.awesome.bibnes.mappers.Mapper;
 import com.bibler.awesome.bibnes.systems.Cartridge;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.systems.Motherboard;
@@ -102,6 +103,10 @@ public class NESProducer {
 		processHeaderInfo(input);
 		nes = new NES();
 		nes.setMirror(inesMirror);
+		Mapper mapper = new Mapper();
+		mapper.setPrgMemSize(inesPrgSize * 0x4000);
+		mapper.setChrMemSize(inesChrSize * 0x2000);
+		nes.setMapper(mapper);
 		processRom(input, nes);
 		//Disassembler disassembler = new Disassembler();
 		//messageHandler.takeNotice("LISTING" + disassembler.disassemble(cart.getPrgMem(), 0), this);
@@ -132,17 +137,21 @@ public class NESProducer {
 	private void processRom(BufferedInputStream input, NES nes) {
 		int index = 0;
 		int read = 0;
-		final int prgSize = inesPrgSize * 16384;
-		while(read != -1) {
+		final int prgSize = inesPrgSize * 0x4000;
+		final int chrSize = inesChrSize * 0x2000;
+		final Mapper mapper = nes.getMapper();
+		final int[] prgMem = new int[prgSize];
+		final int[] chrMem = new int[chrSize];
+		while(read != -1 && (index - prgSize) < chrSize) {
 			try {
 				read = input.read();
 				if(index < prgSize) {
-					nes.fillCPU(index + 0x8000, read);
+					prgMem[index] = read;
 					if(inesPrgSize == 1) {
-						nes.fillCPU(index + 0xC000, read);
+						prgMem[index + 0x4000] = read;
 					}
 				} else {
-					nes.fillPPURom(index - prgSize, read);
+					chrMem[index - prgSize] = read;
 				}
 				index++;
 			} catch(IOException e) {}
@@ -150,6 +159,8 @@ public class NESProducer {
 		try {
 			input.close();
 		} catch(IOException e) {}
+		mapper.setPrgMem(prgMem);
+		mapper.setChrMem(chrMem);
 	}
 
 	public PPU getPPU() {

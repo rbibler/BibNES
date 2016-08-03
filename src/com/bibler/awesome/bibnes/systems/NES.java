@@ -7,6 +7,7 @@ import com.bibler.awesome.bibnes.assembler.Disassembler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.communications.Notifier;
 import com.bibler.awesome.bibnes.io.LogWriter;
+import com.bibler.awesome.bibnes.mappers.Mapper;
 
 public class NES extends Motherboard implements Notifier, Runnable {
 	
@@ -14,6 +15,8 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private APU apu;
 	private int[] cpuMem;
 	private int[] ppuMem;
+	
+	private Mapper mapper;
 	
 	private int cycleCount;
 	private boolean running;
@@ -45,6 +48,14 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		apu = new APU();
 		cpuMem = new int[0x10000];
 		ppuMem = new int[0x4000];
+	}
+	
+	public void setMapper(Mapper mapper) {
+		this.mapper = mapper;
+	}
+	
+	public Mapper getMapper() {
+		return mapper;
 	}
 	
 	@Override
@@ -254,8 +265,8 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			writeToPPU(address, data);
 		} else if(address < 0x4020) {
 			writeToAPU(address, data);
-		} else {
-			//cpuMem[address % 0x10000] = data;
+		} else if(address >= 0x8000) {
+			mapper.writePrg(address, data);
 		}
 	}
 	
@@ -267,8 +278,8 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			readData = readFromPPU(address);
 		} else if(address < 0x4020) {
 			readData = readFromAPU(address);
-		} else {
-			readData = cpuMem[address % 0x10000];
+		} else if(address >= 0x8000){
+			readData = mapper.readPrg(address % 0x10000);
 		}
 		return readData;
 	}
@@ -279,10 +290,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public void ppuWrite(int address, int data) {
 		if(address < 0x2000) {
-			//ppuMem[address] = data;
-			//if(address < 16) {
-				//System.out.println("Writing " + Integer.toHexString(data) + " to " + Integer.toHexString(address));
-			//}
+			mapper.writeChr(address, data);
 		} else if(address < 0x3000) {
 			if(mirrorType == HORIZ) {
 				ppuMem[address] = data;
@@ -304,10 +312,6 @@ public class NES extends Motherboard implements Notifier, Runnable {
 			for(int i = 0; i < 8; i++) {
 				ppuMem[(i * 0x20) + baseAddress + 0x3F00] = data;
 			}
-			/*if(address == 0x3F10 || address == 0x3F14 || address == 0x3F18 || address == 0x3F1C) {
-				ppuMem[address - 0x10] = data;
-			} else if(address == 0x3F00 || address == 0x3F)
-			*/
 			if(address % 4 == 0) {
 				ppuMem[address & ~(1 << 4)] = data;
 				ppuMem[address | (1 << 4)] = data;
@@ -317,8 +321,13 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	}
 	
 	public int ppuRead(int address) {
-		int ret = ppuMem[address % 0x4000];
+		int ret = 0;
+		if(address < 0x2000) {
+			ret = mapper.readChr(address);
+		} else {
+		    ret =ppuMem[address % 0x4000];
 		// Returns the background color for all palette 0 cases. Might not be the right place to do this. 
+		} 
 		if(address >= 0x3F00) {
 			if(address % 4 == 0) {
 				ret = ppuMem[0x3F00];
