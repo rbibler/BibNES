@@ -2,13 +2,13 @@ package com.bibler.awesome.bibnes.mappers;
 
 public class Mapper {
 	
-	private int[] prgMem;
-	private int[] chrMem;
-	private int[] prgRam;
-	private int[] chrRam;
+	protected int[] prgMem;
+	protected int[] chrMem;
+	protected int[] prgRam;
+	protected int[] chrRam;
 	
-	private int prgMemSize;
-	private int chrMemSize;
+	protected int prgMemSize;
+	protected int chrMemSize;
 	
 	
 	public Mapper() {
