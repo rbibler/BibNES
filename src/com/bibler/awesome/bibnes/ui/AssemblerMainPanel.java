@@ -151,6 +151,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 				emulatorPanel.fillPPUMem(prod.getPPUMem());
 				emulatorPanel.fillOAMMem(ppu.getOamMem());
 				nametable.setPPUMem(prod.getPPUMem(), ppu);
+				nametable.setNES(prod.getNES());
 			}
 		} else if(notifier instanceof PPU) {
 			if(message.equalsIgnoreCase("Frame")) {

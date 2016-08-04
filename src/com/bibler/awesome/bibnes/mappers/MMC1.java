@@ -1,5 +1,7 @@
 package com.bibler.awesome.bibnes.mappers;
 
+import com.bibler.awesome.bibnes.systems.NES;
+
 public class MMC1 extends Mapper {
 	
 	private int shiftRegister;
@@ -8,8 +10,15 @@ public class MMC1 extends Mapper {
 	private int chrReg1;
 	private int chrReg2;
 	private int prgReg;
-	private int prgMode;
+	private int prgMode = 3;
 	private int chrMode;
+	private int numBanks;
+	
+	@Override
+	public void setPrgMemSize(int memSize) {
+		super.setPrgMemSize(memSize);
+		numBanks = memSize / 0x4000;
+	}
 	
 	@Override
 	public void writePrg(int address, int data) {
@@ -20,37 +29,52 @@ public class MMC1 extends Mapper {
 				shiftRegister >>= 1;
 				shiftRegister |= (data & 1) << 4;
 				shiftCounter++;
-			} else if(shiftCounter == 5) {
-				if(address < 0xA000) {
-					controlRegister = shiftRegister;
-					prgMode = controlRegister >> 2 & 3;
-					chrMode = controlRegister >> 3 & 1;
-				} else if(address < 0xC000) {
-					chrReg1 = shiftRegister;
-				} else if(address < 0xE000) {
-					chrReg2 = shiftRegister;
-				} else {
-					prgReg = shiftRegister;
+				if(shiftCounter == 5) {
+					if(address < 0xA000) {
+						controlRegister = shiftRegister;
+						prgMode = controlRegister >> 2 & 3;
+						chrMode = controlRegister >> 3 & 1;
+						int mirrorType = controlRegister & 3;
+						if(mirrorType == 3) {
+							nes.setMirror(NES.HORIZ);
+						} else if(mirrorType == 2) {
+							nes.setMirror(NES.VERT);
+						} else {
+							nes.setMirror(NES.SINGLE_SCREEN);
+						}
+						
+					} else if(address < 0xC000) {
+						chrReg1 = shiftRegister;
+					} else if(address < 0xE000) {
+						chrReg2 = shiftRegister;
+					} else {
+						prgReg = shiftRegister;
+					}
+					clearShift();
 				}
-				clearShift();
 			}	
 		}
 	}
 	
 	@Override
 	public int readPrg(int address) {
-		int newAddress = address;
+		int newAddress = address - 0x8000;
 		switch(prgMode) {
 		case 0:
 		case 1:
-			newAddress = address | (prgReg >> 1) << 14;
+			newAddress |= (prgReg >> 1) << 15;
 			break;
 		case 2:
 			// Check to see if we're in the fixed range.
-			if((address >> 14 & 3) == prgMode) {						
-				newAddress = address % 0x8000;
+			if((address >> 14 & 3) != prgMode) {						
+				newAddress |= prgReg << 14;
+			}
+			break;
+		case 3:
+			if((address >> 14 & 3) != prgMode) {
+				newAddress |= prgReg << 14;
 			} else {
-				newAddress = address | prgReg << 14;
+				newAddress |= (numBanks - 1) << 14;
 			}
 		}
 		return prgMem[newAddress % prgMemSize];
@@ -58,7 +82,19 @@ public class MMC1 extends Mapper {
 	
 	@Override
 	public int readChr(int address) {
-		return 0;
+		int newAddress = address;
+		switch(chrMode) {
+		case 0:
+			newAddress |= (chrReg1 >> 1) << 13;
+		case 1:
+			if(address < 0x1000) {
+				newAddress |= chrReg1 << 12;
+			} else {
+				newAddress |= chrReg2 << 12;
+			}
+			break;
+		}
+		return chrMem[newAddress % chrMemSize];
 	}
 	
 	private void clearShift() {

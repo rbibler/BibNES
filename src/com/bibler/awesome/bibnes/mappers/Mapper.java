@@ -1,5 +1,7 @@
 package com.bibler.awesome.bibnes.mappers;
 
+import com.bibler.awesome.bibnes.systems.NES;
+
 public class Mapper {
 	
 	protected int[] prgMem;
@@ -10,9 +12,26 @@ public class Mapper {
 	protected int prgMemSize;
 	protected int chrMemSize;
 	
+	protected NES nes;
+	
 	
 	public Mapper() {
 		
+	}
+	
+	public void setNES(NES nes) {
+		this.nes = nes;
+	}
+	
+	public static Mapper getMapper(int mapperNum) {
+		switch(mapperNum) {
+			case 0:
+				return new Mapper();
+			case 1:
+				return new MMC1();
+			default:
+				return new Mapper();
+		}
 	}
 	
 	public void setPrgMem(int[] prgMem) {

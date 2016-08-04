@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 
 import javax.swing.JPanel;
 
+import com.bibler.awesome.bibnes.systems.NES;
 import com.bibler.awesome.bibnes.systems.PPU;
 import com.bibler.awesome.bibnes.utils.NESPalette;
 
@@ -24,6 +25,7 @@ public class NametableScreen extends PopoutPanel implements Runnable {
 	
 	private int[] ppuMem;
 	private PPU ppu;
+	private NES nes;
 	
 	public NametableScreen(String title, int tabIndex, int width, int height) {
 		super(title, tabIndex, width, height);
@@ -34,6 +36,10 @@ public class NametableScreen extends PopoutPanel implements Runnable {
 		Thread t = new Thread(this);
 		running = true;
 		t.start();
+	}
+	
+	public void setNES(NES nes) {
+		this.nes =nes;
 	}
 	
 	private void update() {
@@ -71,18 +77,18 @@ public class NametableScreen extends PopoutPanel implements Runnable {
 			y = (i / 256);
 			row = y / 8;
 			col = x / 8;
-			ntByte = ppuMem[ntAddress + (row * 32) + col];
-			curAttr = ppuMem[ntAddress + 0x3C0 + (((y / 32) * 8) + (x / 32))] & 0xFF;
+			ntByte = nes.ppuRead(ntAddress + (row * 32) + col);
+			curAttr = nes.ppuRead(ntAddress + 0x3C0 + (((y / 32) * 8) + (x / 32))) & 0xFF;
 			row = (ntByte / 16);
 			col = ntByte % 16;
 			fineY = (y % 8);
 			address = (1  << 0xC) | (row << 8) | (col << 4) | fineY & 7; 
-			if(address >= 0 && address < ppuMem.length) {
-				lowBg = ppuMem[address];
+			if(address >= 0) {
+				lowBg = nes.ppuRead(address);
 			}
 			address = (1 << 0xC) | (row << 8) | (col << 4) | (1 << 3) | fineY & 7;
-			if(address >= 0 && address < ppuMem.length) {
-				highBg = ppuMem[address];
+			if(address >= 0) {
+				highBg = nes.ppuRead(address);
 			}
 			int attrStart = (((y / 32) * 32) * 256) + (((x / 32) * 32));
 			attrX = (x / 32) * 4;
@@ -93,7 +99,7 @@ public class NametableScreen extends PopoutPanel implements Runnable {
 			int attrBitShift = (((ntX - attrX) / 2) * 2) + (((ntY - attrY) / 2) * 4);
 			int palVal = ((curAttr >> attrBitShift) & 3) << 2;
 			pixel = ((highBg >> (7 - (i % 8)) & 1) << 1 | (lowBg >> (7 -(i % 8)) & 1));
-			img.setRGB(x, y, NESPalette.getPixel(ppuMem[0x3F00 + (palVal + pixel)]));
+			img.setRGB(x, y, NESPalette.getPixel(nes.ppuRead(0x3F00 + (palVal + pixel))));
 		}
 	}
 	

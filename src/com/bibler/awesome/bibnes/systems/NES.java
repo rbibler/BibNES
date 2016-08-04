@@ -28,8 +28,9 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	private int mirrorType;
 	
-	private final int HORIZ = 0;
-	private final int VERT = 1;
+	public static final int HORIZ = 0;
+	public static final int VERT = 1;
+	public static final int SINGLE_SCREEN = 2;
 	
 	private Disassembler disassembler = new Disassembler();
 	private Peripheral controller;
@@ -52,6 +53,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public void setMapper(Mapper mapper) {
 		this.mapper = mapper;
+		mapper.setNES(this);
 	}
 	
 	public Mapper getMapper() {

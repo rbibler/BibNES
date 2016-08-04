@@ -103,11 +103,8 @@ public class NESProducer {
 		processHeaderInfo(input);
 		nes = new NES();
 		nes.setMirror(inesMirror);
-		Mapper mapper = new Mapper();
-		mapper.setPrgMemSize(inesPrgSize * 0x4000);
-		mapper.setChrMemSize(inesChrSize * 0x2000);
-		nes.setMapper(mapper);
-		processRom(input, nes);
+		nes.setMapper(processRom(input, nes));
+		
 		//Disassembler disassembler = new Disassembler();
 		//messageHandler.takeNotice("LISTING" + disassembler.disassemble(cart.getPrgMem(), 0), this);
 		nes.registerObjectToNotify(messageHandler);
@@ -131,15 +128,17 @@ public class NESProducer {
 		inesPrgSize = headerBytes[4];
 		inesChrSize = headerBytes[5];
 		inesMapper = headerBytes[6] >> 4 & 0xF | headerBytes[7] & 0xF0;
-		inesMirror = headerBytes[6] & 1;
+		inesMirror = headerBytes[6] & 1;		
 	}
 	
-	private void processRom(BufferedInputStream input, NES nes) {
+	private Mapper processRom(BufferedInputStream input, NES nes) {
 		int index = 0;
 		int read = 0;
 		final int prgSize = inesPrgSize * 0x4000;
 		final int chrSize = inesChrSize * 0x2000;
-		final Mapper mapper = nes.getMapper();
+		final Mapper mapper = Mapper.getMapper(inesMapper);
+		mapper.setPrgMemSize(prgSize);
+		mapper.setChrMemSize(chrSize);
 		final int[] prgMem = new int[prgSize];
 		final int[] chrMem = new int[chrSize];
 		while(read != -1 && (index - prgSize) < chrSize) {
@@ -161,10 +160,15 @@ public class NESProducer {
 		} catch(IOException e) {}
 		mapper.setPrgMem(prgMem);
 		mapper.setChrMem(chrMem);
+		return mapper;
 	}
 
 	public PPU getPPU() {
 		return nes.getPPU();
+	}
+	
+	public NES getNES() {
+		return nes;
 	}
 
 }
