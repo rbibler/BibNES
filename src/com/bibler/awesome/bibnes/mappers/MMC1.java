@@ -76,6 +76,7 @@ public class MMC1 extends Mapper {
 			} else {
 				newAddress |= (numBanks - 1) << 14;
 			}
+			break;
 		}
 		return prgMem[newAddress % prgMemSize];
 	}
@@ -86,6 +87,7 @@ public class MMC1 extends Mapper {
 		switch(chrMode) {
 		case 0:
 			newAddress |= (chrReg1 >> 1) << 13;
+			break;
 		case 1:
 			if(address < 0x1000) {
 				newAddress |= chrReg1 << 12;
@@ -95,6 +97,27 @@ public class MMC1 extends Mapper {
 			break;
 		}
 		return chrMem[newAddress % chrMemSize];
+	}
+	
+	@Override
+	public void writeChr(int address, int data) {
+		if(address > 0x2000) {
+			return;
+		}
+		int newAddress = address;
+		/*switch(chrMode) {
+		case 0:
+			newAddress |= (chrReg1 >> 1) << 13;
+			break;
+		case 1:
+			if(address < 0x1000) {
+				newAddress |= chrReg1 << 12;
+			} else {
+				newAddress |= chrReg2 << 12;
+			}
+			break;
+		}*/
+		chrMem[newAddress % chrMemSize] = data;
 	}
 	
 	private void clearShift() {

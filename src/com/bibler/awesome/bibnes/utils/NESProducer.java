@@ -138,10 +138,10 @@ public class NESProducer {
 		final int chrSize = inesChrSize * 0x2000;
 		final Mapper mapper = Mapper.getMapper(inesMapper);
 		mapper.setPrgMemSize(prgSize);
-		mapper.setChrMemSize(chrSize);
+		mapper.setChrMemSize(chrSize > 0 ? chrSize : 0x2000);
 		final int[] prgMem = new int[prgSize];
-		final int[] chrMem = new int[chrSize];
-		while(read != -1 && (index - prgSize) < chrSize) {
+		final int[] chrMem = new int[chrSize > 0 ? chrSize : 0x2000];
+		while(read != -1) {
 			try {
 				read = input.read();
 				if(index < prgSize) {
@@ -149,7 +149,7 @@ public class NESProducer {
 					if(inesPrgSize == 1) {
 						prgMem[index + 0x4000] = read;
 					}
-				} else {
+				} else if(chrSize > 0 && index - prgSize < chrSize){
 					chrMem[index - prgSize] = read;
 				}
 				index++;
