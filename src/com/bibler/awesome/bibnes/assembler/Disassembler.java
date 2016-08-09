@@ -1,5 +1,6 @@
 package com.bibler.awesome.bibnes.assembler;
 
+import com.bibler.awesome.bibnes.mappers.Mapper;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
 import com.bibler.awesome.bibnes.utils.DigitUtils;
@@ -21,21 +22,21 @@ public class Disassembler {
 		return b.toString();
 	}
 	
-	public String disassembleInstruction(Memory machineCode, int startIndex) {
+	public String disassembleInstruction(Mapper m, int startIndex) {
 		String ret = "";
 		address = startIndex;
 		int operandHigh = -1;
 		int operandLow = -1;
-		opCode = machineCode.read(startIndex++);
+		opCode = m.readPrg(startIndex++);
 		final String inst = AssemblyUtils.getInstruction(opCode);
 		//if(inst != null) {
 			final int length = AssemblyUtils.getBytes(opCode);
 			final int addressMode = AssemblyUtils.lookupAddressMode(opCode);
 			if(length == 2) {
-				operandLow = machineCode.read(startIndex++);
+				operandLow = m.readPrg(startIndex++);
 			} else if(length == 3) {
-				operandLow = machineCode.read(startIndex++);
-				operandHigh = machineCode.read(startIndex++);
+				operandLow = m.readPrg(startIndex++);
+				operandHigh = m.readPrg(startIndex++);
 			}
 			ret = createLine(address, opCode, operandHigh, operandLow, addressMode, inst);
 			

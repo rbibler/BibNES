@@ -10,6 +10,7 @@ import com.bibler.awesome.bibnes.assembler.Disassembler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifier;
 import com.bibler.awesome.bibnes.mappers.Mapper;
+import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Cartridge;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.systems.Motherboard;
@@ -169,6 +170,10 @@ public class NESProducer {
 	
 	public NES getNES() {
 		return nes;
+	}
+	
+	public CPU getCPU() {
+		return nes.getCPU();
 	}
 
 }

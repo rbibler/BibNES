@@ -110,11 +110,11 @@ public class NametableScreen extends PopoutPanel implements Runnable {
 		g.drawImage(nt2, 256, 0, null);
 		g.drawImage(nt3, 0, 240, null);
 		g.drawImage(nt4, 256, 240, null);
-		if(ppu != null) {
+		/*if(ppu != null) {
 			g.setColor(Color.RED);
 			final int x = ppu.currentXScroll;
 			g.drawLine(x, 0, x, 480);
-		}
+		}*/
 	}
 
 	@Override

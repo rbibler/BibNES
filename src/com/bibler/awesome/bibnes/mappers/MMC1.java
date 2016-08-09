@@ -13,6 +13,7 @@ public class MMC1 extends Mapper {
 	private int prgMode = 3;
 	private int chrMode;
 	private int numBanks;
+
 	
 	@Override
 	public void setPrgMemSize(int memSize) {
@@ -34,6 +35,7 @@ public class MMC1 extends Mapper {
 						controlRegister = shiftRegister;
 						prgMode = controlRegister >> 2 & 3;
 						chrMode = controlRegister >> 3 & 1;
+						
 						int mirrorType = controlRegister & 3;
 						if(mirrorType == 3) {
 							nes.setMirror(NES.HORIZ);

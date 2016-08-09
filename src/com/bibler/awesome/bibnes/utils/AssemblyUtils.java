@@ -139,7 +139,7 @@ public class AssemblyUtils {
 	
 	public static String checkMapForInstruction(HashMap<String, Integer> map, int instruction) {
 		String ret = null;
-		if(map.containsValue(instruction)) {
+		if(map != null && map.containsValue(instruction)) {
 			Set<Entry<String, Integer>> set = map.entrySet();
 			for(Entry<String, Integer> entry : set) {
 				if(entry.getValue() == instruction) {

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import com.bibler.awesome.bibnes.assembler.Disassembler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.communications.Notifier;
+import com.bibler.awesome.bibnes.io.LogWriter;
 import com.bibler.awesome.bibnes.utils.AssemblyUtils;
 import com.bibler.awesome.bibnes.utils.StringUtils;
 
@@ -100,10 +101,50 @@ public class CPU implements Notifier {
 		notify("STEP");
 	}
 	
-	public void powerOn() {
-		programCounter =board.cpuRead(0xFFFC) |board.cpuRead(0xFFFD) << 8;
-		resetCPU();
-	}
+	
+	 public void powerOn(Integer initialPC) {// different than reset
+	        // puts RAM in NES poweron state
+	        for (int i = 0; i < 0x800; ++i) {
+	            writeMemory(i, 0xFF);
+	        }
+
+	        writeMemory(0x0008, 0xF7);
+	        writeMemory(0x0009, 0xEF);
+	        writeMemory(0x000A, 0xDF);
+	        writeMemory(0x000F, 0xBF);
+
+	        for (int i = 0x4000; i <= 0x400F; ++i) {
+	            writeMemory(i, 0x00);
+	        }
+
+	        writeMemory(0x4015, 0x00);
+	        writeMemory(0x4017, 0x00);
+
+	        //clocks = 27393; //correct for position we start vblank in
+	        accumulator = 0;
+	        indexX = 0;
+	        indexY = 0;
+	        stackPointer = 0xFD;
+	        if (initialPC == null) {
+	            programCounter = readMemory(0xFFFD) * 256 + readMemory(0xFFFC);
+	        } else {
+	            programCounter = initialPC;
+	        }
+	    }
+
+	    public void reset() {
+	        programCounter = readMemory(0xFFFD) * 256 + readMemory(0xFFFC);
+	        writeMemory(0x4015, 0);
+	        writeMemory(0x4017, readMemory(0x4017));
+	        //disable audio on reset
+	        stackPointer -= 3;
+	        stackPointer &= 0xff;
+	    }
+	
+	//public void powerOn() {
+		//programCounter = board.cpuRead(0xFFFC) |board.cpuRead(0xFFFD) << 8;
+		//resetCPU();
+	//}
 	
 	public void resetCPU() {
 		statusRegister = 0;
@@ -176,6 +217,10 @@ public class CPU implements Notifier {
 	
 	public void fillStatusRegister() {
 		statusRegister = 0xFF;
+	}
+	
+	public String getCurrentInstruction() {
+		return AssemblyUtils.getInstruction(instruction);
 	}
 	
 	public void setNMI(boolean NMIFlag) {
@@ -794,65 +839,173 @@ public class CPU implements Notifier {
 			statusRegister ^= (-((addResult >> 8) & 1) ^ statusRegister) & 1;					// set carry flag
 			statusRegister ^= (-((addResult >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(addResult == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
-			final int overflow = ((accumulator ^ addResult) & (dataRegister ^ addResult) & 0x80) == 0 ? 0 : 1;
-			statusRegister ^= (-overflow ^ statusRegister) & (1 << OVERFLOW_FLAG);
+			final boolean overflowFlag = (((accumulator ^ dataRegister) & 0x80) == 0)
+	                && (((accumulator ^ addResult) & 0x80) != 0);
+			statusRegister &= ~(1 << OVERFLOW_FLAG);
+			if(overflowFlag) {
+				statusRegister |= 1 << OVERFLOW_FLAG;
+			}
+			
 			accumulator = (addResult & 0xFF);
 		}
 	}
 	
 	private void SBC() {
 		if(cyclesRemaining == 1) {
-			final int subtractResult = (accumulator - dataRegister - (~statusRegister & 1));
+			final int subtractResult = (accumulator - dataRegister - (((statusRegister & 1) == 1 ? 0 : 1)));
 			statusRegister ^= (-((subtractResult >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(subtractResult == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
-			int carryFlag = 0;
-			if(subtractResult >= 0 && subtractResult <= 0xFF) {
-				carryFlag = 1;
+			final boolean carryFlag = (subtractResult >> 8 == 0);
+			if(!carryFlag) {
+				statusRegister &= ~1;
+			} else {
+				statusRegister |= 1;
 			}
-			statusRegister ^= (-carryFlag ^ statusRegister) & 1;
-			final int overflow = ((accumulator ^ subtractResult) & (dataRegister ^ subtractResult) & 0x80) == 0 ? 0 : 1;
-			statusRegister ^= (-overflow ^ statusRegister) & (1 << OVERFLOW_FLAG);
+			final boolean overflowFlag = (((accumulator ^ dataRegister) & 0x80) != 0)
+		                && (((accumulator ^ subtractResult) & 0x80) != 0);
+			statusRegister &= ~(1 << OVERFLOW_FLAG);
+			if(overflowFlag) {
+				statusRegister |= 1 << OVERFLOW_FLAG;
+			}
 			accumulator = (subtractResult & 0xFF);
 		}
 	}
 	
 	private void CMP() {
 		if(cyclesRemaining == 1) {
-			SEC();
-			final int result = accumulator - dataRegister; //- (~statusRegister & 1);
-			int carryFlag = 0;
+			final int result = accumulator - dataRegister;
+			boolean negativeFlag;
+			boolean carryFlag;
+			boolean zeroFlag;
+			if (result < 0) {
+	            negativeFlag = ((result >> 7 & 1) != 0);
+	            carryFlag = false;
+	            zeroFlag = false;
+	        } else if (result == 0) {
+	            negativeFlag = false;
+	            carryFlag = true;
+	            zeroFlag = true;
+	        } else {
+	            negativeFlag = ((result >> 7 & 1) != 0);
+	            carryFlag = true;
+	            zeroFlag = false;
+	        }
+			if(negativeFlag) {
+				statusRegister |= (1 << SIGN_FLAG);
+			} else {
+				statusRegister &= ~(1 << SIGN_FLAG);
+			}
+			if(carryFlag) {
+				statusRegister |= 1;
+			} else {
+				statusRegister &= ~1;
+			}
+			if(zeroFlag) {
+				statusRegister |= (1 << 1);
+			} else {
+				statusRegister &= ~(1 << 1);
+			}
+			
+			
+			
+			/*int carryFlag = 0;
 			if(result >= 0 && result <= 0xFF) {
 				carryFlag = 1;
 			}
 			statusRegister ^= (-carryFlag ^ statusRegister) & 1;
 			statusRegister ^= (-((result >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(result == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+			*/
 		}
 	}
 	
 	private void CPX() {
 		if(cyclesRemaining == 1) {
-			final int result = indexX - dataRegister; //- (~statusRegister & 1);
-			int carryFlag = 0;
+			final int result = indexX - dataRegister;
+			boolean negativeFlag;
+			boolean carryFlag;
+			boolean zeroFlag;
+			if (result < 0) {
+	            negativeFlag = ((result >> 7 & 1) != 0);
+	            carryFlag = false;
+	            zeroFlag = false;
+	        } else if (result == 0) {
+	            negativeFlag = false;
+	            carryFlag = true;
+	            zeroFlag = true;
+	        } else {
+	            negativeFlag = ((result >> 7 & 1) != 0);
+	            carryFlag = true;
+	            zeroFlag = false;
+	        }
+			if(negativeFlag) {
+				statusRegister |= (1 << SIGN_FLAG);
+			} else {
+				statusRegister &= ~(1 << SIGN_FLAG);
+			}
+			if(carryFlag) {
+				statusRegister |= 1;
+			} else {
+				statusRegister &= ~1;
+			}
+			if(zeroFlag) {
+				statusRegister |= (1 << 1);
+			} else {
+				statusRegister &= ~(1 << 1);
+			}
+			/*int carryFlag = 0;
 			if(result >= 0 && result <= 0xFF) {
 				carryFlag = 1;
 			}
 			statusRegister ^= (-carryFlag ^ statusRegister) & 1;
 			statusRegister ^= (-((result >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(result == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+			*/
 		}
 	}
 	
 	private void CPY() {
 		if(cyclesRemaining == 1) {
-			final int result = indexY - dataRegister; //- (~statusRegister & 1);
-			int carryFlag = 0;
+			final int result = indexY - dataRegister;
+			boolean negativeFlag;
+			boolean carryFlag;
+			boolean zeroFlag;
+			if (result < 0) {
+	            negativeFlag = ((result >> 7 & 1) != 0);
+	            carryFlag = false;
+	            zeroFlag = false;
+	        } else if (result == 0) {
+	            negativeFlag = false;
+	            carryFlag = true;
+	            zeroFlag = true;
+	        } else {
+	            negativeFlag = ((result >> 7 & 1) != 0);
+	            carryFlag = true;
+	            zeroFlag = false;
+	        }
+			if(negativeFlag) {
+				statusRegister |= (1 << SIGN_FLAG);
+			} else {
+				statusRegister &= ~(1 << SIGN_FLAG);
+			}
+			if(carryFlag) {
+				statusRegister |= 1;
+			} else {
+				statusRegister &= ~1;
+			}
+			if(zeroFlag) {
+				statusRegister |= (1 << 1);
+			} else {
+				statusRegister &= ~(1 << 1);
+			}
+			/*int carryFlag = 0;
 			if(result >= 0 && result <= 0xFF) {
 				carryFlag = 1;
 			}
 			statusRegister ^= (-carryFlag ^ statusRegister) & 1;
 			statusRegister ^= (-((result >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
 			statusRegister ^= (-(result == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+			*/
 		}
 	}
 	
@@ -1084,9 +1237,9 @@ public class CPU implements Notifier {
 	
 	private void ROL() {
 		if(cyclesRemaining == 1) {
-			dataRegister = dataRegister << 1;
-			int carryFlag = statusRegister & 1;
-			dataRegister ^= (-carryFlag ^ dataRegister) & 1;
+			dataRegister = (dataRegister << 1) | (statusRegister & 1);
+			//int carryFlag = statusRegister & 1;
+			//dataRegister ^= (-carryFlag ^ dataRegister) & 1;
 			statusRegister ^= (-((dataRegister >> 8) & 1) ^ statusRegister) & 1;			// set carry flag
 			dataRegister &= 0xFF;
 			if(instruction == 0x2A) {
@@ -1102,7 +1255,9 @@ public class CPU implements Notifier {
 			int carryFlag = statusRegister & 1;
 			statusRegister ^= (-((dataRegister) & 1) ^ statusRegister) & 1;			// set carry flag
 			dataRegister = dataRegister >> 1;
-			dataRegister ^= (-carryFlag ^ dataRegister) & (1 << 7);
+			dataRegister &= 0x7F;
+			dataRegister |= (carryFlag << 7);
+			//dataRegister ^= (-carryFlag ^ dataRegister) & (1 << 7);
 			dataRegister &= 0xFF;
 			if(instruction == 0x6A) {
 				accumulator = dataRegister;
@@ -1116,7 +1271,8 @@ public class CPU implements Notifier {
 		if(cyclesRemaining == 1) {
 			statusRegister ^= (-((dataRegister) & 1) ^ statusRegister) & 1;			// set carry flag
 			dataRegister = dataRegister >> 1;
-			dataRegister &= 0xFF;
+			//dataRegister &= 0xFF;
+			dataRegister &= 0x7F;
 			if(instruction == 0x4A) {
 				accumulator = dataRegister;
 			} else {
@@ -1246,46 +1402,47 @@ public class CPU implements Notifier {
 	private void JSR() {
 		if(cyclesRemaining == 1) {
 			final int pcToPush = programCounter - 1;
-			writeMemory(0x100 | stackPointer, (pcToPush >> 8) & 0xFF);
-			stackPointer = (stackPointer - 1) & 0xFF;
-			writeMemory(0x100 | stackPointer, pcToPush & 0xFF);
-			stackPointer = (stackPointer - 1) & 0xFF;
+			push(pcToPush >> 8);
+			push(pcToPush & 0xFF);
 			programCounter = dataCounter;
 		}
 	}
 	
+	private void push(int data) {
+		writeMemory(0x100 + (stackPointer & 0xFF), data);
+		stackPointer = (stackPointer - 1) & 0xFF;
+	}
+	
+	private int pop() {
+		stackPointer = (stackPointer + 1) & 0xFF;
+		return readMemory(0x100 + (stackPointer & 0xFF));
+	}
+	
 	private void RTS() {
 		if(cyclesRemaining == 1) {
-			stackPointer = (stackPointer + 1) & 0xFF;
-			int newAddress = readMemory(0x100 | stackPointer);
-			stackPointer = (stackPointer + 1) & 0xFF;
-			newAddress |= readMemory(0x100 | stackPointer) << 8;
+			
+			int newAddress = pop() & 0xFF;
+			newAddress |= (pop()) << 8;
 			programCounter = newAddress + 1;
 		}
 	}
 	
 	private void RTI() {
 		if(cyclesRemaining == 1) {
-			stackPointer = (stackPointer + 1) & 0xFF;
-			statusRegister = readMemory(0x100 | stackPointer);
-			stackPointer = (stackPointer + 1) & 0xFF;
-			int newAddress = readMemory(0x100 | stackPointer);
-			stackPointer = (stackPointer + 1) & 0xFF;
-			newAddress |= readMemory(0x100 | stackPointer) << 8;
+			statusRegister = pop();
+			int newAddress = pop() & 0xFF;
+			newAddress |= pop() << 8;
 			programCounter = newAddress;
 		}
 	}
 	
 	private void NMI() {
 		if(cyclesRemaining == 1) {
-			writeMemory(0x100 | stackPointer, (programCounter >> 8) & 0xFF);
-			stackPointer = (stackPointer - 1) & 0xFF;
-			writeMemory(0x100 | stackPointer, programCounter & 0xFF);
-			stackPointer = (stackPointer - 1) & 0xFF;
-			writeMemory(0x100 | stackPointer, statusRegister);
-			stackPointer = (stackPointer - 1) & 0xFF;
+			push(programCounter >> 8 & 0xFF);
+			push(programCounter & 0xFF);
+			push(statusRegister);
 			int lowByte = readMemory(0xFFFA);
-			programCounter = lowByte |board.cpuRead(0xFFFB) << 8;
+			programCounter = lowByte | readMemory(0xFFFB) << 8;
 		}
 	}
 	/* 

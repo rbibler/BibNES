@@ -64,7 +64,7 @@ public class MainFrame extends JFrame {
 		Memory machineCode = assemble();
 		CPU cpu = new CPU();
 		cpu.registerObjectToNotify(messageHandler);
-		cpu.powerOn();
+		cpu.powerOn(null);
 		cpu.resetCPU();
 		cpu.run();
 	}
@@ -126,6 +126,10 @@ public class MainFrame extends JFrame {
 	
 	public void pause() {
 		board.pause();
+	}
+	
+	public void reset() {
+		board.reset();
 	}
 
 }

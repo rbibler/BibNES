@@ -1,20 +1,18 @@
 package com.bibler.awesome.bibnes.io;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Queue;
 
-public class LogWriter implements Runnable {
+public class LogWriter {
 	
 	private FileWriter writer;
 	private String logFileBase;
 	private File logFile;
 	
-	private String[] logBuffer = new String[0x100];
-	private int addIndex;
-	private int readIndex;
-	private int linesWritten;
+	private Queue<String> log = new LinkedList<String>();
 	private int fileCount;
 	
 	boolean running;
@@ -29,16 +27,28 @@ public class LogWriter implements Runnable {
 				System.out.println("Closing Writer");
 				if(writer != null) {
 					try {
+						writeAll();
+						writer.flush();
 						writer.close();
 					} catch(IOException e) {}
 				}
 			}
 		});
-		Thread t = new Thread(this);
-		running = true;
-		t.start();
 		
 	
+	}
+	
+	private void writeAll() {
+		String s = log.poll();
+		do {
+			try {
+				writer.write(s + "\n");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			s = log.poll();
+		} while(s != null);
 	}
 	
 	private void initiateLogWriter() {
@@ -57,38 +67,24 @@ public class LogWriter implements Runnable {
 		} catch(IOException e) {}
 	}
 	
-	public void log(String lineToLog) {
-		logBuffer[addIndex++] = lineToLog;
-		if(addIndex >= logBuffer.length) {
-			if(readIndex > 0) {
-				addIndex = 0;
-			}
-		}
+	public synchronized void log(String lineToLog) {
+		log.add(lineToLog);
 	}
 
-	@Override
+	/*@Override
 	public void run() {
 		while(running) {
-			if(readIndex < addIndex) {
-				while(readIndex < addIndex) {
-					try {
-						writer.write(logBuffer[readIndex++] + "\n");
-						if(readIndex >= logBuffer.length) {
-							readIndex = 0;
-						}
-						linesWritten++;
-						if(linesWritten >= 0x1000) {
-							fileCount++;
-							linesWritten = 0;
-							initiateLogWriter();
-						}
-					} catch(IOException e) {}
-				}
+			final String s = log.poll();
+			if(s != null) {
+				try {
+					writer.write(s + "\n");
+					//writer.flush();
+				} catch (IOException e) {}
 			}
 			try {
 				Thread.sleep(10);
 			} catch(InterruptedException e) {}
 		}
-	}
+	}*/
 	
 }

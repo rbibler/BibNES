@@ -23,6 +23,7 @@ public class RunMenu extends JMenu implements Notifier {
 	private static final long serialVersionUID = -6995648999980272320L;
 	
 	private JMenuItem runItem;
+	private JMenuItem resetItem;
 	private JMenuItem debugItem;
 	private JMenuItem stepItem;
 	private JMenuItem emulateItem;
@@ -42,6 +43,11 @@ public class RunMenu extends JMenu implements Notifier {
 		add(runItem);
 		runItem.setActionCommand("RUN");
 		runItem.addActionListener(actionListener);
+		
+		resetItem = new JMenuItem("Reset");
+		add(resetItem);
+		resetItem.setActionCommand("RESET");
+		resetItem.addActionListener(actionListener);
 		
 		debugItem = new JMenuItem("Debug");
 		add(debugItem);
@@ -101,6 +107,10 @@ public class RunMenu extends JMenu implements Notifier {
 					//mainFrame.runAssembler();
 					mainFrame.runEmulator();
 				}
+				break;
+				
+			case "RESET":
+				mainFrame.reset();
 				break;
 			case "STEP":
 				mainFrame.step();

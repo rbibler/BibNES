@@ -147,9 +147,10 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 				outputPanel.displayListing(message.substring("LISTING".length()));
 			} else if(message.startsWith("DONE")){
 				final PPU ppu = prod.getPPU();
+				emulatorPanel.setCPU(prod.getCPU());
 				emulatorPanel.fillCPUMem(prod.getCPUMem());
 				emulatorPanel.fillPPUMem(prod.getPPUMem());
-				emulatorPanel.fillOAMMem(ppu.getOamMem());
+				//emulatorPanel.fillOAMMem(ppu.getOamMem());
 				nametable.setPPUMem(prod.getPPUMem(), ppu);
 				nametable.setNES(prod.getNES());
 			}

@@ -15,6 +15,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import com.bibler.awesome.bibnes.systems.NES;
+import com.bibler.awesome.bibnes.utils.NESPalette;
 
 public class NESScreen extends PopoutPanel {
 	
@@ -64,7 +65,7 @@ public class NESScreen extends PopoutPanel {
 	
 	public void updateFrame(int[] frameArray) {
 		for(int i = 0; i < frameArray.length; i++) {
-			screenImage.setRGB(i % 256, i / 256, frameArray[i]);
+			screenImage.setRGB(i % 256, i / 256, NESPalette.getPixel(frameArray[i]));
 		}
 		repaint();
 	}

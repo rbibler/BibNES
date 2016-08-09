@@ -7,6 +7,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 
+import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.NES;
 
 import tv.porst.jhexview.JHexView;
@@ -88,6 +89,11 @@ public class EmulatorPanel extends JPanel {
 		oamPane.setEnabled(true);
 		oamPane.setBytesPerColumn(1);
 		oamPane.repaint();
+	}
+
+	public void setCPU(CPU cpu) {
+		statusPanel.setCPU(cpu);
+		
 	}
 	
 	

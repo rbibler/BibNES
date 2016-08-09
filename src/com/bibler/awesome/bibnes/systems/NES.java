@@ -42,6 +42,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	private long frameCount;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
+	private LogWriter log = new LogWriter("C:/users/ryan/desktop/logs/log.txt");
 	
 	public NES() {
 		cpu = new CPU(this);
@@ -67,8 +68,8 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	@Override
 	public void power() {
-		cpu.powerOn();
-		ppu.reset();
+		cpu.powerOn(null);
+		//ppu.reset();
 	}
 	
 	@Override
@@ -120,12 +121,14 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	@Override
 	public void cycle() {
-		checkCPUCycle();
-		if(breakpointEngaged) {
-			return;
-		}
-		ppu.cycle();
-		cycleCount++;
+		//checkCPUCycle();
+		//if(breakpointEngaged) {
+			//return;
+		//}
+		//ppu.cycle();
+		//cycleCount++;
+		ppu.runFrame();
+		frame();
 	}
 
 	private void checkCPUCycle() {
@@ -151,6 +154,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	@Override
 	public void step() {
+		//log.log(disassembler.disassembleInstruction(mapper, cpu.getProgramCounter()));
 		do {
 			cycle();
 		} while(cpu.getCyclesRemaining() > 0);
@@ -358,7 +362,8 @@ public class NES extends Motherboard implements Notifier, Runnable {
                 }
             }
 			if(!breakpointEngaged) {
-				step();
+				//step();
+				cycle();
 			} else {
 				try {
 					Thread.sleep(10);
@@ -370,6 +375,10 @@ public class NES extends Motherboard implements Notifier, Runnable {
 
 	public PPU getPPU() {
 		return ppu;
+	}
+	
+	public CPU getCPU() {
+		return cpu;
 	}
 	
 	

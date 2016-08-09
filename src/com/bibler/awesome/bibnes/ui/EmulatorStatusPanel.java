@@ -31,6 +31,7 @@ public class EmulatorStatusPanel extends JPanel {
 	private JLabel stackPointerValue;
 	private JLabel statusHeading;
 	private JLabel statusValues;
+	private JLabel currentInst;
 	
 	private JPanel accumulatorPanel;
 	private JPanel xIndexPanel;
@@ -39,9 +40,34 @@ public class EmulatorStatusPanel extends JPanel {
 	private JPanel stackPointerPanel;
 	private JPanel statusPanel;
 	
+	private CPU cpu;
+	private boolean running;
+	
 	public EmulatorStatusPanel() {
 		super();
 		initialize();
+	}
+	
+	public void setCPU(CPU cpu) {
+		this.cpu = cpu;
+		setupThread();
+	}
+	
+	private void setupThread() {
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				while(running) {
+					updateValues();
+					try {
+						Thread.sleep(10);
+					} catch(InterruptedException e) {}
+				}
+			}
+		});
+		running = true;
+		t.start();
 	}
 	
 	private void initialize() {
@@ -88,10 +114,13 @@ public class EmulatorStatusPanel extends JPanel {
 		
 		statusHeading = new JLabel("NV-BDIZC");
 		statusValues = new JLabel("00000000");
+		
+		currentInst = new JLabel("Inst: ");
 		statusPanel = new JPanel();
 		statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.Y_AXIS));
 		statusPanel.add(statusHeading);
 		statusPanel.add(statusValues);
+		statusPanel.add(currentInst);
 		accumulatorPanel.setPreferredSize(new Dimension(200, 25));
 		
 	}
@@ -125,22 +154,14 @@ public class EmulatorStatusPanel extends JPanel {
 		
 	}
 	
-	public void handleMessage(String message, Object notifier) {
-		if(notifier instanceof CPU) {
-			switch(message) {
-			case "STEP":
-				updateValues((CPU) notifier);
-			}
-		}
-	}
-	
-	private void updateValues(CPU cpu) {
+	private void updateValues() {
 		updateAccumulator(cpu.getAccumulator());
 		updateXIndex(cpu.getXIndex());
 		updateYIndex(cpu.getYIndex());
 		updateProgramCounter(cpu.getProgramCounter());
 		updateStackPointer(cpu.getStackPointer());
 		updateStatusRegister(cpu.getStatusRegister());
+		updateCurrentInst(cpu.getCurrentInstruction());
 	}
 	
 	public void updateAccumulator(int accumulatorValue) {
@@ -165,5 +186,9 @@ public class EmulatorStatusPanel extends JPanel {
 	
 	public void updateStatusRegister(int statusValues) {
 		this.statusValues.setText(StringUtils.intToPaddedString(statusValues, 8, DigitUtils.BIN));
+	}
+	
+	public void updateCurrentInst(String inst) {
+		this.currentInst.setText("Inst: " + inst);
 	}
 }
