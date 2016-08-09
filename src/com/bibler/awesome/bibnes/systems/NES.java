@@ -121,14 +121,13 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	@Override
 	public void cycle() {
-		//checkCPUCycle();
-		//if(breakpointEngaged) {
-			//return;
-		//}
-		//ppu.cycle();
-		//cycleCount++;
-		ppu.runFrame();
-		frame();
+		checkCPUCycle();
+		if(breakpointEngaged) {
+			return;
+		}
+		ppu.cycle();
+		cycleCount++;
+		
 	}
 
 	private void checkCPUCycle() {

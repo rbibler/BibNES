@@ -140,7 +140,7 @@ public class NESProducer {
 		final Mapper mapper = Mapper.getMapper(inesMapper);
 		mapper.setPrgMemSize(prgSize);
 		mapper.setChrMemSize(chrSize > 0 ? chrSize : 0x2000);
-		final int[] prgMem = new int[prgSize];
+		final int[] prgMem = new int[(inesMapper == 0) ? 0x8000 : prgSize];
 		final int[] chrMem = new int[chrSize > 0 ? chrSize : 0x2000];
 		while(read != -1) {
 			try {

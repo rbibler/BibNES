@@ -95,7 +95,7 @@ public class CPU implements Notifier {
 		} else {
 			execute();
 		}
-		
+		statusRegister |= 1 << 5;
 		cyclesRemaining--;
 		totalCycles++;
 		notify("STEP");
@@ -836,17 +836,18 @@ public class CPU implements Notifier {
 	private void ADC() {
 		if(cyclesRemaining == 1) {
 			final int addResult = (accumulator + dataRegister) + (statusRegister & 1);
-			statusRegister ^= (-((addResult >> 8) & 1) ^ statusRegister) & 1;					// set carry flag
-			statusRegister ^= (-((addResult >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
-			statusRegister ^= (-(addResult == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
-			final boolean overflowFlag = (((accumulator ^ dataRegister) & 0x80) == 0)
-	                && (((accumulator ^ addResult) & 0x80) != 0);
-			statusRegister &= ~(1 << OVERFLOW_FLAG);
+			final boolean overflowFlag = ((addResult ^ accumulator) & (addResult ^ dataRegister) & 0x080) != 0;
 			if(overflowFlag) {
 				statusRegister |= 1 << OVERFLOW_FLAG;
+			} else {
+				statusRegister &= ~(1 << OVERFLOW_FLAG);
 			}
 			
 			accumulator = (addResult & 0xFF);
+			statusRegister ^= (-((addResult >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-((addResult >> 8) & 1) ^ statusRegister) & 1;					// set carry flag
+			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+			
 		}
 	}
 	
@@ -1047,6 +1048,8 @@ public class CPU implements Notifier {
 			dataRegister = dataRegister & 0xFF;
 			if(instruction == 0x0A) {
 				accumulator = dataRegister;
+				statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+				statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 			} else {
 				writeMemory(dataCounter, dataRegister);
 			}
@@ -1238,12 +1241,12 @@ public class CPU implements Notifier {
 	private void ROL() {
 		if(cyclesRemaining == 1) {
 			dataRegister = (dataRegister << 1) | (statusRegister & 1);
-			//int carryFlag = statusRegister & 1;
-			//dataRegister ^= (-carryFlag ^ dataRegister) & 1;
 			statusRegister ^= (-((dataRegister >> 8) & 1) ^ statusRegister) & 1;			// set carry flag
 			dataRegister &= 0xFF;
 			if(instruction == 0x2A) {
 				accumulator = dataRegister;
+				statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+				statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 			} else {
 				writeMemory(dataCounter, dataRegister);
 			}
@@ -1261,6 +1264,8 @@ public class CPU implements Notifier {
 			dataRegister &= 0xFF;
 			if(instruction == 0x6A) {
 				accumulator = dataRegister;
+				statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+				statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 			} else {
 				writeMemory(dataCounter, dataRegister);
 			}
@@ -1275,6 +1280,8 @@ public class CPU implements Notifier {
 			dataRegister &= 0x7F;
 			if(instruction == 0x4A) {
 				accumulator = dataRegister;
+				statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+				statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 			} else {
 				writeMemory(dataCounter, dataRegister);
 			}
@@ -1464,6 +1471,8 @@ public class CPU implements Notifier {
 	private void TSX() {
 		if(cyclesRemaining == 1) {
 			indexX = stackPointer;
+			statusRegister ^= (-((indexX >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(indexX == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
 		}
 	}
 	
@@ -1482,6 +1491,9 @@ public class CPU implements Notifier {
 			dataRegister = readMemory(0x100 | stackPointer);
 		} else if(cyclesRemaining == instructionCycles - 3) {
 			accumulator = dataRegister;
+			statusRegister ^= (-((accumulator >> 7) & 1) ^ statusRegister) & (1 << SIGN_FLAG);			// set sign flag
+			statusRegister ^= (-(accumulator == 0 ? 1 : 0) ^ statusRegister) & (1 << ZERO_FLAG);		// set zero flag
+			
 		}
 	}
 	
@@ -1588,7 +1600,7 @@ public class CPU implements Notifier {
 				pageBoundaryFlag = true;
 			} else {
 				pageBoundaryFlag = false;
-				dataCounter = dataCounter + indexY;
+				dataCounter = (dataCounter + indexY) & 0xFFFF;
 				if(read) {
 					dataRegister = readMemory(dataCounter);
 				}
@@ -1625,6 +1637,7 @@ public class CPU implements Notifier {
 			dataCounter = readMemory(dataRegister);
 		} else if(cyclesRemaining == instructionCycles - 4) {
 			dataCounter |= readMemory(dataRegister + 1) << 8;
+			dataCounter &= 0xFFFF;
 		} else if(cyclesRemaining == instructionCycles - 5 && read) {
 			dataRegister = readMemory(dataCounter);
 		}
@@ -1636,14 +1649,14 @@ public class CPU implements Notifier {
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			dataCounter = readMemory(dataRegister);
 		} else if(cyclesRemaining == instructionCycles - 3) {
-			dataCounter |= readMemory(dataRegister + 1) << 8;
+			dataCounter |= readMemory((dataRegister + 1) & 0xFF) << 8;
 		} else if(cyclesRemaining == instructionCycles - 4) {
 			if((dataCounter + indexY & 0xFF00) != (dataCounter & 0xFF00) && !pageBoundaryFlag) {
 				cyclesRemaining++;
 				pageBoundaryFlag = true;
 			} else {
 				pageBoundaryFlag = false;
-				dataCounter = dataCounter + indexY;
+				dataCounter = (dataCounter + indexY) & 0xFFFF;
 				if(read) {
 					dataRegister = readMemory(dataCounter);
 				}
