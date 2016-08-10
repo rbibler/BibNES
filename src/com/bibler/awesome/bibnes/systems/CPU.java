@@ -1636,7 +1636,7 @@ public class CPU implements Notifier {
 		} else if(cyclesRemaining == instructionCycles - 3) {
 			dataCounter = readMemory(dataRegister);
 		} else if(cyclesRemaining == instructionCycles - 4) {
-			dataCounter |= readMemory(dataRegister + 1) << 8;
+			dataCounter |= readMemory((dataRegister + 1) & 0xFF) << 8;
 			dataCounter &= 0xFFFF;
 		} else if(cyclesRemaining == instructionCycles - 5 && read) {
 			dataRegister = readMemory(dataCounter);
