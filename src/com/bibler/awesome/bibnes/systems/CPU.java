@@ -1499,6 +1499,8 @@ public class CPU implements Notifier {
 	
 	private void PHP() {
 		if(cyclesRemaining == instructionCycles - 1) {
+			statusRegister |= (1 << 4);
+			statusRegister |= (1 << 5);
 			writeMemory(0x100 | stackPointer, statusRegister);
 		} else if(cyclesRemaining == instructionCycles - 2) {
 			stackPointer = (stackPointer - 1) & 0xFF;
