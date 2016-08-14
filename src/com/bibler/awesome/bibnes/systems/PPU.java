@@ -130,7 +130,7 @@ public class PPU implements Notifier {
 	}
 	
 	public int read(int addressToRead) {
-		switch (addressToRead % 8) {
+		switch (addressToRead % 0x2000) {
 			case 2:
 				ppuData = readPPUStatus();
 				break;
@@ -495,7 +495,7 @@ public class PPU implements Notifier {
 						spriteData = OAM[(spriteIndex * 4) + spriteEvalIndex];
 					} else if(spriteFoundCount < 8) {
 						if(spriteMode == 0) {										// If in range evaluation mode
-							spriteRange = (scanline + 1) - (spriteData);		// check range Should be scanline + 1 ?
+							spriteRange = (scanline) - (spriteData);		// check range Should be scanline + 1 ?
 							if(spriteRange >= 0 && spriteRange <=					// If in range 
 									((ppuCtrl >> 5 & 1) == 1 ? 15 : 7)) {
 								spriteMode = 1;		

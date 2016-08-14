@@ -14,11 +14,12 @@ import javax.swing.UnsupportedLookAndFeelException;
 import com.bibler.awesome.bibnes.assembler.Assembler;
 import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
+import com.bibler.awesome.bibnes.controllers.JInputControllerManager;
+import com.bibler.awesome.bibnes.controllers.KeyboardController;
+import com.bibler.awesome.bibnes.controllers.USBGamepad;
 import com.bibler.awesome.bibnes.io.FileUtils;
 import com.bibler.awesome.bibnes.systems.CPU;
-import com.bibler.awesome.bibnes.systems.Controller;
 import com.bibler.awesome.bibnes.systems.Memory;
-import com.bibler.awesome.bibnes.systems.Motherboard;
 import com.bibler.awesome.bibnes.systems.NES;
 import com.bibler.awesome.bibnes.ui.menus.MainFrameMenu;
 import com.bibler.awesome.bibnes.utils.NESProducer;
@@ -77,16 +78,10 @@ public class MainFrame extends JFrame {
 		return machineCode;
 	}
 	
-	public void debug() {
-		Memory machineCode = assemble();
-		board.setROM(machineCode);
-		board.power();
-		board.registerObjectToNotify(messageHandler);
-	}
-	
 	public void loadNesFileAndRun(boolean debug) {
-		Controller controller = new Controller();
-		mainPanel.setController(controller);
+		//KeyboardController controller = new KeyboardController();
+		USBGamepad gamepad = JInputControllerManager.getFirstUSBPad();
+		//mainPanel.setController(gamepad);
 		bpManager.clearAllBreakpoints();
 		File f = FileUtils.loadFile(this);
 		NESProducer producer = new NESProducer();
@@ -97,7 +92,7 @@ public class MainFrame extends JFrame {
 		}
 		board = (NES) producer.produceNES(f, messageHandler);
 		mainPanel.setBoard(board);
-		board.setPeripheral(controller);
+		board.setPeripheral(gamepad);
 		board.setBreakpointManager(bpManager);
 		board.power();
 		board.runSystem();

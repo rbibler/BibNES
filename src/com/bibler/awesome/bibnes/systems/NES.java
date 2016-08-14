@@ -6,13 +6,15 @@ import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 import com.bibler.awesome.bibnes.assembler.Disassembler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
 import com.bibler.awesome.bibnes.communications.Notifier;
+import com.bibler.awesome.bibnes.controllers.BaseController;
 import com.bibler.awesome.bibnes.io.LogWriter;
 import com.bibler.awesome.bibnes.mappers.Mapper;
 
-public class NES extends Motherboard implements Notifier, Runnable {
+public class NES implements Notifier, Runnable {
 	
 	private PPU ppu;
 	private APU apu;
+	private CPU cpu;
 	private int[] cpuMem;
 	private int[] ppuMem;
 	
@@ -33,7 +35,9 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	public static final int SINGLE_SCREEN = 2;
 	
 	private Disassembler disassembler = new Disassembler();
-	private Peripheral controller;
+	private BaseController controller;
+	
+	private BreakpointManager breakpointManager;
 	
 	public double averageFrameRate;
 	private long lastFrameTime;
@@ -61,18 +65,22 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		return mapper;
 	}
 	
-	@Override
-	public void setPeripheral(Peripheral controller) {
+	
+	public void setPeripheral(BaseController controller) {
 		this.controller = controller;
 	}
 	
-	@Override
+	
 	public void power() {
 		cpu.powerOn(null);
 		//ppu.reset();
 	}
 	
-	@Override
+	public void reset() {
+		cpu.reset();
+	}
+	
+	
 	public void registerObjectToNotify(Notifiable objectToNotify) {
 		cpu.registerObjectToNotify(objectToNotify);
 		ppu.registerObjectToNotify(objectToNotify);
@@ -95,7 +103,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		return ppuMem;
 	}
 	
-	@Override
+	
 	public void runSystem() {
 		Thread t = new Thread(this);
 		pause();
@@ -104,14 +112,14 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		resume();
 	}
 	
-	@Override
+	
 	public void pause() {
 		synchronized(pauseLock) {
 			pause = true;
 		}
 	}
 	
-	@Override
+	
 	public void resume() {
 		synchronized (pauseLock) {
             pause = false;
@@ -119,7 +127,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
         }
 	}
 	
-	@Override
+	
 	public void cycle() {
 		checkCPUCycle();
 		if(breakpointEngaged) {
@@ -148,10 +156,10 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	}
 	
 	private boolean checkForBreakpoint(int pc) {
-		return breakpoints.contains(pc % 0x2000);
+		return breakpointManager.contains(pc % 0x2000);
 	}
 	
-	@Override
+	
 	public void step() {
 		//log.log(disassembler.disassembleInstruction(mapper, cpu.getProgramCounter()));
 		do {
@@ -167,7 +175,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		
 	}
 	
-	@Override
+	
 	public void stepNext() {
 		stepped = true;
 		breakpointEngaged = false;
@@ -176,7 +184,7 @@ public class NES extends Motherboard implements Notifier, Runnable {
 		}
 	}
 	
-	@Override
+	
 	public void runEmulator() {
 		if(running) {
 			breakpointEngaged = false;
@@ -378,6 +386,11 @@ public class NES extends Motherboard implements Notifier, Runnable {
 	
 	public CPU getCPU() {
 		return cpu;
+	}
+
+	public void setBreakpointManager(BreakpointManager bpManager) {
+		this.breakpointManager = bpManager;
+		
 	}
 	
 	

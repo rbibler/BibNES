@@ -13,7 +13,6 @@ import com.bibler.awesome.bibnes.mappers.Mapper;
 import com.bibler.awesome.bibnes.systems.CPU;
 import com.bibler.awesome.bibnes.systems.Cartridge;
 import com.bibler.awesome.bibnes.systems.Memory;
-import com.bibler.awesome.bibnes.systems.Motherboard;
 import com.bibler.awesome.bibnes.systems.NES;
 import com.bibler.awesome.bibnes.systems.PPU;
 
@@ -96,7 +95,7 @@ public class NESProducer {
 		assembler.setByteSize(machineCodeSize);
 	}
 
-	public Motherboard produceNES(File f, MessageHandler messageHandler) {
+	public NES produceNES(File f, MessageHandler messageHandler) {
 		if(f == null || !f.exists()) {
 			return null;
 		}

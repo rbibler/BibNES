@@ -16,8 +16,8 @@ import com.bibler.awesome.bibnes.assembler.BreakpointManager;
 import com.bibler.awesome.bibnes.assembler.ErrorHandler;
 import com.bibler.awesome.bibnes.communications.MessageHandler;
 import com.bibler.awesome.bibnes.communications.Notifiable;
+import com.bibler.awesome.bibnes.controllers.KeyboardController;
 import com.bibler.awesome.bibnes.systems.CPU;
-import com.bibler.awesome.bibnes.systems.Controller;
 import com.bibler.awesome.bibnes.systems.Memory;
 import com.bibler.awesome.bibnes.systems.NES;
 import com.bibler.awesome.bibnes.systems.PPU;
@@ -108,7 +108,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		return retLF;
 	}
 	
-	public void setController(Controller controller) {
+	public void setController(KeyboardController controller) {
 		nesScreen.addKeyListener(controller);
 	}
 	

@@ -1,10 +1,10 @@
-package com.bibler.awesome.bibnes.systems;
+package com.bibler.awesome.bibnes.controllers;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.HashMap;
 
-public class Controller extends Peripheral implements KeyListener {
+public class KeyboardController extends BaseController implements KeyListener {
 	
 	private int buttonsByte;
 	private int latch;
@@ -21,7 +21,7 @@ public class Controller extends Peripheral implements KeyListener {
 	
 	private HashMap<Integer, Integer> keyMap = new HashMap<Integer, Integer>();
 	
-	public Controller() {
+	public KeyboardController() {
 		fillKeyMap();
 	}
 	
