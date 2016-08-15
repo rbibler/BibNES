@@ -227,7 +227,7 @@ public class NES implements Notifier, Runnable {
 	
 	
 	public void writeToPPU(int addressToWrite, int data) {
-		ppu.write(addressToWrite, data);
+		ppu.writeProgramRegister(addressToWrite & 7, data);
 		
 	}
 	
@@ -237,14 +237,14 @@ public class NES implements Notifier, Runnable {
 		} else if(addressToWrite == 0x4014) {
 			int n = data * 0x100;
 			for(int i = 0; i < 0x100; i++) {
-				ppu.write(0x2004, cpuMem[i + n]);
+				ppu.writeProgramRegister(4, cpuMem[i + n]);
 			}
 		}
 		apu.write(addressToWrite, data);
 	}
 	
 	public int readFromPPU(int addressToRead) {
-		return ppu.read(addressToRead);
+		return ppu.readProgramRegister(addressToRead & 7);
 	}
 	
 	public int readFromAPU(int addressToRead) {
@@ -255,6 +255,7 @@ public class NES implements Notifier, Runnable {
 	}
 	
 	public void NMI(boolean NMIFlag) {
+		
 		cpu.setNMI(NMIFlag);
 	}
 	
@@ -338,7 +339,7 @@ public class NES implements Notifier, Runnable {
 		if(address < 0x2000) {
 			ret = mapper.readChr(address);
 		} else {
-		    ret =ppuMem[address % 0x4000];
+		    ret = ppuMem[address % 0x4000];
 		// Returns the background color for all palette 0 cases. Might not be the right place to do this. 
 		} 
 		if(address >= 0x3F00) {
