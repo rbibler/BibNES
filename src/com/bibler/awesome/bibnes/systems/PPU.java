@@ -55,6 +55,7 @@ public class PPU implements Notifier {
 	private int attrLatchLow;
 	private int nametableByte;
 	private int attributeByte;
+	private int nextAttrByte;
 	private int bgColorIndex;
 	
 	// PPU Parameters
@@ -263,6 +264,7 @@ public class PPU implements Notifier {
 		switch(cycle % 8) {
 		case 1:
 			if((cycle >= 9 && cycle < 321) || (cycle > 321)) {
+				attributeByte = nextAttrByte;
 				loadLatches();
 			} 
 			break;
@@ -295,12 +297,14 @@ public class PPU implements Notifier {
 		nametableByte = (0x2000 | (vRamAddress & 0xFFF));
 		
 		nametableByte = nes.ppuRead(nametableByte);
+		/*if(scanline < 16) {
 		System.out.println("S: " + scanline + " C: " + cycle + " Y: " + y + " NT: " + Integer.toHexString(nametableByte).toUpperCase());
+		}*/
 	}
 	
 	private void fetchAttributeByte() {
 		attributeByte = 0x23C0 | (vRamAddress & 0xC00) | ((vRamAddress >> 4) & 0x38) | ((vRamAddress >> 2) & 0x7); 
-		attributeByte = nes.ppuRead(attributeByte);
+		nextAttrByte = nes.ppuRead(attributeByte);
 	}
 	
 	public void fetchLowBGByte() {
@@ -322,6 +326,31 @@ public class PPU implements Notifier {
 	private void loadLatches() {
 		bgShiftHigh = (bgShiftHigh & ~0xFF) | (bgLatchHigh & 0xFF);
 		bgShiftLow = (bgShiftLow & ~0xFF) | (bgLatchLow & 0xFF);
+		//final int row = (((vRamAddress & 0x3E0) >> 5) % 4) / 2;
+		//final int col = ((vRamAddress & 0x1F) % 4) / 2;
+		
+		final int row = (scanline % 32) / 16;
+		final int col = ((cycle - 1) % 32) / 16;
+		int attrByte = 0;
+		if(row == 0) {
+			if(col == 0) {		
+				//Top left
+				attrByte = attributeByte & 3;
+			} else {
+				//Top Right
+				attrByte = attributeByte >> 2 & 3;
+			}
+		} else {
+			if(col == 0) {
+				//Bottom left
+				attrByte = attributeByte >> 4 & 3;
+			} else {
+				//Bottom right
+				attrByte = attributeByte >> 6 & 3;
+			}
+		}
+		attrLatchHigh = attrByte >> 1 & 1;
+		attrLatchLow = attrByte & 1;
 	}
 	
 	private void renderBGPixel() {

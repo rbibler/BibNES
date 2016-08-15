@@ -79,8 +79,8 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void loadNesFileAndRun(boolean debug) {
-		//KeyboardController controller = new KeyboardController();
-		USBGamepad gamepad = JInputControllerManager.getFirstUSBPad();
+		KeyboardController gamepad = new KeyboardController();
+		//USBGamepad gamepad = JInputControllerManager.getFirstUSBPad();
 		//mainPanel.setController(gamepad);
 		bpManager.clearAllBreakpoints();
 		File f = FileUtils.loadFile(this);
