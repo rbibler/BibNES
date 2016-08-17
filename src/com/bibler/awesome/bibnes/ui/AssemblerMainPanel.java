@@ -150,7 +150,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 				emulatorPanel.setCPU(prod.getCPU());
 				emulatorPanel.fillCPUMem(prod.getCPUMem());
 				emulatorPanel.fillPPUMem(prod.getPPUMem());
-				//emulatorPanel.fillOAMMem(ppu.getOamMem());
+				emulatorPanel.fillOAMMem(ppu.getOamMem());
 				nametable.setPPUMem(prod.getPPUMem(), ppu);
 				nametable.setNES(prod.getNES());
 			}

@@ -38,7 +38,7 @@ public class PPU implements Notifier {
 	//OAM variables and arrays
 	private int OAMAddress;
 	private int[] OAMData = new int[256];
-	private int[] tempOAMData;
+	private int[] tempOAMData = new int[32];;
 	
 	//Rendering variables
 	private int scanline;
@@ -57,6 +57,13 @@ public class PPU implements Notifier {
 	private int attributeByte;
 	private int nextAttrByte;
 	private int bgColorIndex;
+	
+	//Sprite registers and stuff
+	private int[] spriteXPositions = new int[8];
+	private int[] spriteAttributes = new int[8];
+	private int[] spriteHighBytes = new int[8];
+	private int[] spriteLowBytes = new int[8];
+	private int[] spriteIndices = new int[8];
 	
 	// PPU Parameters
 	//private int linesPerFrame;
@@ -79,7 +86,10 @@ public class PPU implements Notifier {
 	}
 	
 	public void cycle() {
+		
 		clock();
+		spriteEvaluation();
+		renderSprites();
 		cycle++;
 		if(cycle > 340) {
 			cycle = 0;
@@ -205,7 +215,7 @@ public class PPU implements Notifier {
 					if(cycle >= 280 && cycle <= 304 && scanline == 261) {
 						vRamAddress = tempVRamAddress;
 					}
-					//handleSpriteFetches();
+					handleSpriteFetches();
 				} else if(cycle >= 321 && cycle <= 337) {
 					handleMemoryAccess();
 				} else if(cycle > 337 && cycle <= 340) {
@@ -261,24 +271,19 @@ public class PPU implements Notifier {
 	}
 	
 	private void handleMemoryAccess() {
-		switch(cycle % 8) {
+		switch((cycle - 1) & 7) {
 		case 1:
-			if((cycle >= 9 && cycle < 321) || (cycle > 321)) {
-				attributeByte = nextAttrByte;
-				loadLatches();
-			} 
-			break;
-		case 2:
 			fetchNametableByte();
 			break;
-		case 4:
+		case 3:
 			fetchAttributeByte();
 			break;
-		case 6:
+		case 5:
 			fetchLowBGByte();
 			break;
-		case 0:
+		case 7:
 			fetchHighBGByte();
+			loadLatches();
 			if(cycle == 256) {
 				YIncrement();
 			} else {
@@ -292,19 +297,54 @@ public class PPU implements Notifier {
 		}
 	}
 	
+	private int spriteToFetch;
+	private int currentSpriteYOffset;
+	private int currentSpriteTile;
+	private int currentSpriteAddress;
+	
+	private void handleSpriteFetches() {
+		spriteToFetch = (cycle - 257) / 8;
+		switch((cycle - 1) & 7) {
+		case 1:
+			currentSpriteYOffset = tempOAMData[spriteToFetch * 4];
+			break;
+		case 2:
+			currentSpriteTile = tempOAMData[spriteToFetch * 4 + 1];
+			break;
+		case 3:
+			spriteAttributes[spriteToFetch] = tempOAMData[spriteToFetch * 4 + 2];
+			break;
+		case 4:
+			spriteXPositions[spriteToFetch] = tempOAMData[spriteToFetch * 4 + 3];
+			break;
+		case 5:
+			currentSpriteAddress = 0x1000 * (spriteTileSelect ? 1 : 0);
+			if(((spriteAttributes[spriteToFetch] >> 7 & 1) == 1)) {
+				currentSpriteYOffset = ~currentSpriteYOffset & (spriteHeight ? 0xF : 7);
+			}
+			if(spriteHeight) {
+				currentSpriteAddress = ((currentSpriteTile & 1) * 0x1000) + (currentSpriteTile & 0xFE) * 16;
+			} else {
+				currentSpriteAddress += (currentSpriteTile * 16);
+			}
+			currentSpriteAddress += currentSpriteYOffset;
+			spriteLowBytes[spriteToFetch] = nes.ppuRead(currentSpriteAddress);
+			break;
+		case 7:
+			spriteHighBytes[spriteToFetch++] = nes.ppuRead(currentSpriteAddress + 8);
+			break;
+		}
+	}
+	
 	private void fetchNametableByte() {
 		final int y = (vRamAddress & 0x3E0) >> 5;
 		nametableByte = (0x2000 | (vRamAddress & 0xFFF));
-		
 		nametableByte = nes.ppuRead(nametableByte);
-		/*if(scanline < 16) {
-		System.out.println("S: " + scanline + " C: " + cycle + " Y: " + y + " NT: " + Integer.toHexString(nametableByte).toUpperCase());
-		}*/
 	}
 	
 	private void fetchAttributeByte() {
 		attributeByte = 0x23C0 | (vRamAddress & 0xC00) | ((vRamAddress >> 4) & 0x38) | ((vRamAddress >> 2) & 0x7); 
-		nextAttrByte = nes.ppuRead(attributeByte);
+		attributeByte = nes.ppuRead(attributeByte);
 	}
 	
 	public void fetchLowBGByte() {
@@ -326,11 +366,8 @@ public class PPU implements Notifier {
 	private void loadLatches() {
 		bgShiftHigh = (bgShiftHigh & ~0xFF) | (bgLatchHigh & 0xFF);
 		bgShiftLow = (bgShiftLow & ~0xFF) | (bgLatchLow & 0xFF);
-		//final int row = (((vRamAddress & 0x3E0) >> 5) % 4) / 2;
-		//final int col = ((vRamAddress & 0x1F) % 4) / 2;
-		
-		final int row = (scanline % 32) / 16;
-		final int col = ((cycle - 1) % 32) / 16;
+		final int row = ((((vRamAddress & 0x3E0) >> 5)) % 4) / 2;
+		final int col = ((vRamAddress & 0x1F) % 4) / 2;
 		int attrByte = 0;
 		if(row == 0) {
 			if(col == 0) {		
@@ -360,11 +397,14 @@ public class PPU implements Notifier {
 		bgColorIndex = pixel;
 		pixel |= (attrShiftHigh >> (7 - fineX) & 1) << 3;
 		pixel |= (attrShiftLow >> (7 - fineX) & 1) << 2;
+		
+
 		int pixelValue = nes.ppuRead(0x3F00 + pixel);
 		if(grayScale) {
 			pixelValue &= 0x30;
 		}
 		if(bgClip && cycle < 8) {
+			bgColorIndex = 0;
 			frameArray[offset] = NESPalette.getPixel(nes.ppuRead(0x3F00));
 		} else {
 			frameArray[offset] = NESPalette.getPixel(pixelValue);
@@ -386,6 +426,116 @@ public class PPU implements Notifier {
 	private boolean rendering() {
 		return (spritesEnabled || bgEnabled);
 	}
+	
+	private int yDifference;
+	private int inRangeCounter;
+	private int spriteTempData;
+	private int currentSpriteNum;
+	private int evalState;
+	private int evalStep;
+	
+	private void spriteEvaluation() {
+		//if(!rendering()) {
+			//return;
+		//}
+		if(cycle >= 1 && cycle <= 64) {
+			if(cycle == 1) {
+				inRangeCounter = 0;
+				currentSpriteNum = 0;
+				evalState = 0;
+				evalStep = 0;
+			}
+			if((cycle & 1) == 1) {
+				tempOAMData[cycle >> 1] = 0xFF;
+			}
+		} else if(cycle >= 65 && cycle <= 256 && currentSpriteNum < 64) {
+			if((cycle & 1) == 1) {
+				spriteTempData = OAMData[(currentSpriteNum * 4) + evalStep];
+			} else {
+				if(evalState == 0) {
+					yDifference = (scanline - spriteTempData);
+					if(yDifference >= 0 && yDifference <= (spriteHeight ? 15 : 7)) {
+						if(inRangeCounter < 8) {
+							if(spriteTempData == 0x18) {
+								System.out.println("sprite 0");
+							}
+							tempOAMData[inRangeCounter * 4 + evalStep] = yDifference;
+							evalState++;
+							evalStep++;
+							spriteIndices[inRangeCounter] = currentSpriteNum;
+						} else {
+							spriteOverflow = true;
+						}
+					} else {
+						currentSpriteNum++;
+					}
+				} else if(evalState == 1) {
+					tempOAMData[inRangeCounter * 4 + evalStep] = spriteTempData;
+					evalStep++;
+					if(evalStep == 4) {
+						currentSpriteNum++;
+						inRangeCounter++;
+						evalState = 0;
+						evalStep = 0;
+					}
+				}
+			}
+		}
+	}
+	
+	private void renderSprites() {
+		if(spritesEnabled && scanline < 240 && cycle > 0 && cycle < 256) {
+			for(int i = 0; i < 8; i++) {
+				if(cycle >= spriteXPositions[i] && cycle < (spriteXPositions[i] + 8)) {
+					if( !(spriteClip && cycle < 8) ) {
+						renderSprite(i);
+					}
+				}
+			}
+		}
+	}
+	
+	/*
+	 * Priority Decision Table
+	 * BG Pixel | Sprite Pixel | Priority | Output
+	 * 0			0				X		BG ($3F00)
+	 * 0			1-3				X		Sprite
+	 * 1-3			0				X		BG
+	 * 1-3			1-3				0		Sprite
+	 * 1-3			1-3				1		BG
+	 */
+	
+	private void renderSprite(int index) {
+		int shift = cycle - spriteXPositions[index];
+		if((spriteAttributes[index] >> 6 & 1) == 0) {
+			shift = 7 - shift; 
+		} 
+		
+		int pixel = (spriteLowBytes[index] >> (shift)) & 1;
+		pixel |= ((spriteHighBytes[index] >> (shift)) & 1) << 1;
+		pixel |= (spriteAttributes[index] & 3) << 2;
+		final int bufferIndex = (scanline * 256) + (cycle - 1);
+		final int palVal = nes.ppuRead(0x3F10 + pixel);
+		final int spritePixel = NESPalette.getPixel((grayScale ? palVal & 0x30 : palVal));
+		final int pixelIndex = pixel & 0x03;
+		
+		final int priority = spriteAttributes[index] >> 5 & 1;
+		if(bgColorIndex == 0) {							// If BG Pixel = 0
+			if((pixelIndex) != 0) {																// If Sprite Pixel is not 0, sprite pixel wins
+				frameArray[bufferIndex] = spritePixel;
+			}
+		} else {																				// If BG Pixel is not 0
+			if((pixelIndex) != 0) {																// If Sprite Pixel is not 0, sprite pixel wins
+				if(spriteIndices[index] == 0 && cycle < 255) {
+					sprite0Hit = true;
+				}
+				if(priority == 0) {
+					frameArray[bufferIndex] = spritePixel;
+				}
+			}
+		}
+	}
+	
 
 	@Override
 	public void notify(String messageToSend) {
@@ -406,6 +556,10 @@ public class PPU implements Notifier {
 	
 	public int[] getFrameForPainting() {
 		return frameArray;
+	}
+
+	public int[] getOamMem() {
+		return OAMData;
 	}
 	
 	

@@ -7,7 +7,7 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/3"/>
-	<classpathentry kind="lib" path="C:/Users/rbibl/Downloads/jinput-2.0.5.jar/jinput-2.0.5.jar"/>
-	<classpathentry kind="lib" path="C:/Users/rbibl/Downloads/JHexView.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Ryan/Downloads/archive/archive/dist/jinput.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Ryan/Documents/repos/BibNES/lib/JHexView.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
