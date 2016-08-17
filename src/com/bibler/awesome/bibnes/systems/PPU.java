@@ -129,7 +129,8 @@ public class PPU implements Notifier {
 			break;
 		case 4: 
 			if(!renderingAndVisible()) {
-				OAMData[OAMAddress++] = data;
+				OAMData[(OAMAddress & 0xFF)] = data;
+				OAMAddress++;
 			} else {
 				// Bump only the high 6 bits
 			}
@@ -182,16 +183,19 @@ public class PPU implements Notifier {
 			readReturn = OAMData[OAMAddress++];
 			break;
 		case 7:
-			readLatch = nes.ppuRead(vRamAddress);
+			if(vRamAddress >= 0x3F00) {
+				readReturn = nes.ppuRead(vRamAddress);
+				readLatch = nes.ppuRead(vRamAddress - 0x1000);
+			}  else {
+				readLatch = nes.ppuRead(vRamAddress);
+			}
 			if(!renderingAndVisible()) {
 				vRamAddress += vRamInc;
 			} else {
 				coarseXIncrement();
 				YIncrement();
 			}
-			if(vRamAddress >= 0x3F00) {
-				readReturn = readLatch;
-			} 
+			
 			break;
 		}
 		return readReturn;
@@ -435,9 +439,9 @@ public class PPU implements Notifier {
 	private int evalStep;
 	
 	private void spriteEvaluation() {
-		//if(!rendering()) {
-			//return;
-		//}
+		if(!rendering()) {
+			return;
+		}
 		if(cycle >= 1 && cycle <= 64) {
 			if(cycle == 1) {
 				inRangeCounter = 0;
