@@ -33,6 +33,8 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	private AssemblerInputPanel inputPanel;
 	private NESScreen nesScreen;
 	private NametableScreen nametable;
+	private PaletteTable paletteTable;
+	private PopoutPanel debugPanel;
 	private AssemblerOutputPanel outputPanel;
 	private ProjectPanel projectPanel;
 	private EmulatorPanel emulatorPanel;
@@ -53,7 +55,12 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		LookAndFeel currentLF = setupLookAndFeel();
 		inputPanel = new AssemblerInputPanel("Source", 0, 900,600, bpManager);
 		nesScreen = new NESScreen("Emulator", 1, 256, 240);
-		nametable = new NametableScreen("Debug", 2, 512, 480);
+		debugPanel = new PopoutPanel("Debug", 2, 1024, 960);
+		nametable = new NametableScreen();
+		debugPanel.add(nametable);
+		paletteTable = new PaletteTable(512, 64);
+		debugPanel.add(paletteTable);
+		nametable = new NametableScreen();
 		middlePane = new PopoutPaneHolder(10);
 		middlePane.addPopoutPanel(inputPanel);
 		inputPanel.setParent(middlePane);
@@ -61,9 +68,9 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		middlePane.addPopoutPanel(nesScreen);
 		nesScreen.setParent(middlePane);
 		nesScreen.setPoppedStatus(false);
-		middlePane.addPopoutPanel(nametable);
-		nametable.setParent(middlePane);
-		nametable.setPoppedStatus(false);
+		middlePane.addPopoutPanel(debugPanel);
+		debugPanel.setParent(middlePane);
+		debugPanel.setPoppedStatus(false);
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "none");
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "none");
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("UP"), "none");
@@ -114,6 +121,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	
 	public void setBoard(NES nes) {
 		nesScreen.setBoard(nes);
+		paletteTable.setPPUMem(nes.getPPUMem());
 	}
 	
 	public String[] getInputLines() {

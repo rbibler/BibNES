@@ -71,8 +71,11 @@ public class PPU implements Notifier {
 
 	
 	//Power on Palette Values
-	private int[] powerOnPalette = new int[] {
-			
+	private int[] powerOnPalette = {
+			0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0D, 
+			0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2C, 
+			0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 
+			0x08, 0x3A, 0x00, 0x02, 0x00, 0x20, 0x2C, 0x08	
 	};
 	
 	//Other Systems
@@ -83,6 +86,17 @@ public class PPU implements Notifier {
 	
 	public PPU(NES nes) {
 		this.nes = nes;
+	}
+	
+	public void reset() {
+		writePowerOnPalette();
+		//oddFrame = false;
+	}
+	
+	private void writePowerOnPalette() {
+		for(int i = 0; i < powerOnPalette.length; i++) {
+			nes.ppuWrite(0x3F00 + i, powerOnPalette[i]);
+		}
 	}
 	
 	public void cycle() {
@@ -180,7 +194,7 @@ public class PPU implements Notifier {
 			vBlankFlag = false;
 			break;
 		case 4:
-			readReturn = OAMData[OAMAddress++];
+			readReturn = OAMData[OAMAddress];
 			break;
 		case 7:
 			if(vRamAddress >= 0x3F00) {
@@ -341,7 +355,6 @@ public class PPU implements Notifier {
 	}
 	
 	private void fetchNametableByte() {
-		final int y = (vRamAddress & 0x3E0) >> 5;
 		nametableByte = (0x2000 | (vRamAddress & 0xFFF));
 		nametableByte = nes.ppuRead(nametableByte);
 	}
@@ -460,9 +473,6 @@ public class PPU implements Notifier {
 					yDifference = (scanline - spriteTempData);
 					if(yDifference >= 0 && yDifference <= (spriteHeight ? 15 : 7)) {
 						if(inRangeCounter < 8) {
-							if(spriteTempData == 0x18) {
-								System.out.println("sprite 0");
-							}
 							tempOAMData[inRangeCounter * 4 + evalStep] = yDifference;
 							evalState++;
 							evalStep++;

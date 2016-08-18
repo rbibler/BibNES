@@ -68,7 +68,7 @@ public class Mapper {
 	
 	public void writeChr(int address, int data) {
 		if(address < 0x2000) {
-			chrMem[address % chrMemSize] = data;
+			//chrMem[address % chrMemSize] = data;
 		}
 	}
 	

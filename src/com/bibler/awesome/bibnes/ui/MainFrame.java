@@ -112,7 +112,7 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void step() {
-		board.stepNext();
+		//board.stepNext();
 	}
 	
 	public void frame() {

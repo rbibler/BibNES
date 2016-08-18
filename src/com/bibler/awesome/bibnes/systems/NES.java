@@ -70,10 +70,23 @@ public class NES implements Notifier, Runnable {
 		this.controller = controller;
 	}
 	
+	private int vblankStart;
+	private int vblankStop;
+	private int cycles;
+	
+	public void startVBlankClock() {
+		vblankStart = cycles;
+	}
+	
+	public void stopVBlankClock() {
+		vblankStop = cycles;
+		System.out.println("Vblank period: " + (vblankStop - vblankStart));
+	}
+	
 	
 	public void power() {
 		cpu.powerOn(null);
-		//ppu.reset();
+		ppu.reset();
 	}
 	
 	public void reset() {
@@ -129,61 +142,13 @@ public class NES implements Notifier, Runnable {
 	
 	
 	public void cycle() {
-		checkCPUCycle();
-		if(breakpointEngaged) {
-			return;
-		}
+		
 		ppu.cycle();
-		cycleCount++;
-		
+		ppu.cycle();
+		ppu.cycle();
+		cpu.cycle();
+		cycles++;
 	}
-
-	private void checkCPUCycle() {
-		if(cycleCount % 3 == 0) {
-			checkForNewCPUInstruction();
-			cpu.cycle();
-			if(breakpointEngaged) {
-				return;
-			}
-			
-		}
-	}
-
-	private void checkForNewCPUInstruction() {
-		if(cpu.getCyclesRemaining() == 0) {
-			breakpointEngaged = checkForBreakpoint(cpu.getProgramCounter());
-		}
-	}
-	
-	private boolean checkForBreakpoint(int pc) {
-		return breakpointManager.contains(pc % 0x2000);
-	}
-	
-	
-	public void step() {
-		//log.log(disassembler.disassembleInstruction(mapper, cpu.getProgramCounter()));
-		do {
-			cycle();
-		} while(cpu.getCyclesRemaining() > 0);
-		 while(cycleCount % 3 != 0) {
-			cycle();
-		};
-		if(stepped) {
-			breakpointEngaged = true;
-			stepped = false;
-		} 
-		
-	}
-	
-	
-	public void stepNext() {
-		stepped = true;
-		breakpointEngaged = false;
-		if(!running) {
-			runSystem();
-		}
-	}
-	
 	
 	public void runEmulator() {
 		if(running) {
@@ -370,7 +335,6 @@ public class NES implements Notifier, Runnable {
                 }
             }
 			if(!breakpointEngaged) {
-				//step();
 				cycle();
 			} else {
 				try {

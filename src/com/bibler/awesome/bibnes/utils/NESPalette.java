@@ -1,5 +1,7 @@
 package com.bibler.awesome.bibnes.utils;
 
+import java.awt.Color;
+
 public class NESPalette {
 	
 	
@@ -17,6 +19,11 @@ public class NESPalette {
 		
 	public static int getPixel(int pixelIndex) {
 		return pixels[pixelIndex % pixels.length];
+	}
+	
+	public static Color getPixelColor(int pixelIndex) {
+		final int pixelInt = pixels[pixelIndex % pixels.length];
+		return new Color(pixelInt >> 16 & 0xFF, pixelInt >> 8 & 0xFF, pixelInt & 0xFF);
 	}
 
 	
