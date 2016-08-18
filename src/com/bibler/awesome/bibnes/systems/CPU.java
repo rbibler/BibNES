@@ -81,6 +81,7 @@ public class CPU implements Notifier {
 
 	public void cycle() {
 		if(cyclesRemaining == 0) {
+			
 			if(NMINext) {
 				NMINext = false;
 				cyclesRemaining = 6;
@@ -94,6 +95,9 @@ public class CPU implements Notifier {
 			NMIPrev = NMIFlag;
 		} else {
 			execute();
+			if(cyclesRemaining == 1 && dataCounter != 0x8053 && dataCounter != 0x8050) {
+				System.out.println(AssemblyUtils.getInstruction(instruction) + " $" + Integer.toHexString(dataCounter).toUpperCase());
+			}
 		}
 		statusRegister |= 1 << 5;
 		cyclesRemaining--;
