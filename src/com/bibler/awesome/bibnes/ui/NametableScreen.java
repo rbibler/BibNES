@@ -10,7 +10,7 @@ import com.bibler.awesome.bibnes.systems.NES;
 import com.bibler.awesome.bibnes.systems.PPU;
 import com.bibler.awesome.bibnes.utils.NESPalette;
 
-public class NametableScreen extends JPanel implements Runnable {
+public class NametableScreen extends PopoutPanel implements Runnable {
 	
 	/**
 	 * 
@@ -27,8 +27,8 @@ public class NametableScreen extends JPanel implements Runnable {
 	private PPU ppu;
 	private NES nes;
 	
-	public NametableScreen() {
-		super();
+	public NametableScreen(String title, int tabIndex, int width, int height) {
+		super(title, tabIndex, width, height);
 		nt1 = new BufferedImage(256, 240, BufferedImage.TYPE_4BYTE_ABGR);
 		nt2 = new BufferedImage(256, 240, BufferedImage.TYPE_4BYTE_ABGR);
 		nt3 = new BufferedImage(256, 240, BufferedImage.TYPE_4BYTE_ABGR);

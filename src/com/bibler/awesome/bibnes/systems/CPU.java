@@ -96,7 +96,7 @@ public class CPU implements Notifier {
 		} else {
 			execute();
 			if(cyclesRemaining == 1 && dataCounter != 0x8053 && dataCounter != 0x8050) {
-				System.out.println(AssemblyUtils.getInstruction(instruction) + " $" + Integer.toHexString(dataCounter).toUpperCase());
+				//System.out.println(AssemblyUtils.getInstruction(instruction) + " $" + Integer.toHexString(dataCounter).toUpperCase());
 			}
 		}
 		statusRegister |= 1 << 5;

@@ -36,6 +36,9 @@ public class PaletteTable extends JPanel implements Runnable {
 	
 	@Override
 	public void paintComponent(Graphics g) {
+		if(ppuMem == null) {
+			return;
+		}
 		super.paintComponent(g);
 		for(int i = 0; i < 16; i++) {
 			g.setColor(NESPalette.getPixelColor(ppuMem[0x3F00 + i]));

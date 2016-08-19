@@ -34,6 +34,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	private NESScreen nesScreen;
 	private NametableScreen nametable;
 	private PaletteTable paletteTable;
+	private PatternTableScreen patternTable;
 	private PopoutPanel debugPanel;
 	private AssemblerOutputPanel outputPanel;
 	private ProjectPanel projectPanel;
@@ -56,11 +57,11 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		inputPanel = new AssemblerInputPanel("Source", 0, 900,600, bpManager);
 		nesScreen = new NESScreen("Emulator", 1, 256, 240);
 		debugPanel = new PopoutPanel("Debug", 2, 1024, 960);
-		nametable = new NametableScreen();
-		debugPanel.add(nametable);
+		nametable = new NametableScreen("Nametable", 3, 512, 480);
 		paletteTable = new PaletteTable(512, 64);
+		patternTable = new PatternTableScreen(512, 256);
 		debugPanel.add(paletteTable);
-		nametable = new NametableScreen();
+		debugPanel.add(patternTable);
 		middlePane = new PopoutPaneHolder(10);
 		middlePane.addPopoutPanel(inputPanel);
 		inputPanel.setParent(middlePane);
@@ -70,6 +71,8 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		nesScreen.setPoppedStatus(false);
 		middlePane.addPopoutPanel(debugPanel);
 		debugPanel.setParent(middlePane);
+		middlePane.addPopoutPanel(nametable);
+		nametable.setParent(middlePane);
 		debugPanel.setPoppedStatus(false);
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "none");
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "none");
@@ -122,6 +125,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	public void setBoard(NES nes) {
 		nesScreen.setBoard(nes);
 		paletteTable.setPPUMem(nes.getPPUMem());
+		patternTable.setMapper(nes.getMapper(), nes.getPPUMem());
 	}
 	
 	public String[] getInputLines() {
