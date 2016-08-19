@@ -60,6 +60,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		nametable = new NametableScreen("Nametable", 3, 512, 480);
 		paletteTable = new PaletteTable(512, 64);
 		patternTable = new PatternTableScreen(512, 256);
+		paletteTable.setPatternTableScreen(patternTable);
 		debugPanel.add(paletteTable);
 		debugPanel.add(patternTable);
 		middlePane = new PopoutPaneHolder(10);

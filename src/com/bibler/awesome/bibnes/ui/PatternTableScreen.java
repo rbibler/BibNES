@@ -36,6 +36,10 @@ public class PatternTableScreen extends JPanel implements Runnable {
 		startThread();
 	}
 	
+	public void updateCurrentPaletteIndex(int currentPaletteIndex) {
+		this.currentPaletteIndex = currentPaletteIndex;
+	}
+	
 	private void startThread() {
 		Thread t = new Thread(this);
 		t.start();
