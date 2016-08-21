@@ -21,6 +21,7 @@ public class PPU implements Notifier {
 	private boolean vBlankFlag;
 	private boolean sprite0Hit;
 	private boolean spriteOverflow;
+	private boolean oddFrame;
 	
 	// Integer register values
 	private int vRamInc;
@@ -105,7 +106,15 @@ public class PPU implements Notifier {
 		spriteEvaluation();
 		renderSprites();
 		cycle++;
-		if(cycle > 340) {
+		if(cycle == 339 && oddFrame && scanline == 261) {
+			cycle = 0;
+			frame++;
+			scanline = 0;
+			nes.frame();
+			oddFrame = !oddFrame;
+			notify("FRAME");
+			return;
+		} else if(cycle > 340) {
 			cycle = 0;
 			scanline++;
 			if(scanline > 261) {
@@ -178,6 +187,9 @@ public class PPU implements Notifier {
 				YIncrement();
 			}
 			break;
+		default:
+			System.out.println("WEIRDNESS!");
+			break;
 		}
 	}
 	
@@ -219,11 +231,6 @@ public class PPU implements Notifier {
 		if(scanline < 240 || scanline == 261) {
 			if(rendering()) {
 				if(cycle > 0 && cycle <= 257 ) {
-					if(cycle == 1 && scanline == 261) {
-						vBlankFlag = false;
-						sprite0Hit = false;
-						spriteOverflow = false;
-					}
 					handleMemoryAccess();
 					if(cycle == 257) {
 						vRamAddress = (vRamAddress & ~0x41F) | (tempVRamAddress & 0x41F);
@@ -240,6 +247,11 @@ public class PPU implements Notifier {
 					fetchNametableByte();
 					fetchNametableByte();
 				}
+			}
+			if(cycle == 1 && scanline == 261) {
+				vBlankFlag = false;
+				sprite0Hit = false;
+				spriteOverflow = false;
 			}
 			
 		} else if(scanline == 241) {

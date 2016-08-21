@@ -98,7 +98,12 @@ public class MMC1 extends Mapper {
 			}
 			break;
 		}
-		return chrMem[newAddress % chrMemSize];
+		if(chrMem != null) {
+			return chrMem[newAddress % chrMemSize];
+		} else if(chrRam != null) {
+			return chrRam[newAddress % chrRam.length];
+		}
+		return newAddress >> 8;
 	}
 	
 	@Override
@@ -119,7 +124,11 @@ public class MMC1 extends Mapper {
 			}
 			break;
 		}*/
-		chrMem[newAddress % chrMemSize] = data;
+		if(chrMem != null) {
+			chrMem[newAddress % chrMemSize] = data;
+		} else if(chrRam != null) {
+			chrRam[newAddress % chrRam.length] = data;
+		}
 	}
 	
 	private void clearShift() {

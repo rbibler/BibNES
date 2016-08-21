@@ -39,7 +39,11 @@ public class Mapper {
 	}
 	
 	public void setChrMem(int[] chrMem) {
+		if(chrMem == null) {
+			chrRam = new int[0x2000];
+		}
 		this.chrMem = chrMem;
+		
 	}
 	
 	public void setPrgMemSize(int prgMemSize) {
@@ -67,15 +71,19 @@ public class Mapper {
 	}
 	
 	public void writeChr(int address, int data) {
-		if(address < 0x2000) {
-			//chrMem[address % chrMemSize] = data;
+		if(address < 0x2000 && chrRam != null) {
+			chrRam[address % chrRam.length] = data;
 		}
 	}
 	
 	public int readChr(int address) {
 		int ret = 0;
 		if(address < 0x2000) {
-			ret = chrMem[address % chrMemSize];
+			if(chrMem != null) {
+				ret = chrMem[address % chrMemSize];
+			} else if(chrRam != null) {
+				ret = chrRam[address % chrRam.length];
+			}
 		}
 		return ret;
 	}
