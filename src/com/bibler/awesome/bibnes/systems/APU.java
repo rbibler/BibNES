@@ -71,8 +71,13 @@ public class APU {
 	}
 	
 	public int read(int addressToRead) {
-		
-		return 0;
+		if(addressToRead == 0x4015) {
+			final int ret = readStatus();
+			//System.out.println("Reading status " + Integer.toBinaryString(ret));
+			return ret;
+		} else {
+			return addressToRead >> 8;
+		}
 	}
 	
 	public void clock() {
@@ -83,6 +88,14 @@ public class APU {
 			cpuDivider = 1;
 			apuHalfClock();
 		}
+	}
+	
+	private int readStatus() {
+		final int noiseLength = (noiseOne.getLengthCounter() > 0 ? 1 : 0);
+		final int triLength = (triOne.getLengthCounter() > 0 ? 1 : 0);
+		final int pulseOneLength = (pulseOne.getLengthCounter() > 0 ? 1 : 0);
+		final int pulseTwoLength = (pulseTwo.getLengthCounter() > 0 ? 1 : 0);
+		return pulseOneLength | (pulseTwoLength << 1) | (triLength << 2) | (noiseLength << 3);
 	}
 	
 	private void apuClock() {

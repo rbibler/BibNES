@@ -13,4 +13,8 @@ public class WaveGenerator {
 	public void setLengthCounterEnabled(boolean enabled) {};
 	
 	public void clockLengthCounter() {};
+	
+	public int getLengthCounter() {
+		return lengthCounter;
+	}
 }

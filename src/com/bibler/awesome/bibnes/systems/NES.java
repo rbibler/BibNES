@@ -205,8 +205,9 @@ public class NES implements Notifier, Runnable {
 			for(int i = 0; i < 0x100; i++) {
 				ppu.writeProgramRegister(4, cpuMem[i + n]);
 			}
+		} else {
+			apu.write(addressToWrite, data);
 		}
-		apu.write(addressToWrite, data);
 	}
 	
 	public int readFromPPU(int addressToRead) {

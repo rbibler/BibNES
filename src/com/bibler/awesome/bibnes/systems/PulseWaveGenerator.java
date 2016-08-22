@@ -25,9 +25,25 @@ public class PulseWaveGenerator extends WaveGenerator {
 	
 	@Override
 	public void write(int register, int data) {
+		//if(data > 0) {
+			//System.out.println("Wrote to pulse register " + register + " data " + Integer.toBinaryString(data));
+		//}
 		switch(register) {
 		case 0:
-			duty = data >> 6 & 3;
+			switch(data >> 6 & 3) {
+			case 0:
+				duty = 0b01000000;
+				break;
+			case 1:
+				duty = 0b01100000;
+				break;
+			case 2:
+				duty = 0b01111000;
+				break;
+			case 3:
+				duty = 0b10011111;
+				break;
+			}
 			lengthCounterHalt = (data >> 5 & 1) == 1;
 			constantVolume = (data >> 4 & 1) == 1;
 			envelope = data & 0b1111;
@@ -46,6 +62,8 @@ public class PulseWaveGenerator extends WaveGenerator {
 			timer &= ~(7 << 8);
 			timer |= (data & 7) << 8;
 			lengthCounter = data >> 3 & 0b11111;
+			currentStep = 7;
+			currentTimer = timer;
 			break;
 		}
 	}
@@ -78,7 +96,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 		} else {
 			currentTimer--;
 		}
-		return lengthCounter > 0 ? (envelope * (duty >> currentStep) & 1) : 0;
+		return lengthCounter > 0 ? (7 * ((duty >> currentStep) & 1)) : 0;
 	}
 
 }
