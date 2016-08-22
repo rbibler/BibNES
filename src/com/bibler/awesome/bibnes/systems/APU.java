@@ -8,13 +8,22 @@ public class APU {
 	private NoiseWaveGenerator noiseOne;
 	private DMCWaveGenerator DMCOne;
 	
-	private boolean DMCEnable;
-	private boolean noiseEnable;
-	private boolean triEnable;
-	private boolean pulse2Enable;
-	private boolean pulse1Enable;
+	private Mixer mixer;
+	
+	private int cpuDivider;
+	
 	private int frameCounter;
+	private int frameCounterMode;
 	private boolean disableFrameInterrupt;
+	
+	public APU() {
+		pulseOne = new PulseWaveGenerator();
+		pulseTwo = new PulseWaveGenerator();
+		triOne = new TriangleWaveGenerator();
+		noiseOne = new NoiseWaveGenerator();
+		DMCOne = new DMCWaveGenerator();
+		mixer = new Mixer();
+	}
 	
 	public void write(int addressToWrite, int data) {
 		final int register = addressToWrite - 0x4000;
@@ -48,14 +57,14 @@ public class APU {
 			DMCOne.write(register, data);
 			break;
 		case 0x15:
-			DMCEnable = (data >> 4 & 1) == 1;
-			noiseEnable = (data >> 3 & 1) == 1;
-			triEnable = (data >> 2 & 1) == 1;
-			pulse2Enable = (data >> 1 & 1) == 1;
-			pulse1Enable = (data & 1) == 1;
+			DMCOne.setLengthCounterEnabled((data >> 4 & 1) == 1);
+			noiseOne.setLengthCounterEnabled((data >> 3 & 1) == 1);
+			triOne.setLengthCounterEnabled((data >> 2 & 1) == 1);
+			pulseTwo.setLengthCounterEnabled((data >> 1 & 1) == 1);
+			pulseOne.setLengthCounterEnabled((data & 1) == 1);
 			break;
 		case 0x17:
-			frameCounter = (data >> 7) & 1;
+			frameCounterMode = (data >> 7) & 1;
 			disableFrameInterrupt = (data >> 6 & 1) == 1;
 			break;
 		}
@@ -64,6 +73,78 @@ public class APU {
 	public int read(int addressToRead) {
 		
 		return 0;
+	}
+	
+	public void clock() {
+		if(cpuDivider == 1) {
+			cpuDivider = 0;
+			apuClock();
+		} else {
+			cpuDivider = 1;
+			apuHalfClock();
+		}
+	}
+	
+	private void apuClock() {
+		frameCounter++;
+		if(frameCounter == 14915 && frameCounterMode == 0) {
+			frameCounter = 0;
+		} else if(frameCounter == 18641 && frameCounterMode == 1) {
+			frameCounter = 0;
+		}
+		mix();
+	}
+	
+	private void apuHalfClock() {
+		if(frameCounter == 3728) {
+			clockAllEnvelopes();
+			triOne.clockLinearCounter();
+		} else if(frameCounter == 7456) {
+			clockAllEnvelopes();
+			triOne.clockLinearCounter();
+			clockAllLengthCounters();
+			clockSweepUnits();
+		} else if(frameCounter == 11185) {
+			clockAllEnvelopes();
+			triOne.clockLinearCounter();
+		} else if(frameCounter == 14914 && frameCounterMode == 0) {
+			clockAllEnvelopes();
+			triOne.clockLinearCounter();
+			clockAllLengthCounters();
+			clockSweepUnits();
+		} else if(frameCounter == 18640 && frameCounterMode == 1) {
+			clockAllEnvelopes();
+			triOne.clockLinearCounter();
+			clockAllLengthCounters();
+			clockSweepUnits();
+		}
+	}
+	
+	private void clockAllEnvelopes() {
+		pulseOne.clockEnvelope();
+		pulseTwo.clockEnvelope();
+		noiseOne.clockEnvelope();
+	}
+	
+	private void clockAllLengthCounters() {
+		pulseOne.clockLengthCounter();
+		pulseTwo.clockLengthCounter();
+		triOne.clockLengthCounter();
+		noiseOne.clockLengthCounter();
+	}
+	
+	private void clockSweepUnits() {
+		pulseOne.clockSweepUnit();
+		pulseTwo.clockSweepUnit();
+	}
+	
+	private void mix() {
+		double pulseOneValue = pulseOne.clock();
+		double pulseTwoValue = pulseTwo.clock();
+		double triValue = triOne.clock();
+		double noiseValue = noiseOne.clock();
+		double DMCValue = DMCOne.clock();
+		mixer.output(pulseOneValue, pulseTwoValue, triValue, noiseValue, DMCValue);
 	}
 
 }

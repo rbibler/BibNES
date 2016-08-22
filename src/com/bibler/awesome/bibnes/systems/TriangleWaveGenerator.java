@@ -6,6 +6,10 @@ public class TriangleWaveGenerator extends WaveGenerator {
 	private boolean lengthCounterDisable;
 	private int linearCounterReloadValue;
 	
+	public void clockLinearCounter() {
+		
+	}
+	
 	@Override
 	public void write(int register, int data) {
 		switch(register) {

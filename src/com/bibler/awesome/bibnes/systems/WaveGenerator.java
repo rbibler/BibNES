@@ -7,4 +7,10 @@ public class WaveGenerator {
 	
 	
 	public void write(int register, int data) {};
+	
+	public int clock() { return 0; };
+	
+	public void setLengthCounterEnabled(boolean enabled) {};
+	
+	public void clockLengthCounter() {};
 }

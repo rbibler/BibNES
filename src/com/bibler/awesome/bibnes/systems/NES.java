@@ -147,6 +147,7 @@ public class NES implements Notifier, Runnable {
 		ppu.cycle();
 		ppu.cycle();
 		cpu.cycle();
+		apu.clock();
 		cycles++;
 	}
 	

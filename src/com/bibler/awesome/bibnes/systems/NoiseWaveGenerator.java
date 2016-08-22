@@ -9,6 +9,10 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	private boolean loopNoise;
 	private int noisePeriod;
 	
+	public void clockEnvelope() {
+		
+	}
+	
 	@Override
 	public void write(int register, int data) {
 		switch(register) {
