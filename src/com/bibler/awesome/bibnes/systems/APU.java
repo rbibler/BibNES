@@ -164,8 +164,15 @@ public class APU {
 		byte[] pulseTwoSamples = new byte[512];
 		pulseOne.getSamples(pulseOneSamples);
 		pulseTwo.getSamples(pulseTwoSamples);
+		byte sample;
 		for(int i = 0; i < pulseOneSamples.length; i++) {
-			output[i] = (byte) ((pulseOneSamples[i] + pulseTwoSamples[1]) & 0xFF);
+			sample = (byte) ((pulseOneSamples[i] + pulseTwoSamples[i]));
+			if(sample > Byte.MAX_VALUE * .7) {
+				sample = (byte) (Byte.MAX_VALUE * .7);
+			} else if(sample < Byte.MIN_VALUE * .7) {
+				sample = (byte) (Byte.MIN_VALUE * .7);
+			}
+			output[i] = sample;
 		}
 		return output.length;
 	}
