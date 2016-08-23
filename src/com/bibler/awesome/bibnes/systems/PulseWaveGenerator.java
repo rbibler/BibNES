@@ -14,6 +14,11 @@ public class PulseWaveGenerator extends WaveGenerator {
 	private boolean lengthCounterEnabled;
 	private int currentTimer;
 	private int currentStep;
+	private double frequency;
+	private long periodSamples;
+	private long sampleNumber;
+	private double cpuClockSpeed = 1789773;
+	private double sampleRate = 44100;
 	
 	public void clockEnvelope() {
 		
@@ -64,6 +69,8 @@ public class PulseWaveGenerator extends WaveGenerator {
 			lengthCounter = data >> 3 & 0b11111;
 			currentStep = 7;
 			currentTimer = timer;
+			frequency = cpuClockSpeed / (16 * (timer + 1));
+			periodSamples = (long) (sampleRate / frequency);
 			break;
 		}
 	}
@@ -96,7 +103,37 @@ public class PulseWaveGenerator extends WaveGenerator {
 		} else {
 			currentTimer--;
 		}
+		
 		return lengthCounter > 0 ? (7 * ((duty >> currentStep) & 1)) : 0;
+	}
+	
+	@Override
+	public double getSample() {
+		if(periodSamples == 0) {
+			return periodSamples;
+		}
+		double value;
+		if(sampleNumber < (periodSamples / 2)) {
+			value = 1.0;
+		} else {
+			value = -1.0;
+		}
+		if(lengthCounter > 0) {
+			value *= (duty >> currentStep & 1);
+		}
+		sampleNumber = (sampleNumber + 1) % periodSamples;
+		return value;
+	}
+	
+	@Override
+	public int getSamples(byte[] samples) {
+
+		for(int i = 0; i < samples.length; i++) {
+			double ds = getSample() * Byte.MAX_VALUE;
+			byte ss = (byte) Math.round(ds);
+			samples[i] = ss;
+		}
+		return samples.length;
 	}
 
 }

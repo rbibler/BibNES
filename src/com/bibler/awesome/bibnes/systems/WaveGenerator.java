@@ -17,4 +17,12 @@ public class WaveGenerator {
 	public int getLengthCounter() {
 		return lengthCounter;
 	}
+	
+	public double getSample() {
+		return 0;
+	}
+	
+	public int getSamples(byte[] samples) {
+		return 0;
+	}
 }

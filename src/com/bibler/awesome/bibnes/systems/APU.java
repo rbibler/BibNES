@@ -22,7 +22,7 @@ public class APU {
 		triOne = new TriangleWaveGenerator();
 		noiseOne = new NoiseWaveGenerator();
 		DMCOne = new DMCWaveGenerator();
-		mixer = new Mixer();
+		mixer = new Mixer(this);
 	}
 	
 	public void write(int addressToWrite, int data) {
@@ -152,12 +152,22 @@ public class APU {
 	}
 	
 	private void mix() {
-		double pulseOneValue = pulseOne.clock();
-		double pulseTwoValue = pulseTwo.clock();
-		double triValue = triOne.clock();
-		double noiseValue = noiseOne.clock();
-		double DMCValue = DMCOne.clock();
-		mixer.output(pulseOneValue, pulseTwoValue, triValue, noiseValue, DMCValue);
+		pulseOne.clock();
+		pulseTwo.clock();
+		triOne.clock();
+		noiseOne.clock();
+		DMCOne.clock();
+	}
+	
+	public int getSamples(byte[] output) {
+		byte[] pulseOneSamples = new byte[512];
+		byte[] pulseTwoSamples = new byte[512];
+		pulseOne.getSamples(pulseOneSamples);
+		pulseTwo.getSamples(pulseTwoSamples);
+		for(int i = 0; i < pulseOneSamples.length; i++) {
+			output[i] = (byte) ((pulseOneSamples[i] + pulseTwoSamples[1]) & 0xFF);
+		}
+		return output.length;
 	}
 
 }

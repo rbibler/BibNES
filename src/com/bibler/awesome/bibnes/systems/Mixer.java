@@ -7,48 +7,42 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 
-public class Mixer {
+public class Mixer implements Runnable {
 	
 	private byte[] sampleBuffer;
 	private int sampleBufferIndex;
-	private SourceDataLine line;
+	private SourceDataLine player;
 	
-	public Mixer() {
+	private APU apu;
+	
+	public Mixer(APU apu) {
+		this.apu = apu;
 		sampleBuffer = new byte[512];
 		openLine();
-		line.start();
+		player.start();
+		Thread t = new Thread(this);
+		t.start();
 	}
 	
-	public void output(double pulseOneValue, double pulseTwoValue, double triValue, double noiseValue, double DMCValue) {
-		//if(pulseOneValue > 0 || pulseTwoValue > 0) {
-			//System.out.println("Mixed!: " + "\n     Pulse 1: " + pulseOneValue + "\n     Pulse 2: " + pulseTwoValue);
-		//}
-		sampleBuffer[sampleBufferIndex++] = (byte) (pulseOneValue + pulseTwoValue);
-		if(sampleBufferIndex >= sampleBuffer.length) {
-			writeAudioBuffer();
-			sampleBufferIndex = 0;
+	public void openLine() {
+		AudioFormat[] format = new AudioFormat[] {new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0F, 8, 1, 1, 44100.0F, false)};
+		DataLine.Info info = new DataLine.Info(SourceDataLine.class, format, 512, 512);
+		if(!AudioSystem.isLineSupported(info)) {
+			
 		}
-	}
-	
-	private void writeAudioBuffer() {
-		line.write(sampleBuffer, 0, sampleBuffer.length);
-	}
-	
-	private void openLine() {
-		AudioFormat format = new AudioFormat(44200, 8, 1, false, true);
-		DataLine.Info info = new DataLine.Info(SourceDataLine.class, 
-			    format); // format is an AudioFormat object
-			if (!AudioSystem.isLineSupported(info)) {
-			    // Handle the error.
-			    }
-			    // Obtain and open the line.
-			try {
-			    line = (SourceDataLine) AudioSystem.getLine(info);
-			    line.open(format);
-			} catch (LineUnavailableException ex) {
-			        // Handle the error.
-			    //... 
-			}
+		try {
+			player = (SourceDataLine) AudioSystem.getLine(info);
+			player.open(format[0]);
+		} catch(LineUnavailableException e) {};
 	}
 
+	@Override
+	public void run() {
+		while(!Thread.interrupted()) {
+			final int bytesRead = apu.getSamples(sampleBuffer);
+			if(bytesRead > 0) {
+				player.write(sampleBuffer,  0,  bytesRead);
+			}
+		}
+	}
 }
