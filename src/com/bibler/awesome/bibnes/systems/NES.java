@@ -354,6 +354,10 @@ public class NES implements Notifier, Runnable {
 	public CPU getCPU() {
 		return cpu;
 	}
+	
+	public APU getAPU() {
+		return apu;
+	}
 
 	public void setBreakpointManager(BreakpointManager bpManager) {
 		this.breakpointManager = bpManager;

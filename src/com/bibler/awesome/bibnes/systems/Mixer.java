@@ -49,4 +49,8 @@ public class Mixer  {
 		player.write(sampleBuffer, 0, sampleBuffer.length);
 	}
 	
+	public byte[] getFrame() {
+		return sampleBuffer;
+	}
+	
 }

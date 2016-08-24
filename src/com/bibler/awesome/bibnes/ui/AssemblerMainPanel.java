@@ -41,6 +41,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	private EmulatorPanel emulatorPanel;
 	private JSplitPane inputStatusPane;
 	private JSplitPane inputOutputPane;
+	private AudioChannelView audioView;
 	
 	public AssemblerMainPanel(MessageHandler handler, BreakpointManager bpManager) {
 		super(JSplitPane.HORIZONTAL_SPLIT);
@@ -61,8 +62,10 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		paletteTable = new PaletteTable(512, 64);
 		patternTable = new PatternTableScreen(512, 256);
 		paletteTable.setPatternTableScreen(patternTable);
-		debugPanel.add(paletteTable);
-		debugPanel.add(patternTable);
+		audioView = new AudioChannelView();
+		//debugPanel.add(paletteTable);
+		//debugPanel.add(patternTable);
+		debugPanel.add(audioView);
 		middlePane = new PopoutPaneHolder(10);
 		middlePane.addPopoutPanel(inputPanel);
 		inputPanel.setParent(middlePane);
@@ -127,6 +130,8 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		nesScreen.setBoard(nes);
 		paletteTable.setPPUMem(nes.getPPUMem());
 		patternTable.setMapper(nes.getMapper(), nes.getPPUMem());
+		audioView.setFrame(nes.getAPU().getFrame());
+		nes.getAPU().setAudioChannelView(audioView);
 	}
 	
 	public String[] getInputLines() {

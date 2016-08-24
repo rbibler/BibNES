@@ -132,6 +132,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	@Override
 	public double getSample() {
 		currentVolume = constantVolume ? envelope : decayLevelCounter;
+		currentVolume = 9;
 		return (lengthCounter > 0 && currentTimer >= 8) ? (currentVolume * ((duty >> currentStep) & 1)) : 0;
 	}
 

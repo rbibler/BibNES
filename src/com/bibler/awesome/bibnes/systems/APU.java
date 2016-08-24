@@ -1,5 +1,7 @@
 package com.bibler.awesome.bibnes.systems;
 
+import com.bibler.awesome.bibnes.ui.AudioChannelView;
+
 public class APU {
 	
 	private PulseWaveGenerator pulseOne;
@@ -24,6 +26,8 @@ public class APU {
 	private int apuCycle;
 	
 	private int sampleRate = 1789773 / 44100;
+	
+	private AudioChannelView audioChannelView;
 	
 	public APU() {
 		pulseOne = new PulseWaveGenerator();
@@ -98,7 +102,7 @@ public class APU {
 				apuClock();
 			}
 			triOne.clock();
-			accumulator = getSamples();
+			accumulator += getSamples();
 			if ((apuCycle % sampleRate) < 1) {
 				//not quite right - there's a non-integer # cycles per sample.
                 mixer.outputSample( (byte) (accumulator / remainder));
@@ -107,14 +111,17 @@ public class APU {
              }
              ++apuCycle;
 		}
+		if(audioChannelView != null) {
+			audioChannelView.updateView();
+		}
 		mixer.flushSamples();
 	}
 	
 	private byte getSamples() {
-		double pulseOneByte = 0xFF * (pulseOne.getSample() / 15.0);
-		double pulseTwoByte = 0xFF * (pulseTwo.getSample() / 15.0);
+		double pulseOneByte = 0xFF * (pulseOne.getSample() / 16.0);
+		double pulseTwoByte = 0xFF * (pulseTwo.getSample() / 16.0);
 		double tri = 0xFF * (triOne.getSample() / 15.0);
-		final double total = pulseOneByte + pulseTwoByte;
+		final double total = pulseOneByte;// + pulseTwoByte;
 		return (byte) (total > 0xE1 ? 0xE0 : total);
 	}
 
@@ -181,6 +188,14 @@ public class APU {
 	private void clockSweepUnits() {
 		pulseOne.clockSweepUnit();
 		pulseTwo.clockSweepUnit();
+	}
+	
+	public void setAudioChannelView(AudioChannelView audioChannelView) {
+		this.audioChannelView = audioChannelView;
+	}
+	
+	public byte[] getFrame() {
+		return mixer.getFrame();
 	}
 
 }
