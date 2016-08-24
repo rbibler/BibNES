@@ -7,7 +7,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 
-public class Mixer implements Runnable {
+public class Mixer  {
 	
 	private byte[] sampleBuffer;
 	private int sampleBufferIndex;
@@ -17,16 +17,21 @@ public class Mixer implements Runnable {
 	
 	public Mixer(APU apu) {
 		this.apu = apu;
-		sampleBuffer = new byte[512];
+		sampleBuffer = new byte[(int) Math.ceil(44100.0 / 60)];
 		openLine();
 		player.start();
-		Thread t = new Thread(this);
-		t.start();
 	}
 	
 	public void openLine() {
-		AudioFormat[] format = new AudioFormat[] {new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0F, 8, 1, 1, 44100.0F, false)};
-		DataLine.Info info = new DataLine.Info(SourceDataLine.class, format, 512, 512);
+		AudioFormat[] format = new AudioFormat[] {
+				new AudioFormat(
+                44100,
+                8,//bit
+                1,//channel
+                false,//unsigned
+                false //little endian
+        )};
+		DataLine.Info info = new DataLine.Info(SourceDataLine.class, format[0], sampleBuffer.length);
 		if(!AudioSystem.isLineSupported(info)) {
 			
 		}
@@ -35,14 +40,13 @@ public class Mixer implements Runnable {
 			player.open(format[0]);
 		} catch(LineUnavailableException e) {};
 	}
-
-	@Override
-	public void run() {
-		while(!Thread.interrupted()) {
-			final int bytesRead = apu.getSamples(sampleBuffer);
-			if(bytesRead > 0) {
-				player.write(sampleBuffer,  0,  bytesRead);
-			}
-		}
+	
+	public void outputSample(byte sample) {
+		sampleBuffer[sampleBufferIndex++ % sampleBuffer.length] = sample;
 	}
+
+	public void flushSamples() {
+		player.write(sampleBuffer, 0, sampleBuffer.length);
+	}
+	
 }

@@ -7,7 +7,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	private int sweepPeriod;
 	private int sweepNegate;
 	private int sweepShift;
-	private double duty;
+	private int duty;
 	private int channelVolume;
 	private boolean lengthCounterHalt;
 	private boolean constantVolume;
@@ -15,11 +15,6 @@ public class PulseWaveGenerator extends WaveGenerator {
 	private boolean envelopeStartFlag;
 	private int currentTimer;
 	private int currentStep;
-	private double frequency;
-	private long periodSamples;
-	private long sampleNumber;
-	private double cpuClockSpeed = 1789773;
-	private double sampleRate = 44100;
 	private int currentVolume;
 	private int decayLevelCounter;
 	private int envelopeDividerPeriod;
@@ -59,23 +54,20 @@ public class PulseWaveGenerator extends WaveGenerator {
 	
 	@Override
 	public void write(int register, int data) {
-		//if(data > 0) {
-			//System.out.println("Wrote to pulse register " + register + " data " + Integer.toBinaryString(data));
-		//}
 		switch(register) {
 		case 0:
 			switch(data >> 6 & 3) {
 			case 0:
-				duty = .125;
+				duty = 0b1000000;
 				break;
 			case 1:
-				duty = .25;
+				duty = 0b1100000;
 				break;
 			case 2:
-				duty = .50;
+				duty = 0b1111000;
 				break;
 			case 3:
-				duty = .75;
+				duty = 0b10011111;
 				break;
 			}
 			lengthCounterHalt = (data >> 5 & 1) == 1;
@@ -101,8 +93,6 @@ public class PulseWaveGenerator extends WaveGenerator {
 			lengthCounter = data >> 3 & 0b11111;
 			currentStep = 7;
 			currentTimer = timer;
-			frequency = cpuClockSpeed / (16 * (timer + 1));
-			periodSamples = (long) (sampleRate / frequency);
 			envelopeStartFlag = true;
 			break;
 		}
@@ -137,37 +127,12 @@ public class PulseWaveGenerator extends WaveGenerator {
 			currentTimer--;
 		}
 		return 0;
-		//return lengthCounter > 0 ? (7 * ((duty >> currentStep) & 1)) : 0;
 	}
 	
 	@Override
 	public double getSample() {
-		if(periodSamples == 0) {
-			return periodSamples;
-		}
-		double value = 0;
-		//if(lengthCounter > 0) {
-			if(sampleNumber < (periodSamples * duty)) {
-				value = 1.0;
-			} else {
-				value = -1.0;
-			}
-		//}
-		sampleNumber = (sampleNumber + 1) % periodSamples;
-		return value;
-	}
-	
-	@Override
-	public int getSamples(byte[] samples) {
 		currentVolume = constantVolume ? envelope : decayLevelCounter;
-		double volumeMultiplier = (currentVolume / 15.0);
-		for(int i = 0; i < samples.length; i++) {
-			
-			double ds = getSample() * (Byte.MAX_VALUE * volumeMultiplier);
-			byte ss = (byte) Math.round(ds);
-			samples[i] = (byte) (ss);
-		}
-		return samples.length;
+		return (lengthCounter > 0 && currentTimer >= 8) ? (currentVolume * ((duty >> currentStep) & 1)) : 0;
 	}
 
 }

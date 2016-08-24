@@ -15,6 +15,15 @@ public class APU {
 	private int frameCounter;
 	private int frameCounterMode;
 	private boolean disableFrameInterrupt;
+	byte[] pulseOneSamples = new byte[512];
+	byte[] pulseTwoSamples = new byte[512];
+	byte[] triSamples = new byte[512];
+	
+	private int remainder;
+	private double accumulator;
+	private int apuCycle;
+	
+	private int sampleRate = 1789773 / 44100;
 	
 	public APU() {
 		pulseOne = new PulseWaveGenerator();
@@ -80,15 +89,35 @@ public class APU {
 		}
 	}
 	
-	public void clock() {
-		if(cpuDivider == 1) {
-			cpuDivider = 0;
-			apuClock();
-		} else {
-			cpuDivider = 1;
-			apuHalfClock();
+	public void frame(int cpuClocks) {
+		for(int i = 0; i < cpuClocks; i++) {
+			++remainder;
+			if((i & 1) == 1) {
+				apuHalfClock();
+			} else {
+				apuClock();
+			}
+			triOne.clock();
+			accumulator = getSamples();
+			if ((apuCycle % sampleRate) < 1) {
+				//not quite right - there's a non-integer # cycles per sample.
+                mixer.outputSample( (byte) (accumulator / remainder));
+                remainder = 0;
+                accumulator = 0;
+             }
+             ++apuCycle;
 		}
+		mixer.flushSamples();
 	}
+	
+	private byte getSamples() {
+		double pulseOneByte = 0xFF * (pulseOne.getSample() / 15.0);
+		double pulseTwoByte = 0xFF * (pulseTwo.getSample() / 15.0);
+		double tri = 0xFF * (triOne.getSample() / 15.0);
+		final double total = pulseOneByte + pulseTwoByte;
+		return (byte) (total > 0xE1 ? 0xE0 : total);
+	}
+
 	
 	private int readStatus() {
 		final int noiseLength = (noiseOne.getLengthCounter() > 0 ? 1 : 0);
@@ -105,7 +134,10 @@ public class APU {
 		} else if(frameCounter == 18641 && frameCounterMode == 1) {
 			frameCounter = 0;
 		}
-		mix();
+		pulseOne.clock();
+		pulseTwo.clock();
+		noiseOne.clock();
+		DMCOne.clock();
 	}
 	
 	private void apuHalfClock() {
@@ -149,32 +181,6 @@ public class APU {
 	private void clockSweepUnits() {
 		pulseOne.clockSweepUnit();
 		pulseTwo.clockSweepUnit();
-	}
-	
-	private void mix() {
-		pulseOne.clock();
-		pulseTwo.clock();
-		triOne.clock();
-		noiseOne.clock();
-		DMCOne.clock();
-	}
-	
-	public int getSamples(byte[] output) {
-		byte[] pulseOneSamples = new byte[512];
-		byte[] pulseTwoSamples = new byte[512];
-		pulseOne.getSamples(pulseOneSamples);
-		pulseTwo.getSamples(pulseTwoSamples);
-		byte sample;
-		for(int i = 0; i < pulseOneSamples.length; i++) {
-			sample = (byte) ((pulseOneSamples[i] + pulseTwoSamples[i]));
-			if(sample > Byte.MAX_VALUE * .7) {
-				sample = (byte) (Byte.MAX_VALUE * .7);
-			} else if(sample < Byte.MIN_VALUE * .7) {
-				sample = (byte) (Byte.MIN_VALUE * .7);
-			}
-			output[i] = sample;
-		}
-		return output.length;
 	}
 
 }
