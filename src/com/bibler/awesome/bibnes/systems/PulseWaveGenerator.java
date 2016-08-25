@@ -110,7 +110,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 			timer |= (data & 7) << 8;
 			lengthCounter = lengthCounterLookup[data >> 4 & 0xF][data >> 3 & 1];
 			currentStep = 7;
-			currentTimer = timer;
+			currentTimer = timer + 1;
 			envelopeStartFlag = true;
 			break;
 		}
@@ -136,7 +136,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	@Override
 	public int clock() {
 		if(currentTimer == 0) {
-			currentTimer = timer;
+			currentTimer = timer + 1;
 			currentStep--;
 			if(currentStep < 0) {
 				currentStep = 7;
@@ -150,7 +150,9 @@ public class PulseWaveGenerator extends WaveGenerator {
 	@Override
 	public double getSample() {
 		currentVolume = constantVolume ? envelope : decayLevelCounter;
-		return (lengthCounter > 0 && currentTimer >= 8) ? (currentVolume * ((duty >> currentStep) & 1)) : 0;
+		final int dutyLevel = (duty >> currentStep & 1);
+		final double sample = (lengthCounter > 0 && timer >= 8) ? (currentVolume * dutyLevel) : 0;
+		return sample;
 	}
 
 }

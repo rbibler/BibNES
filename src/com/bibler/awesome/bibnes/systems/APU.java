@@ -122,9 +122,10 @@ public class APU {
 		//double pulseTwoByte = 0xFF * (pulseTwo.getSample() / 16.0);
 		//double tri = 0xFF * (triOne.getSample() / 15.0);
 		//final int total = (int) ((pulseOneByte + pulseTwoByte) > 0xE1 ? 0xE0 : (pulseOneByte + pulseTwoByte));;// + pulseTwoByte;
-		double pulseOneByte = pulseOne.getSample();
-		double pulseTwoByte = pulseTwo.getSample();
-		double total = .00752 * (pulseOneByte + pulseTwoByte);
+		double pulseOneByte = 0; //pulseOne.getSample();
+		double pulseTwoByte = 0;//pulseTwo.getSample();
+		double tri = triOne.getSample();
+		double total = (.00752 * (pulseOneByte + pulseTwoByte)) + (0.00851 * tri);
 		total *= 0xFF;
 		return (byte) (total); 
 	}

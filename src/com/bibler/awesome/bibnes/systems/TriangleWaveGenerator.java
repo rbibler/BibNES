@@ -14,6 +14,25 @@ public class TriangleWaveGenerator extends WaveGenerator {
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
 	};
 	
+	private int[][] lengthCounterLookup = new int[][] {
+		{0x0A, 0xFE},
+		{0x14, 0x02},
+		{0x28, 0x04},
+		{0x50, 0x06},
+		{0xA0, 0x08},
+		{0x3C, 0x0A},
+		{0x0E, 0x0C},
+		{0x1A, 0x0E},
+		{0x0C, 0x10},
+		{0x18, 0x12},
+		{0x30, 0x14},
+		{0x60, 0x16},
+		{0xC0, 0x18},
+		{0x48, 0x1A},
+		{0x10, 0x1C},
+		{0x20, 0x1E},	
+	};
+	
 	private boolean linearCounterReloadFlag;
 	private boolean lengthCounterEnabled;
 	
@@ -75,7 +94,8 @@ public class TriangleWaveGenerator extends WaveGenerator {
 		case 0x0B:
 			timer &= ~(0b11100000000);
 			timer |= (data & 7) << 8;
-			lengthCounter = data >> 3 & 0b11111;
+			//lengthCounter = data >> 3 & 0b11111;
+			lengthCounter = lengthCounterLookup[data >> 4 & 0xF][data >> 3 & 1];
 			linearCounterReloadFlag = true;
 			break;
 		}
