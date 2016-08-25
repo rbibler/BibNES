@@ -98,7 +98,7 @@ public class APU {
 				apuClock();
 			}
 			triOne.clock();
-			accumulator = getSamples();
+			accumulator += getSamples();
 			if ((apuCycle % sampleRate) < 1) {
 				//not quite right - there's a non-integer # cycles per sample.
                 mixer.outputSample( (byte) (accumulator / remainder));
