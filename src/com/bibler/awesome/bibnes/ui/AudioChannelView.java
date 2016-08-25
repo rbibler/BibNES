@@ -9,9 +9,10 @@ import javax.swing.JPanel;
 
 
 
-public class AudioChannelView extends JPanel {
+public class AudioChannelView extends JPanel implements Runnable {
 	
 	private byte[] frame;
+	private boolean paintOnNext;
 	
 	
 	public AudioChannelView() {
@@ -19,6 +20,8 @@ public class AudioChannelView extends JPanel {
 		setPreferredSize(new Dimension(512, 250));
 		setBorder(BorderFactory.createLineBorder(Color.RED));
 		setBackground(Color.BLACK);
+		Thread t = new Thread(this);
+		t.start();
 	}
 	
 	public void setFrame(byte[] frame) {
@@ -26,7 +29,7 @@ public class AudioChannelView extends JPanel {
 	}
 	
 	public void updateView() {
-		revalidate();
+		paintOnNext = true;
 	}
 
 	@Override
@@ -40,14 +43,27 @@ public class AudioChannelView extends JPanel {
 		int y2;
 		int x = 0;
 		int xSkip = frame.length / 512;
-		
+		int yStart = (int) (150 * .75f);
 		for(int i = 0; i < frame.length - (xSkip + 1); i += xSkip) {
-			y1 = frame[i];
-			y2 = frame[i + xSkip];
-			g.drawLine(x, y1, x + 1, y2);
+			y1 = Math.abs(frame[i]);
+			y2 = Math.abs(frame[i + xSkip]);
+			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
 			x++;
-			System.out.println("y1: " + y1 + " y2: " + y2);
 		}
+	}
+
+	@Override
+	public void run() {
+		while(!Thread.interrupted()) {
+			if(paintOnNext) {
+				repaint();
+				paintOnNext = false;
+			}
+			try {
+				Thread.sleep(10);
+			} catch(InterruptedException e) {}
+		}
+		
 	}
 
 }
