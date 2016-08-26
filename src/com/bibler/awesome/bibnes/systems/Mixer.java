@@ -45,7 +45,9 @@ public class Mixer  {
 	}
 
 	public void flushSamples() {
-		player.write(sampleBuffer, 0, sampleBufferIndex);
+		if(player.available() >= sampleBufferIndex) {
+			player.write(sampleBuffer, 0, sampleBufferIndex);
+		}
 		sampleBufferIndex = 0;
 	}
 	

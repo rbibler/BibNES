@@ -117,9 +117,9 @@ public class APU {
 		mixer.flushSamples();
 		cycles = 0;
 		outputSamples = 0;
-		if(audioChannelView != null) {
-			audioChannelView.updateView();
-		}
+		//if(audioChannelView != null) {
+			//audioChannelView.updateView();
+		//}
 	}
 	
 	/*public void frame(int cpuClocks) {
@@ -154,7 +154,9 @@ public class APU {
 		double pulseOneByte = pulseOne.getSample();
 		double pulseTwoByte = pulseTwo.getSample();
 		double tri = triOne.getSample();
-		double total = (.00752 * (pulseOneByte + pulseTwoByte)) + (0.00851 * tri);
+		double noise = noiseOne.getSample();
+		double total = (.00752 * (pulseOneByte + pulseTwoByte)) + ((0.00851 * tri) + (noise * .00355));
+		//total = noise;
 		total *= 0xFF;
 		return (byte) (total); 
 	}

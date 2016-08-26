@@ -3,14 +3,53 @@ package com.bibler.awesome.bibnes.systems;
 public class NoiseWaveGenerator extends WaveGenerator {
 	
 	private int envelope;
-	private int linearFeedback;
+	private int linearFeedback = 1;
 	private boolean loopEnable;
 	private boolean constantVolume;
 	private boolean loopNoise;
-	private int noisePeriod;
+	private int currentTimer;
+	private int decayLevelCounter;
 	
-	public void clockEnvelope() {
-		
+	private boolean modeFlag;
+	
+	private int[][] lengthCounterLookup = new int[][] {
+		{0x0A, 0xFE},
+		{0x14, 0x02},
+		{0x28, 0x04},
+		{0x50, 0x06},
+		{0xA0, 0x08},
+		{0x3C, 0x0A},
+		{0x0E, 0x0C},
+		{0x1A, 0x0E},
+		{0x0C, 0x10},
+		{0x18, 0x12},
+		{0x30, 0x14},
+		{0x60, 0x16},
+		{0xC0, 0x18},
+		{0x48, 0x1A},
+		{0x10, 0x1C},
+		{0x20, 0x1E},	
+	};
+	
+	private int[] periodLookup = new int[] {
+			4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068
+	};
+	private boolean lengthCounterEnabled;
+	private boolean envelopeStartFlag;
+	private int envelopeDividerPeriod;
+	
+	@Override
+	public int clock() {
+		if(currentTimer == 0) {
+			currentTimer = timer;
+			final int feedback = (linearFeedback & 1) ^ ((modeFlag ? (linearFeedback >> 6 & 1) : (linearFeedback >> 1 & 1)));
+			linearFeedback >>= 1;
+			linearFeedback = (linearFeedback & ~(1 << 14)) | (feedback << 14);
+			
+		} else {
+			currentTimer--;
+		}
+		return 0;
 	}
 	
 	@Override
@@ -23,12 +62,69 @@ public class NoiseWaveGenerator extends WaveGenerator {
 			break;
 		case 0x0E:
 			loopNoise = (data >> 7 & 1) == 1;
-			noisePeriod = data & 0b1111;
+			timer = periodLookup[data & 0b1111];
 			break;
 		case 0x0F:
-			lengthCounter = (data >> 3) & 0b11111;
+			lengthCounter = lengthCounterLookup[data >> 4 & 0xF][data >> 3 & 1];
+			modeFlag = (data >> 7 & 1) == 1;
+			envelopeStartFlag = true;
 			break;
 		}
+	}
+	
+	@Override
+	public void setLengthCounterEnabled(boolean enabled) {
+		lengthCounterEnabled = enabled;
+		if(!enabled) {
+			lengthCounter = 0;
+		}
+	}
+	
+	@Override
+	public void clockLengthCounter() {
+		if(lengthCounterEnabled) {
+			if(lengthCounter > 0 && !loopEnable) {
+				lengthCounter--;
+			}
+		}
+	}
+	
+	public void clockEnvelope() {
+		if(envelopeStartFlag) {
+			envelopeStartFlag = false;
+			decayLevelCounter = 15;
+			envelopeDividerPeriod = envelope;
+		} else {
+			clockEnvelopeDivider();
+		}
+	}
+	
+	private void clockEnvelopeDivider() {
+		if(envelopeDividerPeriod == 0) {
+			envelopeDividerPeriod = envelope;
+			clockEnvelopeDecayCounter();
+		} else {
+			envelopeDividerPeriod--;
+		}
+	}
+	
+	private void clockEnvelopeDecayCounter() {
+		if(decayLevelCounter == 0) {
+			if(loopEnable) {
+				decayLevelCounter = 15;
+			}
+		} else {
+			decayLevelCounter--;;
+		}
+	}
+	
+	@Override
+	public double getSample() {
+		double currentVolume = constantVolume ? envelope : decayLevelCounter;
+		if(lengthCounter == 0 || (linearFeedback & 1) == 1) {
+			currentVolume = 0;
+		}
+		return currentVolume;
 	}
 
 }
