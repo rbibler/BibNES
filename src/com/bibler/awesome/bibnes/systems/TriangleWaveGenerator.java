@@ -104,6 +104,9 @@ public class TriangleWaveGenerator extends WaveGenerator {
 	@Override
 	public double getSample() {
 		currentVolume =  sequence[currentStep];
+		if(timer < 2) {
+			currentVolume = 0;
+		}
 		return currentVolume;
 	}
 	

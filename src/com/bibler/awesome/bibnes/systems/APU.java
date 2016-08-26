@@ -92,8 +92,37 @@ public class APU {
 			return addressToRead >> 8;
 		}
 	}
+	private int cycles = 0;
+	private int outputSamples;
+	private double smoothedValue;
+	private double newValue;
+	private double smoothing = .5;
+	public void clock() {
+		triOne.clock();
+		if((cycles & 1) == 1) {
+			apuHalfClock();
+		} else {
+			apuClock();
+			if(cycles % sampleRate == 0) {
+				newValue = getSamples();
+				smoothedValue += (newValue - smoothedValue) / 2;
+				mixer.outputSample((byte) smoothedValue);
+				outputSamples++;
+			}
+		}
+		cycles++;
+	}
 	
-	public void frame(int cpuClocks) {
+	public void finishFrame() {
+		mixer.flushSamples();
+		cycles = 0;
+		outputSamples = 0;
+		if(audioChannelView != null) {
+			audioChannelView.updateView();
+		}
+	}
+	
+	/*public void frame(int cpuClocks) {
 		for(int i = 0; i < cpuClocks; i++) {
 			++remainder;
 			if((i & 1) == 1) {
@@ -115,20 +144,22 @@ public class APU {
 			audioChannelView.updateView();
 		}
 		mixer.flushSamples();
-	}
+	}*/
 	
 	private byte getSamples() {
 		//double pulseOneByte = 0xFF * (pulseOne.getSample() / 16.0);
 		//double pulseTwoByte = 0xFF * (pulseTwo.getSample() / 16.0);
 		//double tri = 0xFF * (triOne.getSample() / 15.0);
 		//final int total = (int) ((pulseOneByte + pulseTwoByte) > 0xE1 ? 0xE0 : (pulseOneByte + pulseTwoByte));;// + pulseTwoByte;
-		double pulseOneByte = 0; //pulseOne.getSample();
-		double pulseTwoByte = 0;//pulseTwo.getSample();
+		double pulseOneByte = pulseOne.getSample();
+		double pulseTwoByte = pulseTwo.getSample();
 		double tri = triOne.getSample();
 		double total = (.00752 * (pulseOneByte + pulseTwoByte)) + (0.00851 * tri);
 		total *= 0xFF;
 		return (byte) (total); 
 	}
+	
+	
 
 	
 	private int readStatus() {

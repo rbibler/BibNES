@@ -146,6 +146,7 @@ public class NES implements Notifier, Runnable {
 		ppu.cycle();
 		ppu.cycle();
 		cpu.cycle();
+		apu.clock();
 		cycles++;
 	}
 	
@@ -169,7 +170,8 @@ public class NES implements Notifier, Runnable {
 	
 	public void frame() {
 		final long frameTime = System.currentTimeMillis() - lastFrameTime;
-		apu.frame(cycles);
+		apu.finishFrame();
+		
 		cycles = 0;
 		if(frameTime < frameRate) {
 			try {

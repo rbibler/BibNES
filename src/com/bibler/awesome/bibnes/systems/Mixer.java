@@ -13,11 +13,10 @@ public class Mixer  {
 	private int sampleBufferIndex;
 	private SourceDataLine player;
 	
-	private APU apu;
 	
 	public Mixer(APU apu) {
-		this.apu = apu;
-		sampleBuffer = new byte[(int) Math.ceil(44100.0 / 60)];
+		sampleBuffer = new byte[(int) Math.ceil(44100.0 / 60) * 2];
+		System.out.println("buffer length: " + sampleBuffer.length);
 		openLine();
 		player.start();
 	}
@@ -46,7 +45,8 @@ public class Mixer  {
 	}
 
 	public void flushSamples() {
-		player.write(sampleBuffer, 0, sampleBuffer.length);
+		player.write(sampleBuffer, 0, sampleBufferIndex);
+		sampleBufferIndex = 0;
 	}
 	
 	public byte[] getFrame() {
