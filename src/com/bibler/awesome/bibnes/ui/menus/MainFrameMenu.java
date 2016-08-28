@@ -14,6 +14,7 @@ public class MainFrameMenu extends JMenuBar {
 	private JMenu fileMenu;
 	private JMenu editMenu;
 	private RunMenu runMenu;
+	private ConfigMenu configMenu;
 	
 	
 	public MainFrameMenu(MessageHandler handler) {
@@ -25,10 +26,13 @@ public class MainFrameMenu extends JMenuBar {
 		fileMenu = new FileMenu("File");
 		editMenu = new EditMenu("Edit");
 		runMenu = new RunMenu("Run");
+		configMenu = new ConfigMenu("Options");
 		add(fileMenu);
 		add(editMenu);
 		add(runMenu);
+		add(configMenu);
 		runMenu.registerObjectToNotify(handler);
+		configMenu.registerObjectToNotify(handler);
 	
 	}
 }

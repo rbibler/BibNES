@@ -10,6 +10,12 @@ public class APU {
 	private NoiseWaveGenerator noiseOne;
 	private DMCWaveGenerator DMCOne;
 	
+	private boolean pulseOneEnabled = true;
+	private boolean pulseTwoEnabled = true;
+	private boolean triEnabled = true;
+	private boolean noiseEnabled = true;
+	private boolean dmcEnabled = true;
+	
 	private Mixer mixer;
 	
 	private int cpuDivider;
@@ -29,12 +35,12 @@ public class APU {
 	
 	private AudioChannelView audioChannelView;
 	
-	public APU() {
+	public APU(NES nes) {
 		pulseOne = new PulseWaveGenerator();
 		pulseTwo = new PulseWaveGenerator();
 		triOne = new TriangleWaveGenerator();
 		noiseOne = new NoiseWaveGenerator();
-		DMCOne = new DMCWaveGenerator();
+		DMCOne = new DMCWaveGenerator(nes);
 		mixer = new Mixer(this);
 	}
 	
@@ -99,6 +105,7 @@ public class APU {
 	private double smoothing = .5;
 	public void clock() {
 		triOne.clock();
+		DMCOne.clock();
 		if((cycles & 1) == 1) {
 			apuHalfClock();
 		} else {
@@ -122,40 +129,39 @@ public class APU {
 		//}
 	}
 	
-	/*public void frame(int cpuClocks) {
-		for(int i = 0; i < cpuClocks; i++) {
-			++remainder;
-			if((i & 1) == 1) {
-				apuHalfClock();
-			} else {
-				apuClock();
-			}
-			triOne.clock();
-			accumulator += getSamples();
-			if ((apuCycle % sampleRate) < 1) {
-				//not quite right - there's a non-integer # cycles per sample.
-                mixer.outputSample( (byte) (accumulator / remainder));
-                remainder = 0;
-                accumulator = 0;
-             }
-             ++apuCycle;
+	public void setChannelEnabled(int channel, boolean enabled) {
+		switch(channel) {
+		case 0:
+			pulseOneEnabled = enabled;
+			break;
+		case 1:
+			pulseTwoEnabled = enabled;
+			break;
+		case 2:
+			triEnabled = enabled;
+			break;
+		case 3:
+			noiseEnabled = enabled;
+			break;
+		case 4:
+			dmcEnabled = enabled;
+			break;
 		}
-		if(audioChannelView != null) {
-			audioChannelView.updateView();
-		}
-		mixer.flushSamples();
-	}*/
+	}
+	
+	
 	
 	private byte getSamples() {
 		//double pulseOneByte = 0xFF * (pulseOne.getSample() / 16.0);
 		//double pulseTwoByte = 0xFF * (pulseTwo.getSample() / 16.0);
 		//double tri = 0xFF * (triOne.getSample() / 15.0);
 		//final int total = (int) ((pulseOneByte + pulseTwoByte) > 0xE1 ? 0xE0 : (pulseOneByte + pulseTwoByte));;// + pulseTwoByte;
-		double pulseOneByte = pulseOne.getSample();
-		double pulseTwoByte = pulseTwo.getSample();
-		double tri = triOne.getSample();
-		double noise = noiseOne.getSample();
-		double total = (.00752 * (pulseOneByte + pulseTwoByte)) + ((0.00851 * tri) + (noise * .00355));
+		double pulseOneByte = pulseOneEnabled ? pulseOne.getSample() : 0;
+		double pulseTwoByte = pulseTwoEnabled ? pulseTwo.getSample() : 0;
+		double tri = triEnabled ? triOne.getSample() : 0;
+		double noise = noiseEnabled ? noiseOne.getSample() : 0;
+		double dmc = dmcEnabled ? DMCOne.getSample() : 0;
+		double total = (.00752 * (pulseOneByte + pulseTwoByte)) + ((0.00851 * tri) + (noise * .00494) + (dmc * .0033f));
 		//total = noise;
 		total *= 0xFF;
 		return (byte) (total); 
@@ -182,7 +188,7 @@ public class APU {
 		pulseOne.clock();
 		pulseTwo.clock();
 		noiseOne.clock();
-		DMCOne.clock();
+		
 	}
 	
 	private void apuHalfClock() {

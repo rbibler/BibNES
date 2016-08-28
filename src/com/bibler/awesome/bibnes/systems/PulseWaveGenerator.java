@@ -5,8 +5,10 @@ public class PulseWaveGenerator extends WaveGenerator {
 	private int envelope = 7;
 	private boolean sweepEnabled;
 	private int sweepPeriod;
-	private int sweepNegate;
+	private boolean sweepNegate;
+	private boolean sweepReloadFlag;
 	private int sweepShift;
+	private int sweepDivider;
 	private int duty;
 	private int channelVolume;
 	private boolean lengthCounterHalt;
@@ -67,7 +69,34 @@ public class PulseWaveGenerator extends WaveGenerator {
 	}
 	
 	public void clockSweepUnit() {
-		
+		if(sweepReloadFlag) {
+			sweepDivider = (sweepPeriod + 1);
+			sweepReloadFlag = false;
+			if(sweepEnabled) {
+				sweepDivider = (sweepPeriod + 1);
+				int result = timer >> sweepShift;
+				if(sweepNegate) {
+					result = ~result;
+				}
+				if(result < 0x7FF && currentTimer > 8) {
+					timer
+					+= result;
+				}
+			}
+		} else {
+			if(sweepDivider > 0) {
+				sweepDivider--;
+			} else if(sweepEnabled) {
+				sweepDivider = (sweepPeriod + 1);
+				int result = timer >> sweepShift;
+				if(sweepNegate) {
+					result = ~result;
+				}
+				if(result < 0x7FF && currentTimer > 8) {
+					timer += result;
+				}
+			}
+		}
 	}
 	
 	@Override
@@ -98,8 +127,9 @@ public class PulseWaveGenerator extends WaveGenerator {
 		case 1:
 			sweepEnabled = (data >> 7 & 1) == 1;
 			sweepPeriod = (data >> 4) & 7;
-			sweepNegate = data >> 3 & 1;
+			sweepNegate = (data >> 3 & 1) == 1;
 			sweepShift = data & 7;
+			sweepReloadFlag = true;
 			break;
 		case 2:
 			timer &= ~0xFF;

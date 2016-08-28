@@ -45,13 +45,16 @@ public class NES implements Notifier, Runnable {
 	private long totalFrameTime;
 	private long frameCount;
 	
+	private int cpuCyclesToSkip;
+	private boolean skipCPUCycles;
+	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private LogWriter log = new LogWriter("C:/users/ryan/desktop/logs/log.txt");
 	
 	public NES() {
 		cpu = new CPU(this);
 		ppu = new PPU(this);
-		apu = new APU();
+		apu = new APU(this);
 		cpuMem = new int[0x10000];
 		ppuMem = new int[0x4000];
 	}
@@ -140,12 +143,27 @@ public class NES implements Notifier, Runnable {
         }
 	}
 	
+	private void setCPUSkip(int skip) {
+		cpuCyclesToSkip = skip;
+		skipCPUCycles = true;
+	}	
+	
+	public void interrupt() {
+		
+	}
 	
 	public void cycle() {
 		ppu.cycle();
 		ppu.cycle();
 		ppu.cycle();
-		cpu.cycle();
+		if(!skipCPUCycles) {
+			cpu.cycle();
+		} else {
+			cpuCyclesToSkip--;
+			if(cpuCyclesToSkip == 0) {
+				skipCPUCycles = false;
+			}
+		}
 		apu.clock();
 		cycles++;
 	}
@@ -267,6 +285,11 @@ public class NES implements Notifier, Runnable {
 		return readData;
 	}
 	
+	public int readDMCByte(int address) {
+		setCPUSkip(4);
+		return cpuRead(address);
+	}
+	
 	public void fillPPURom(int address, int data) {
 		ppuMem[address] = data;
 	}
@@ -364,6 +387,10 @@ public class NES implements Notifier, Runnable {
 	public void setBreakpointManager(BreakpointManager bpManager) {
 		this.breakpointManager = bpManager;
 		
+	}
+	
+	public void setAudioChannelEnable(int audioChannel, boolean enable) {
+		apu.setChannelEnabled(audioChannel, enable);
 	}
 	
 	
