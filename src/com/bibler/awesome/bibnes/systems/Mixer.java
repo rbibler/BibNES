@@ -58,7 +58,8 @@ public class Mixer {
         )};
 		try {
 			player = AudioSystem.getSourceDataLine(format[0]);
-			player.open(format[0], samplesPerFrame * 32 * channels /*ch*/ * (bitRate / 8) /*bytes/sample*/); 
+			player.open(format[0], samplesPerFrame  * 16 * channels /*ch*/ * (bitRate / 8) /*bytes/sample*/); 
+			
 		} catch (LineUnavailableException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -89,7 +90,18 @@ public class Mixer {
 				}
 			}
 		}
+		if(sampleBufferIndex >= 745) {
+			if(player.available() >= sampleBufferIndex) {
+				player.write(sampleBuffer, 0, sampleBufferIndex);
+			}
+			sampleBufferIndex = 0;
+		}
+		
+			
+		
 	}
+	
+	private int skipNext;
 	
 	public void flushSamples() {
 		if(player.available() >= sampleBufferIndex) {
