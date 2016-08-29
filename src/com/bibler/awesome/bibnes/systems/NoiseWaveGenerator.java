@@ -39,6 +39,23 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	private int envelopeDividerPeriod;
 	
 	@Override
+	public void reset() {
+		envelope = 0;
+		linearFeedback = 1;
+		loopEnable = false;
+		constantVolume = false;
+		loopNoise = false;
+		currentTimer = 0;
+		decayLevelCounter = 0;
+		timer = 0;
+		modeFlag = false;
+		lengthCounterEnabled = false;
+		lengthCounter = 0;
+		envelopeDividerPeriod = 0;
+		envelopeStartFlag = false;
+	}
+	
+	@Override
 	public int clock() {
 		if(currentTimer == 0) {
 			currentTimer = timer;

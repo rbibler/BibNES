@@ -39,6 +39,28 @@ public class PulseWaveGenerator extends WaveGenerator {
 		{0x20, 0x1E},	
 	};
 	
+	@Override
+	public void reset() {
+		envelope = 7;
+		envelopeStartFlag = false;
+		decayLevelCounter = 0;
+		envelopeDividerPeriod = 0;
+		sweepEnabled = false;
+		sweepPeriod = 0;
+		sweepNegate = false;
+		sweepReloadFlag = false;
+		sweepShift = 0;
+		sweepDivider = 0;
+		duty = 0;
+		lengthCounterHalt = false;
+		constantVolume = false;
+		lengthCounterEnabled = false;
+		envelopeStartFlag = false;
+		currentTimer = 0;
+		currentStep = 0;
+		currentVolume = 0;
+	}
+	
 	public void clockEnvelope() {
 		if(envelopeStartFlag) {
 			envelopeStartFlag = false;

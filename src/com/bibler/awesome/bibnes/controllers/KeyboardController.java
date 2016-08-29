@@ -56,14 +56,11 @@ public class KeyboardController extends BaseController implements KeyListener {
 	public void keyPressed(KeyEvent arg0) {
 		
 		int keyEvent = arg0.getKeyCode();
-		if(keyEvent == KeyEvent.VK_A) {
-			System.out.println("A PRESSED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-		}
+		
 		if(!keyMap.containsKey(keyEvent)) {
 			return;
 		}
 		buttonsByte |= keyMap.get(keyEvent);
-		System.out.println("buttonsByte: " + buttonsByte);
 	}
 
 	@Override

@@ -35,6 +35,7 @@ public class MainFrame extends JFrame {
 	private MessageHandler messageHandler = new MessageHandler();
 	private NES board;
 	private BreakpointManager bpManager;
+	private MainFrameMenu mainFrameMenu;
 	
 	public MainFrame() {
 		super();
@@ -54,7 +55,8 @@ public class MainFrame extends JFrame {
 		mainPanel = new AssemblerMainPanel(messageHandler, bpManager);
 		setLayout(new BorderLayout());
 		add(mainPanel, BorderLayout.CENTER);
-		setJMenuBar(new MainFrameMenu(messageHandler));
+		mainFrameMenu = new MainFrameMenu(messageHandler);
+		setJMenuBar(mainFrameMenu);
 		pack();
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setVisible(true);
@@ -91,12 +93,20 @@ public class MainFrame extends JFrame {
 			
 		}
 		board = (NES) producer.produceNES(f, messageHandler);
+		setupAudioChannelStates();
 		mainPanel.setBoard(board);
 		board.setPeripheral(gamepad);
 		board.setBreakpointManager(bpManager);
 		board.power();
 		board.runSystem();
 
+	}
+	
+	private void setupAudioChannelStates() {
+		boolean[] states = mainFrameMenu.getConfigMenu().getAudioChannelStates();
+		for(int i = 0; i < states.length; i++) {
+			board.setAudioChannelEnable(i, states[i]);
+		}
 	}
 	
 	public void emulateNES(boolean debug) {
@@ -129,6 +139,10 @@ public class MainFrame extends JFrame {
 	
 	public void setAudioChannelEnable(int audioChannel, boolean enable) {
 		board.setAudioChannelEnable(audioChannel, enable);
+	}
+	
+	public void updateAudioParams(int paramNum) {
+		board.updateAudioParams(paramNum);
 	}
 
 }

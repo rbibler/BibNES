@@ -35,4 +35,8 @@ public class MainFrameMenu extends JMenuBar {
 		configMenu.registerObjectToNotify(handler);
 	
 	}
+	
+	public ConfigMenu getConfigMenu() {
+		return configMenu;
+	}
 }

@@ -6,9 +6,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.KeyStroke;
 
 import com.bibler.awesome.bibnes.communications.MessageHandler;
@@ -24,6 +26,8 @@ public class ConfigMenu extends JMenu implements Notifier {
 	private JCheckBoxMenuItem triEnableItem;
 	private JCheckBoxMenuItem noiseEnableItem;
 	private JCheckBoxMenuItem dmcEnableItem;
+	private JRadioButtonMenuItem eightBitAudio;
+	private JRadioButtonMenuItem sixteenBitAudio;
 	private AudioEnableActionListener actionListener = new AudioEnableActionListener();
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private MainFrame mainFrame;
@@ -40,31 +44,70 @@ public class ConfigMenu extends JMenu implements Notifier {
 		pulseOneEnableItem.setActionCommand("P1");
 		pulseOneEnableItem.addActionListener(actionListener);
 		pulseOneEnableItem.setSelected(true);
+		pulseOneEnableItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
+		
 		
 		pulseTwoEnableItem = new JCheckBoxMenuItem("Pulse Two");
 		audioMenu.add(pulseTwoEnableItem);
 		pulseTwoEnableItem.setActionCommand("P2");
 		pulseTwoEnableItem.addActionListener(actionListener);
 		pulseTwoEnableItem.setSelected(true);
+		pulseTwoEnableItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));
 		
 		triEnableItem = new JCheckBoxMenuItem("Triangle");
 		audioMenu.add(triEnableItem);
 		triEnableItem.setActionCommand("TRI");
 		triEnableItem.addActionListener(actionListener);
 		triEnableItem.setSelected(true);
+		triEnableItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
 		
 		noiseEnableItem = new JCheckBoxMenuItem("Noise");
 		audioMenu.add(noiseEnableItem);
 		noiseEnableItem.setActionCommand("NOISE");
 		noiseEnableItem.addActionListener(actionListener);
 		noiseEnableItem.setSelected(true);
+		noiseEnableItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4, 0));
 		
 		dmcEnableItem = new JCheckBoxMenuItem("DMC");
 		audioMenu.add(dmcEnableItem);
 		dmcEnableItem.setActionCommand("DMC");
 		dmcEnableItem.addActionListener(actionListener);
 		dmcEnableItem.setSelected(true);
+		dmcEnableItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
+		
+		ButtonGroup audioButtonGroup = new ButtonGroup();
+		eightBitAudio = new JRadioButtonMenuItem("8 Bit Audio");
+		audioMenu.add(eightBitAudio);
+		eightBitAudio.setActionCommand("8");
+		eightBitAudio.addActionListener(actionListener);
+		eightBitAudio.setSelected(true);;
+		
+		sixteenBitAudio = new JRadioButtonMenuItem("16 Bit Audio");
+		audioMenu.add(sixteenBitAudio);
+		sixteenBitAudio.addActionListener(actionListener);
+		sixteenBitAudio.setActionCommand("16");
+		sixteenBitAudio.setSelected(false);
+		audioButtonGroup.add(eightBitAudio);
+		audioButtonGroup.add(sixteenBitAudio);
 		add(audioMenu);
+	}
+	
+	public void resetAllAudioChannels() {
+		pulseOneEnableItem.setSelected(true);
+		pulseTwoEnableItem.setSelected(true);
+		triEnableItem.setSelected(true);
+		noiseEnableItem.setSelected(true);
+		dmcEnableItem.setSelected(true);
+	}
+	
+	public boolean[] getAudioChannelStates() {
+		return new boolean[] {
+			pulseOneEnableItem.isSelected(),
+			pulseTwoEnableItem.isSelected(),
+			triEnableItem.isSelected(),
+			noiseEnableItem.isSelected(),
+			dmcEnableItem.isSelected()
+		};
 	}
 	
 	public void registerObjectToNotify(MessageHandler handler) {
@@ -107,8 +150,20 @@ public class ConfigMenu extends JMenu implements Notifier {
 			case "DMC":
 				audioChannel = 4;
 				break;
+				
+			case "8":
+				
+				mainFrame.updateAudioParams(8);
+				
+				break;
+			case "16":
+				
+				mainFrame.updateAudioParams(16);
+				
 			}
-			mainFrame.setAudioChannelEnable(audioChannel, ((JCheckBoxMenuItem) arg0.getSource()).isSelected());
+			if(arg0.getSource() instanceof JCheckBoxMenuItem) {
+				mainFrame.setAudioChannelEnable(audioChannel, ((JCheckBoxMenuItem) arg0.getSource()).isSelected());
+			}
 		}
 		
 	}

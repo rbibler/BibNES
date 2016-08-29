@@ -15,6 +15,14 @@ public class APU {
 	private boolean triEnabled = true;
 	private boolean noiseEnabled = true;
 	private boolean dmcEnabled = true;
+	private boolean filteringOn = false;
+	
+	private int cycles = 0;
+	private int outputSamples;
+	private double smoothedValue;
+	private double newValue;
+	private double smoothing = .5;
+	private int totalAPUCycles;
 	
 	private Mixer mixer;
 	
@@ -22,6 +30,7 @@ public class APU {
 	
 	private int frameCounter;
 	private int frameCounterMode;
+	private int frameStep;
 	private boolean disableFrameInterrupt;
 	byte[] pulseOneSamples = new byte[512];
 	byte[] pulseTwoSamples = new byte[512];
@@ -31,7 +40,11 @@ public class APU {
 	private double accumulator;
 	private int apuCycle;
 	
-	private int sampleRate = 1789773 / 44100;
+	private int sampleRate = 1786860 / 44100;
+	private int volumeMultiplier;
+	private int bitRate;
+	
+	private final int FRAME_DIVIDER_PERIOD = 7456;
 	
 	private AudioChannelView audioChannelView;
 	
@@ -41,7 +54,20 @@ public class APU {
 		triOne = new TriangleWaveGenerator();
 		noiseOne = new NoiseWaveGenerator();
 		DMCOne = new DMCWaveGenerator(nes);
-		mixer = new Mixer(this);
+		mixer = new Mixer();
+		frameCounter = FRAME_DIVIDER_PERIOD;
+		frameStep = 1;
+		updateAudioParams(16);
+	}
+	
+	public void updateAudioParams(int bitRate) {
+		this.bitRate = bitRate;
+		if(bitRate == 8) {
+			volumeMultiplier = 0xFF;
+		} else if(bitRate == 16) {
+			volumeMultiplier = 32768;
+		}
+		mixer.updateParameters(bitRate);
 	}
 	
 	public void write(int addressToWrite, int data) {
@@ -83,6 +109,7 @@ public class APU {
 			pulseOne.setLengthCounterEnabled((data & 1) == 1);
 			break;
 		case 0x17:
+			frameCounter = 0;
 			frameCounterMode = (data >> 7) & 1;
 			disableFrameInterrupt = (data >> 6 & 1) == 1;
 			break;
@@ -92,28 +119,24 @@ public class APU {
 	public int read(int addressToRead) {
 		if(addressToRead == 0x4015) {
 			final int ret = readStatus();
-			//System.out.println("Reading status " + Integer.toBinaryString(ret));
 			return ret;
 		} else {
 			return addressToRead >> 8;
 		}
 	}
-	private int cycles = 0;
-	private int outputSamples;
-	private double smoothedValue;
-	private double newValue;
-	private double smoothing = .5;
+	
+	
 	public void clock() {
 		triOne.clock();
 		DMCOne.clock();
-		if((cycles & 1) == 1) {
-			apuHalfClock();
-		} else {
+		if((cycles & 1) == 0) {
 			apuClock();
 			if(cycles % sampleRate == 0) {
 				newValue = getSamples();
-				smoothedValue += (newValue - smoothedValue) / 2;
-				mixer.outputSample((byte) smoothedValue);
+				if(bitRate == 16 && filteringOn) {
+					newValue = lowpass_filter(highpass_filter((int) newValue));
+				}
+				mixer.outputSample((int) newValue);
 				outputSamples++;
 			}
 		}
@@ -127,6 +150,16 @@ public class APU {
 		//if(audioChannelView != null) {
 			//audioChannelView.updateView();
 		//}
+	}
+	
+	public void reset() {
+		frameCounter = FRAME_DIVIDER_PERIOD;
+		pulseOne.reset();
+		pulseTwo.reset();
+		triOne.reset();
+		noiseOne.reset();
+		DMCOne.reset();
+		frameStep = 1;
 	}
 	
 	public void setChannelEnabled(int channel, boolean enabled) {
@@ -149,26 +182,34 @@ public class APU {
 		}
 	}
 	
+	private int dckiller;
+	private int lpaccum;
+	
+	 private int highpass_filter(int sample) {
+	        //for killing the dc in the signal
+	        sample += dckiller;
+	        dckiller -= sample >> 8;//the actual high pass part
+	        dckiller += (sample > 0 ? -1 : 1);//guarantees the signal decays to exactly zero
+	        return sample;
+	    }
+
+	    private int lowpass_filter(int sample) {
+	        sample += lpaccum;
+	        lpaccum -= sample * 0.9;
+	        return lpaccum;
+	    }
 	
 	
-	private byte getSamples() {
-		//double pulseOneByte = 0xFF * (pulseOne.getSample() / 16.0);
-		//double pulseTwoByte = 0xFF * (pulseTwo.getSample() / 16.0);
-		//double tri = 0xFF * (triOne.getSample() / 15.0);
-		//final int total = (int) ((pulseOneByte + pulseTwoByte) > 0xE1 ? 0xE0 : (pulseOneByte + pulseTwoByte));;// + pulseTwoByte;
+	private int getSamples() {
 		double pulseOneByte = pulseOneEnabled ? pulseOne.getSample() : 0;
 		double pulseTwoByte = pulseTwoEnabled ? pulseTwo.getSample() : 0;
 		double tri = triEnabled ? triOne.getSample() : 0;
 		double noise = noiseEnabled ? noiseOne.getSample() : 0;
 		double dmc = dmcEnabled ? DMCOne.getSample() : 0;
 		double total = (.00752 * (pulseOneByte + pulseTwoByte)) + ((0.00851 * tri) + (noise * .00494) + (dmc * .0033f));
-		//total = noise;
-		total *= 0xFF;
-		return (byte) (total); 
+		total *= volumeMultiplier;
+		return (int) total; 
 	}
-	
-	
-
 	
 	private int readStatus() {
 		final int noiseLength = (noiseOne.getLengthCounter() > 0 ? 1 : 0);
@@ -179,41 +220,51 @@ public class APU {
 	}
 	
 	private void apuClock() {
-		frameCounter++;
-		if(frameCounter == 14915 && frameCounterMode == 0) {
-			frameCounter = 0;
-		} else if(frameCounter == 18641 && frameCounterMode == 1) {
-			frameCounter = 0;
-		}
 		pulseOne.clock();
 		pulseTwo.clock();
 		noiseOne.clock();
-		
+		totalAPUCycles++;
 	}
 	
-	private void apuHalfClock() {
-		if(frameCounter == 3728) {
+	public void stepFrame() {
+		
+		switch(frameStep) {
+		case 1:
 			clockAllEnvelopes();
 			triOne.clockLinearCounter();
-		} else if(frameCounter == 7456) {
-			clockAllEnvelopes();
-			triOne.clockLinearCounter();
-			clockAllLengthCounters();
-			clockSweepUnits();
-		} else if(frameCounter == 11185) {
-			clockAllEnvelopes();
-			triOne.clockLinearCounter();
-		} else if(frameCounter == 14914 && frameCounterMode == 0) {
+			break;
+		case 2:
 			clockAllEnvelopes();
 			triOne.clockLinearCounter();
 			clockAllLengthCounters();
 			clockSweepUnits();
-		} else if(frameCounter == 18640 && frameCounterMode == 1) {
+			break;
+		case 3:
 			clockAllEnvelopes();
 			triOne.clockLinearCounter();
-			clockAllLengthCounters();
-			clockSweepUnits();
+			break;
+		case 4:
+			if(frameCounterMode == 0) {
+				clockAllEnvelopes();
+				triOne.clockLinearCounter();
+				clockAllLengthCounters();
+				clockSweepUnits();
+				frameStep = 0;
+				totalAPUCycles = 0;
+			}
+			break;
+		case 5:
+			if(frameCounterMode == 1) {
+				clockAllEnvelopes();
+				triOne.clockLinearCounter();
+				clockAllLengthCounters();
+				clockSweepUnits();
+				frameStep = 0;
+				totalAPUCycles = 0;
+			}
+			break;
 		}
+		frameStep++;
 	}
 	
 	private void clockAllEnvelopes() {
@@ -240,6 +291,10 @@ public class APU {
 	
 	public byte[] getFrame() {
 		return mixer.getFrame();
+	}
+	
+	public boolean bufferHasLessThan(int samples) {
+		return mixer.bufferHasLessThan(samples);
 	}
 
 }

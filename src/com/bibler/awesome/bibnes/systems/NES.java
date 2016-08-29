@@ -41,7 +41,7 @@ public class NES implements Notifier, Runnable {
 	
 	public double averageFrameRate;
 	private long lastFrameTime;
-	private long frameRate = 1000 / 60;
+	private long frameRate = (long) (1000 / 59.9);
 	private long totalFrameTime;
 	private long frameCount;
 	
@@ -50,6 +50,8 @@ public class NES implements Notifier, Runnable {
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private LogWriter log = new LogWriter("C:/users/ryan/desktop/logs/log.txt");
+	
+	private long frameStartTime;
 	
 	public NES() {
 		cpu = new CPU(this);
@@ -94,6 +96,7 @@ public class NES implements Notifier, Runnable {
 	
 	public void reset() {
 		cpu.reset();
+		apu.reset();
 	}
 	
 	
@@ -152,19 +155,28 @@ public class NES implements Notifier, Runnable {
 		
 	}
 	
+	
+	private int totalClocks;
 	public void cycle() {
-		ppu.cycle();
-		ppu.cycle();
-		ppu.cycle();
-		if(!skipCPUCycles) {
-			cpu.cycle();
-		} else {
-			cpuCyclesToSkip--;
-			if(cpuCyclesToSkip == 0) {
-				skipCPUCycles = false;
-			}
+		if(totalClocks % 4 == 0) {
+			ppu.cycle();
 		}
-		apu.clock();
+		if(totalClocks % 12 == 0) {
+			if(!skipCPUCycles) {
+				cpu.cycle();
+			} else {
+				cpuCyclesToSkip--;
+				if(cpuCyclesToSkip == 0) {
+					skipCPUCycles = false;
+				}
+			}
+			apu.clock();
+		}
+		if(totalClocks == 89490) {
+			apu.stepFrame();
+			totalClocks = 0;
+		}
+		totalClocks++;
 		cycles++;
 	}
 	
@@ -187,10 +199,9 @@ public class NES implements Notifier, Runnable {
 	}
 	
 	public void frame() {
-		final long frameTime = System.currentTimeMillis() - lastFrameTime;
 		apu.finishFrame();
-		
 		cycles = 0;
+		long frameTime = System.currentTimeMillis() - lastFrameTime;
 		if(frameTime < frameRate) {
 			try {
 				Thread.sleep((long) (frameRate - frameTime));
@@ -391,6 +402,10 @@ public class NES implements Notifier, Runnable {
 	
 	public void setAudioChannelEnable(int audioChannel, boolean enable) {
 		apu.setChannelEnabled(audioChannel, enable);
+	}
+	
+	public void updateAudioParams(int paramNum) {
+		apu.updateAudioParams(paramNum);
 	}
 	
 	

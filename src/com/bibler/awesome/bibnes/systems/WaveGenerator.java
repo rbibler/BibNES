@@ -25,4 +25,6 @@ public class WaveGenerator {
 	public int getSamples(byte[] samples) {
 		return 0;
 	}
+	
+	public void reset() {};
 }

@@ -36,6 +36,21 @@ public class TriangleWaveGenerator extends WaveGenerator {
 	private boolean linearCounterReloadFlag;
 	private boolean lengthCounterEnabled;
 	
+	@Override
+	public void reset() {
+		linearCounterReloadFlag = false;
+		lengthCounterEnabled = false;
+		linearCounter = 0;
+		linearCounterReloadValue = 0;
+		lengthCounterDisable = false;
+		lengthCounterEnabled = false;
+		lengthCounter = 0;
+		currentTimer = 0;
+		timer = 0;
+		currentStep = 0;
+		currentVolume = 0;
+	}
+	
 	public void clockLinearCounter() {
 		if(linearCounterReloadFlag) {
 			linearCounter = linearCounterReloadValue;
