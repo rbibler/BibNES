@@ -44,6 +44,8 @@ public class NES implements Notifier, Runnable {
 	private long frameRate = (long) (1000 / 59.9);
 	private long totalFrameTime;
 	private long frameCount;
+	public long initialFrameTime;
+	public long frameTimeAfterSleep;
 	
 	private int cpuCyclesToSkip;
 	private boolean skipCPUCycles;
@@ -201,15 +203,15 @@ public class NES implements Notifier, Runnable {
 	public void frame() {
 		apu.finishFrame();
 		cycles = 0;
-		long frameTime = System.currentTimeMillis() - lastFrameTime;
-		if(frameTime < frameRate) {
+		initialFrameTime = System.currentTimeMillis() - lastFrameTime;
+		if(initialFrameTime < frameRate) {
 			try {
-				Thread.sleep((long) (frameRate - frameTime));
+				Thread.sleep((long) (frameRate - initialFrameTime));
 			} catch(InterruptedException e) {}
 		}
 		if(lastFrameTime != 0) {
-			final long fullTime = System.currentTimeMillis() - lastFrameTime;
-			totalFrameTime += fullTime;
+			frameTimeAfterSleep = System.currentTimeMillis() - lastFrameTime;
+			totalFrameTime += frameTimeAfterSleep;
 			frameCount++;
 			averageFrameRate = 1000.0 / (totalFrameTime / frameCount);
 			

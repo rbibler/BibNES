@@ -94,6 +94,8 @@ public class Mixer {
 	public void flushSamples() {
 		if(player.available() >= sampleBufferIndex) {
 			player.write(sampleBuffer, 0, sampleBufferIndex);
+		} else {
+			System.out.println("OVERRUN!!!!");
 		}
 		sampleBufferIndex = 0;
 	}
@@ -106,5 +108,12 @@ public class Mixer {
 		 //returns true if the audio buffer has less than the specified amt of samples remaining in it
 	     return (player == null) ? false : ((player.getBufferSize() - player.available()) <= samples);
 	 }
+	 
+	public float getBufferUsage() {
+		final float size = player.getBufferSize();
+		final float avail = player.available();
+		final float used = size - avail;
+		return used / size;
+	}
 	
 }

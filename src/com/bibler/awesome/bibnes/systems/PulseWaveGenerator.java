@@ -52,7 +52,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 		sweepShift = 0;
 		sweepDivider = 0;
 		duty = 0;
-		lengthCounterHalt = false;
+		lengthCounterHalt = true;
 		constantVolume = false;
 		lengthCounterEnabled = false;
 		envelopeStartFlag = false;
@@ -139,7 +139,10 @@ public class PulseWaveGenerator extends WaveGenerator {
 				duty = 0b10011111;
 				break;
 			}
-			lengthCounterHalt = (data >> 5 & 1) == 1;
+			lengthCounterHalt = (data >> 5 & 1) == 0;
+			if(lengthCounterHalt) {
+				lengthCounter = 0;
+			}
 			constantVolume = (data >> 4 & 1) == 1;
 			envelope = data & 0b1111;
 			if(constantVolume) {
@@ -187,6 +190,9 @@ public class PulseWaveGenerator extends WaveGenerator {
 	
 	@Override
 	public int clock() {
+		if(lengthCounterHalt) {
+			lengthCounter = 0;
+		}
 		if(currentTimer == 0) {
 			currentTimer = timer + 1;
 			currentStep--;

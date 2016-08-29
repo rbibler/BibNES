@@ -86,7 +86,9 @@ public class NESScreen extends PopoutPanel {
 		g.drawImage(screenImage, 0, 0, ratio * 256, ratio * 240, null);
 		g.setColor(Color.GREEN);
 		if(nes != null) {
-			g.drawString("FPS: " + nes.averageFrameRate, 200, 15);
+			g.drawString("FPS: " + nes.averageFrameRate, 100, 15);
+			g.drawString("Initial Frame time: " + nes.initialFrameTime, 100, 55);
+			g.drawString("Total Frame Time: " + nes.frameTimeAfterSleep,  100,  80);
 		}
 	}
 

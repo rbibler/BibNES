@@ -296,5 +296,9 @@ public class APU {
 	public boolean bufferHasLessThan(int samples) {
 		return mixer.bufferHasLessThan(samples);
 	}
+	
+	public float getBufferUsage() {
+		return mixer.getBufferUsage();
+	}
 
 }

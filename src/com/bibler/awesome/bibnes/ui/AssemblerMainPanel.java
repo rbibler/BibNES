@@ -130,7 +130,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		nesScreen.setBoard(nes);
 		paletteTable.setPPUMem(nes.getPPUMem());
 		patternTable.setMapper(nes.getMapper(), nes.getPPUMem());
-		audioView.setFrame(nes.getAPU().getFrame());
+		audioView.setFrame(nes.getAPU().getFrame(), nes.getAPU());
 		nes.getAPU().setAudioChannelView(audioView);
 	}
 	
