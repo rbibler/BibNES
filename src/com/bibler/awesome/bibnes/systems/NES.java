@@ -18,6 +18,8 @@ public class NES implements Notifier, Runnable {
 	private int[] cpuMem;
 	private int[] ppuMem;
 	
+	private boolean frameBased;
+	
 	private Mapper mapper;
 	
 	private int cycleCount;
@@ -61,21 +63,6 @@ public class NES implements Notifier, Runnable {
 		apu = new APU(this);
 		cpuMem = new int[0x10000];
 		ppuMem = new int[0x4000];
-		Thread t = new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				while(!Thread.interrupted()) {
-					printStats();
-					try {
-						Thread.sleep(10);
-					} catch(InterruptedException e) {}
-				}
-				
-			}
-			
-		});
-		t.start();
 	}
 	
 	public void setMapper(Mapper mapper) {
@@ -175,10 +162,10 @@ public class NES implements Notifier, Runnable {
 	
 	private int totalClocks;
 	public void cycle() {
-		if(totalClocks % 4 == 0) {
+		//if(totalClocks % 4 == 0) {
 			ppu.cycle();
-		}
-		if(totalClocks % 12 == 0) {
+		//}
+		if(totalClocks % 3 == 0) {
 			if(!skipCPUCycles) {
 				cpu.cycle();
 			} else {
@@ -189,13 +176,24 @@ public class NES implements Notifier, Runnable {
 			}
 			apu.clock();
 		}
-		if(totalClocks == 89490) {
+		if(totalClocks == 89490 / 4) {
 			apu.stepFrame();
 			totalClocks = 0;
 		}
 		totalClocks++;
 		cycles++;
 	}
+	
+	private void runFrame() {
+		for(int i = 0; i < 89342; i++) {
+			cycle();
+		}
+		frame();
+		totalClocks = 0;
+	}
+	
+	
+	
 	
 	public void runEmulator() {
 		if(running) {
@@ -232,7 +230,7 @@ public class NES implements Notifier, Runnable {
 			
 		}
 		lastFrameTime = System.currentTimeMillis();
-		
+		printStats();
 		apu.finishFrame();
 		if(frameByFrame) {
 			pause();
@@ -393,13 +391,14 @@ public class NES implements Notifier, Runnable {
                     }
                 }
             }
-			if(!breakpointEngaged) {
+			/*if(!breakpointEngaged) {
 				cycle();
 			} else {
 				try {
 					Thread.sleep(10);
 				} catch(InterruptedException e) {}
-			}
+			}*/
+			runFrame();
 		}
 		
 	}
@@ -432,6 +431,5 @@ public class NES implements Notifier, Runnable {
 	public void updateAudioParams(int paramNum) {
 		apu.updateAudioParams(paramNum);
 	}
-	
 	
 }
