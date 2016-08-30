@@ -1,5 +1,8 @@
 package com.bibler.awesome.bibnes.systems;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
@@ -7,7 +10,9 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 
-public class Mixer {
+
+
+public class Mixer  {
 	
 	private byte[] sampleBuffer;
 	private int sampleBufferIndex;
@@ -18,6 +23,8 @@ public class Mixer {
 	private int bitRate;
 	private int channels;
 	private int bytesPerSample;
+	
+	private Queue<byte[]> bufferList = new LinkedList<byte[]>();
 	
 	private int[] sampleRates = new int[] {
 		6000, 7333, 8000, 11025, 16000, 22050, 24000, 32000, 44100,
@@ -58,8 +65,7 @@ public class Mixer {
         )};
 		try {
 			player = AudioSystem.getSourceDataLine(format[0]);
-			player.open(format[0], samplesPerFrame  * 16 * channels /*ch*/ * (bitRate / 8) /*bytes/sample*/); 
-			
+			player.open(format[0], samplesPerFrame * 4 * channels /*ch*/ * (bitRate / 8) /*bytes/sample*/); 
 		} catch (LineUnavailableException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -80,7 +86,6 @@ public class Mixer {
             //System.err.println("clop");
 			}
 		}
-		if(sampleBufferIndex + bytesPerSample < sampleBuffer.length) {
 			for(int i = 0; i < channels; i++) {
 				if(bitRate == 8) {
 					sampleBuffer[sampleBufferIndex++] = (byte) (sample & 0xFF);
@@ -89,25 +94,12 @@ public class Mixer {
 					sampleBuffer[sampleBufferIndex++] = (byte) ((sample >> 8) & 0xFF);
 				}
 			}
-		}
-		if(sampleBufferIndex >= 745) {
-			if(player.available() >= sampleBufferIndex) {
-				player.write(sampleBuffer, 0, sampleBufferIndex);
-			}
-			sampleBufferIndex = 0;
-		}
-		
-			
 		
 	}
-	
-	private int skipNext;
 	
 	public void flushSamples() {
 		if(player.available() >= sampleBufferIndex) {
 			player.write(sampleBuffer, 0, sampleBufferIndex);
-		} else {
-			System.out.println("OVERRUN!!!!");
 		}
 		sampleBufferIndex = 0;
 	}
@@ -127,5 +119,6 @@ public class Mixer {
 		final float used = size - avail;
 		return used / size;
 	}
+
 	
 }

@@ -55,29 +55,29 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		inputOutputPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		
 		LookAndFeel currentLF = setupLookAndFeel();
-		inputPanel = new AssemblerInputPanel("Source", 0, 900,600, bpManager);
+		//inputPanel = new AssemblerInputPanel("Source", 0, 900,600, bpManager);
 		nesScreen = new NESScreen("Emulator", 1, 256, 240);
-		debugPanel = new PopoutPanel("Debug", 2, 1024, 960);
-		nametable = new NametableScreen("Nametable", 3, 512, 480);
-		paletteTable = new PaletteTable(512, 64);
-		patternTable = new PatternTableScreen(512, 256);
-		paletteTable.setPatternTableScreen(patternTable);
-		audioView = new AudioChannelView();
+		//debugPanel = new PopoutPanel("Debug", 2, 1024, 960);
+		//nametable = new NametableScreen("Nametable", 3, 512, 480);
+		//paletteTable = new PaletteTable(512, 64);
+		//patternTable = new PatternTableScreen(512, 256);
+		//paletteTable.setPatternTableScreen(patternTable);
+		//audioView = new AudioChannelView();
 		//debugPanel.add(paletteTable);
 		//debugPanel.add(patternTable);
-		debugPanel.add(audioView);
+		//debugPanel.add(audioView);
 		middlePane = new PopoutPaneHolder(10);
-		middlePane.addPopoutPanel(inputPanel);
-		inputPanel.setParent(middlePane);
-		inputPanel.setPoppedStatus(false);
+		//middlePane.addPopoutPanel(inputPanel);
+		//inputPanel.setParent(middlePane);
+		//inputPanel.setPoppedStatus(false);
 		middlePane.addPopoutPanel(nesScreen);
 		nesScreen.setParent(middlePane);
 		nesScreen.setPoppedStatus(false);
-		middlePane.addPopoutPanel(debugPanel);
-		debugPanel.setParent(middlePane);
-		middlePane.addPopoutPanel(nametable);
-		nametable.setParent(middlePane);
-		debugPanel.setPoppedStatus(false);
+		//middlePane.addPopoutPanel(debugPanel);
+		//debugPanel.setParent(middlePane);
+		//middlePane.addPopoutPanel(nametable);
+		//nametable.setParent(middlePane);
+		//debugPanel.setPoppedStatus(false);
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "none");
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "none");
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("UP"), "none");
@@ -97,7 +97,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 			}
 			
 		});
-		inputPanel.applyLookAndFeel(currentLF);
+		//inputPanel.applyLookAndFeel(currentLF);
 		outputPanel = new AssemblerOutputPanel("", 0, 900,200, bpManager);
 		emulatorPanel = new EmulatorPanel(200, 600);
 		projectPanel = new ProjectPanel(200, 600);
@@ -128,10 +128,10 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	
 	public void setBoard(NES nes) {
 		nesScreen.setBoard(nes);
-		paletteTable.setPPUMem(nes.getPPUMem());
-		patternTable.setMapper(nes.getMapper(), nes.getPPUMem());
-		audioView.setFrame(nes.getAPU().getFrame(), nes.getAPU());
-		nes.getAPU().setAudioChannelView(audioView);
+		//paletteTable.setPPUMem(nes.getPPUMem());
+		//patternTable.setMapper(nes.getMapper(), nes.getPPUMem());
+		//audioView.setFrame(nes.getAPU().getFrame(), nes.getAPU());
+		//nes.getAPU().setAudioChannelView(audioView);
 	}
 	
 	public String[] getInputLines() {
@@ -169,12 +169,12 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 				emulatorPanel.fillCPUMem(prod.getCPUMem());
 				emulatorPanel.fillPPUMem(prod.getPPUMem());
 				emulatorPanel.fillOAMMem(ppu.getOamMem());
-				nametable.setPPUMem(prod.getPPUMem(), ppu);
-				nametable.setNES(prod.getNES());
+				//nametable.setPPUMem(prod.getPPUMem(), ppu);
+				//nametable.setNES(prod.getNES());
 			}
 		} else if(notifier instanceof PPU) {
 			if(message.equalsIgnoreCase("Frame")) {
-				nesScreen.updateFrame(((PPU) notifier).getFrameForPainting());
+				//nesScreen.updateFrame(((PPU) notifier).getFrameForPainting());
 			} 
 		}
 	}

@@ -15,6 +15,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	private boolean constantVolume;
 	private boolean lengthCounterEnabled;
 	private boolean envelopeStartFlag;
+	private boolean envelopeLoopFlag;
 	private int currentTimer;
 	private int currentStep;
 	private int currentVolume;
@@ -43,6 +44,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	public void reset() {
 		envelope = 7;
 		envelopeStartFlag = false;
+		envelopeLoopFlag = false;
 		decayLevelCounter = 0;
 		envelopeDividerPeriod = 0;
 		sweepEnabled = false;
@@ -57,7 +59,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 		lengthCounterEnabled = false;
 		envelopeStartFlag = false;
 		currentTimer = 0;
-		currentStep = 0;
+		currentStep = 7;
 		currentVolume = 0;
 	}
 	
@@ -82,7 +84,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	
 	private void clockEnvelopeDecayCounter() {
 		if(decayLevelCounter == 0) {
-			if(lengthCounterHalt) {
+			if(envelopeLoopFlag) {
 				decayLevelCounter = 15;
 			}
 		} else {
@@ -139,10 +141,8 @@ public class PulseWaveGenerator extends WaveGenerator {
 				duty = 0b10011111;
 				break;
 			}
-			lengthCounterHalt = (data >> 5 & 1) == 0;
-			if(lengthCounterHalt) {
-				lengthCounter = 0;
-			}
+			lengthCounterHalt = (data >> 5 & 1) == 1;
+			envelopeLoopFlag = lengthCounterHalt;
 			constantVolume = (data >> 4 & 1) == 1;
 			envelope = data & 0b1111;
 			if(constantVolume) {
@@ -165,7 +165,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 			timer |= (data & 7) << 8;
 			lengthCounter = lengthCounterLookup[data >> 4 & 0xF][data >> 3 & 1];
 			currentStep = 7;
-			currentTimer = timer + 1;
+			currentTimer = timer;
 			envelopeStartFlag = true;
 			break;
 		}
@@ -181,20 +181,18 @@ public class PulseWaveGenerator extends WaveGenerator {
 	
 	@Override
 	public void clockLengthCounter() {
-		if(lengthCounterEnabled) {
-			if(lengthCounter > 0 && !lengthCounterHalt) {
-				lengthCounter--;
-			}
+		if(lengthCounter > 0 && !lengthCounterHalt) {
+			lengthCounter--;
 		}
 	}
 	
 	@Override
 	public int clock() {
-		if(lengthCounterHalt) {
+		if(!lengthCounterEnabled) {
 			lengthCounter = 0;
 		}
 		if(currentTimer == 0) {
-			currentTimer = timer + 1;
+			currentTimer = timer;
 			currentStep--;
 			if(currentStep < 0) {
 				currentStep = 7;

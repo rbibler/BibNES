@@ -127,6 +127,7 @@ public class APU {
 	
 	
 	public void clock() {
+		//System.out.println("clock");
 		triOne.clock();
 		DMCOne.clock();
 		if((cycles & 1) == 0) {
@@ -144,7 +145,7 @@ public class APU {
 	}
 	
 	public void finishFrame() {
-		//mixer.flushSamples();
+		mixer.flushSamples();
 		cycles = 0;
 		outputSamples = 0;
 		//if(audioChannelView != null) {

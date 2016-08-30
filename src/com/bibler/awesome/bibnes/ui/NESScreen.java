@@ -17,7 +17,7 @@ import javax.swing.JPanel;
 import com.bibler.awesome.bibnes.systems.NES;
 import com.bibler.awesome.bibnes.utils.NESPalette;
 
-public class NESScreen extends PopoutPanel {
+public class NESScreen extends PopoutPanel implements Runnable {
 	
 	/**
 	 * 
@@ -72,6 +72,8 @@ public class NESScreen extends PopoutPanel {
 	
 	public void setBoard(NES nes) {
 		this.nes = nes;
+		Thread t = new Thread(this);
+		t.start();
 	}
 	
 	@Override
@@ -90,6 +92,14 @@ public class NESScreen extends PopoutPanel {
 			g.drawString("Initial Frame time: " + nes.initialFrameTime, 100, 55);
 			g.drawString("Total Frame Time: " + nes.frameTimeAfterSleep,  100,  80);
 		}
+	}
+
+	@Override
+	public void run() {
+		while(!Thread.interrupted()) {
+			updateFrame(nes.getPPU().getFrameForPainting());
+		}
+		
 	}
 
 }

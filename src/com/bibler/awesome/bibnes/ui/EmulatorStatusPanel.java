@@ -67,7 +67,7 @@ public class EmulatorStatusPanel extends JPanel {
 			}
 		});
 		running = true;
-		t.start();
+		//t.start();
 	}
 	
 	private void initialize() {

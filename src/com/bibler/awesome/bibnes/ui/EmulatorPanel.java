@@ -57,7 +57,7 @@ public class EmulatorPanel extends JPanel {
 			
 		});
 		running = true;
-		t.start();
+		//t.start();
 		
 	}
 	

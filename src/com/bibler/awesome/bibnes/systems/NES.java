@@ -61,6 +61,21 @@ public class NES implements Notifier, Runnable {
 		apu = new APU(this);
 		cpuMem = new int[0x10000];
 		ppuMem = new int[0x4000];
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				while(!Thread.interrupted()) {
+					printStats();
+					try {
+						Thread.sleep(10);
+					} catch(InterruptedException e) {}
+				}
+				
+			}
+			
+		});
+		t.start();
 	}
 	
 	public void setMapper(Mapper mapper) {
@@ -201,7 +216,7 @@ public class NES implements Notifier, Runnable {
 	}
 	
 	public void frame() {
-		apu.finishFrame();
+		
 		cycles = 0;
 		initialFrameTime = System.currentTimeMillis() - lastFrameTime;
 		if(initialFrameTime < frameRate) {
@@ -218,10 +233,14 @@ public class NES implements Notifier, Runnable {
 		}
 		lastFrameTime = System.currentTimeMillis();
 		
-		
+		apu.finishFrame();
 		if(frameByFrame) {
 			pause();
 		}
+	}
+	
+	private void printStats() {
+		System.out.println("Frame time: " + initialFrameTime);
 	}
 	
 	
