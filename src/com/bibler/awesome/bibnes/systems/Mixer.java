@@ -23,6 +23,7 @@ public class Mixer  {
 	private int bitRate;
 	private int channels;
 	private int bytesPerSample;
+	private boolean audioEnabled = true;
 	
 	private Queue<byte[]> bufferList = new LinkedList<byte[]>();
 	
@@ -30,6 +31,13 @@ public class Mixer  {
 		6000, 7333, 8000, 11025, 16000, 22050, 24000, 32000, 44100,
 		48000, 64000, 88200, 96000, 192000
 	};
+	
+	public void enableAudio(boolean audioEnabled) {
+		this.audioEnabled = audioEnabled;
+		if(player != null) {
+			player.flush();
+		}
+	}
 	
 	public void updateParameters(int bitRate) {
 		sampleRate = 44100;
@@ -76,16 +84,17 @@ public class Mixer  {
 	}
 	
 	public void outputSample(int sample) {
-		if(bitRate == 16) {
-			if (sample < -32768) {
-				sample = -32768;
-            //System.err.println("clip");
+		if(audioEnabled) {
+			if(bitRate == 16) {
+				if (sample < -32768) {
+					sample = -32768;
+					//System.err.println("clip");
+				}
+				if (sample > 32767) {
+					sample = 32767;
+					//System.err.println("clop");
+				}
 			}
-			if (sample > 32767) {
-				sample = 32767;
-            //System.err.println("clop");
-			}
-		}
 			for(int i = 0; i < channels; i++) {
 				if(bitRate == 8) {
 					sampleBuffer[sampleBufferIndex++] = (byte) (sample & 0xFF);
@@ -94,14 +103,17 @@ public class Mixer  {
 					sampleBuffer[sampleBufferIndex++] = (byte) ((sample >> 8) & 0xFF);
 				}
 			}
+		}
 		
 	}
 	
 	public void flushSamples() {
-		if(player.available() >= sampleBufferIndex) {
-			player.write(sampleBuffer, 0, sampleBufferIndex);
+		if(audioEnabled) {
+			if(player.available() >= sampleBufferIndex) {
+				player.write(sampleBuffer, 0, sampleBufferIndex);
+			}
+			sampleBufferIndex = 0;
 		}
-		sampleBufferIndex = 0;
 	}
 	
 	public byte[] getFrame() {

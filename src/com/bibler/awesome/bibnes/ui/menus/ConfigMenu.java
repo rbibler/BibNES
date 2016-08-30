@@ -21,6 +21,7 @@ import com.bibler.awesome.bibnes.ui.MainFrame;
 public class ConfigMenu extends JMenu implements Notifier {
 
 	private JMenu audioMenu;
+	private JCheckBoxMenuItem silenceAudioItem;
 	private JCheckBoxMenuItem pulseOneEnableItem;
 	private JCheckBoxMenuItem pulseTwoEnableItem;
 	private JCheckBoxMenuItem triEnableItem;
@@ -39,6 +40,15 @@ public class ConfigMenu extends JMenu implements Notifier {
 	
 	private void initialize() {
 		audioMenu = new JMenu("Audio Options");
+		
+		silenceAudioItem = new JCheckBoxMenuItem("Silence All Channels");
+		audioMenu.add(silenceAudioItem);
+		silenceAudioItem.setActionCommand("SILENCE");
+		silenceAudioItem.addActionListener(actionListener);
+		silenceAudioItem.setSelected(false);
+		silenceAudioItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0));
+		
+		
 		pulseOneEnableItem = new JCheckBoxMenuItem("Pulse One");
 		audioMenu.add(pulseOneEnableItem);
 		pulseOneEnableItem.setActionCommand("P1");
@@ -124,6 +134,16 @@ public class ConfigMenu extends JMenu implements Notifier {
 		return (MainFrame) parent;
 	}
 	
+	private void enableAllAudioItems(boolean enable) {
+		mainFrame.enableAudio(enable);
+		pulseOneEnableItem.setEnabled(enable);
+		pulseTwoEnableItem.setEnabled(enable);
+		triEnableItem.setEnabled(enable);
+		noiseEnableItem.setEnabled(enable);
+		dmcEnableItem.setEnabled(enable);
+	}
+	
+	
 	private class AudioEnableActionListener implements ActionListener {
 
 		@Override
@@ -134,6 +154,9 @@ public class ConfigMenu extends JMenu implements Notifier {
 			String command = arg0.getActionCommand();
 			int audioChannel = -1;
 			switch(command) {
+			case "SILENCE":
+				enableAllAudioItems(!silenceAudioItem.isSelected());
+				break;
 			case "P1":
 				audioChannel = 0;
 				break;

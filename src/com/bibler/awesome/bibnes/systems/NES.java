@@ -421,6 +421,10 @@ public class NES implements Notifier, Runnable {
 		
 	}
 	
+	public void enableAudio(boolean enable) {
+		apu.enableAudio(enable);
+	}
+	
 	public void setAudioChannelEnable(int audioChannel, boolean enable) {
 		apu.setChannelEnabled(audioChannel, enable);
 	}

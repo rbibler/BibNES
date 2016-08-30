@@ -301,5 +301,9 @@ public class APU {
 	public float getBufferUsage() {
 		return mixer.getBufferUsage();
 	}
+	
+	public void enableAudio(boolean enable) {
+		mixer.enableAudio(enable);
+	}
 
 }

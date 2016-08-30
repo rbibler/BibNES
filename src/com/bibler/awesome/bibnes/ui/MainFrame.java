@@ -141,6 +141,10 @@ public class MainFrame extends JFrame {
 		board.setAudioChannelEnable(audioChannel, enable);
 	}
 	
+	public void enableAudio(boolean enable) {
+		board.enableAudio(enable);
+	}
+	
 	public void updateAudioParams(int paramNum) {
 		board.updateAudioParams(paramNum);
 	}
