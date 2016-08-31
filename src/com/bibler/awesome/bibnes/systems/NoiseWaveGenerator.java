@@ -136,8 +136,8 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	}
 	
 	@Override
-	public double getSample() {
-		double currentVolume = constantVolume ? envelope : decayLevelCounter;
+	public int getSample() {
+		int currentVolume = constantVolume ? envelope : decayLevelCounter;
 		if(lengthCounter == 0 || (linearFeedback & 1) == 1) {
 			currentVolume = 0;
 		}

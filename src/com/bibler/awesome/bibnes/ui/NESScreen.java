@@ -23,14 +23,15 @@ public class NESScreen extends PopoutPanel implements Runnable {
 	 * 
 	 */
 	private static final long serialVersionUID = 2850055628329603061L;
-	BufferedImage screenImage;
-	double scaleX;
-	double scaleY;
-	int screenshotCount;
+	private BufferedImage screenImage;
+	private double scaleX;
+	private double scaleY;
+	private int screenshotCount;
 	
 	private NES nes;
 	
-	boolean flash; 
+	private boolean flash; 
+	private boolean updateNext;
 	
 	public NESScreen(String title, int tabIndex, int width, int height) {
 		super(title, tabIndex, width, height);
@@ -63,7 +64,11 @@ public class NESScreen extends PopoutPanel implements Runnable {
 		}
 	}
 	
-	public void updateFrame(int[] frameArray) {
+	public void triggerUpdate() {
+		updateNext = true;
+	}
+	
+	private void updateFrame(int[] frameArray) {
 		for(int i = 0; i < frameArray.length; i++) {
 			screenImage.setRGB(i % 256, i / 256, frameArray[i]);
 		}
@@ -97,7 +102,10 @@ public class NESScreen extends PopoutPanel implements Runnable {
 	@Override
 	public void run() {
 		while(!Thread.interrupted()) {
-			updateFrame(nes.getPPU().getFrameForPainting());
+			if(updateNext) {
+				updateNext = false;
+				updateFrame(nes.getPPU().getFrameForPainting());
+			}
 		}
 		
 	}

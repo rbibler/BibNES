@@ -214,7 +214,8 @@ public class NES implements Notifier, Runnable {
 	}
 	
 	public void frame() {
-		
+		apu.finishFrame();
+		notify("FRAME");
 		cycles = 0;
 		initialFrameTime = System.currentTimeMillis() - lastFrameTime;
 		if(initialFrameTime < frameRate) {
@@ -231,7 +232,7 @@ public class NES implements Notifier, Runnable {
 		}
 		lastFrameTime = System.currentTimeMillis();
 		printStats();
-		apu.finishFrame();
+		
 		if(frameByFrame) {
 			pause();
 		}

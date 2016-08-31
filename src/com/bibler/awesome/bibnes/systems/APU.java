@@ -23,6 +23,8 @@ public class APU {
 	private double newValue;
 	private double smoothing = .5;
 	private int totalAPUCycles;
+	private int sampleIndex;
+	private int samplesPerFrame;
 	
 	private Mixer mixer;
 	
@@ -32,9 +34,14 @@ public class APU {
 	private int frameCounterMode;
 	private int frameStep;
 	private boolean disableFrameInterrupt;
-	byte[] pulseOneSamples = new byte[512];
-	byte[] pulseTwoSamples = new byte[512];
-	byte[] triSamples = new byte[512];
+	
+	int[] pulseOneSamples = new int[512];
+	int[] pulseTwoSamples = new int[512];
+	int[] triSamples = new int[512];
+	int[] noiseSamples = new int[512];
+	int[] dmcSamples = new int[512];
+	
+	private int[] sampleIndices = new int[5];
 	
 	private int remainder;
 	private double accumulator;
@@ -68,6 +75,12 @@ public class APU {
 			volumeMultiplier = 32768;
 		}
 		mixer.updateParameters(bitRate);
+		samplesPerFrame = (int) (44100 / 59.9);
+		pulseOneSamples = new int[samplesPerFrame];
+		pulseTwoSamples = new int[samplesPerFrame];
+		triSamples = new int[samplesPerFrame];
+		noiseSamples = new int[samplesPerFrame];
+		dmcSamples = new int[samplesPerFrame];
 	}
 	
 	public void write(int addressToWrite, int data) {
@@ -127,7 +140,6 @@ public class APU {
 	
 	
 	public void clock() {
-		//System.out.println("clock");
 		triOne.clock();
 		DMCOne.clock();
 		if((cycles & 1) == 0) {
@@ -148,9 +160,9 @@ public class APU {
 		mixer.flushSamples();
 		cycles = 0;
 		outputSamples = 0;
-		//if(audioChannelView != null) {
-			//audioChannelView.updateView();
-		//}
+		if(audioChannelView != null) {
+			audioChannelView.updateView();
+		}
 	}
 	
 	public void reset() {
@@ -202,13 +214,18 @@ public class APU {
 	
 	
 	private int getSamples() {
-		double pulseOneByte = pulseOneEnabled ? pulseOne.getSample() : 0;
-		double pulseTwoByte = pulseTwoEnabled ? pulseTwo.getSample() : 0;
-		double tri = triEnabled ? triOne.getSample() : 0;
-		double noise = noiseEnabled ? noiseOne.getSample() : 0;
-		double dmc = dmcEnabled ? DMCOne.getSample() : 0;
-		double total = (.00752 * (pulseOneByte + pulseTwoByte)) + ((0.00851 * tri) + (noise * .00494) + (dmc * .0033f));
+		pulseOneSamples[sampleIndex] = pulseOneEnabled ? pulseOne.getSample() : 0;
+		pulseTwoSamples[sampleIndex] = pulseTwoEnabled ? pulseTwo.getSample() : 0;
+		triSamples[sampleIndex] = triEnabled ? triOne.getSample() : 0;
+		noiseSamples[sampleIndex] = noiseEnabled ? noiseOne.getSample() : 0;
+		dmcSamples[sampleIndex] = dmcEnabled ? DMCOne.getSample() : 0;
+		double total = (.00752 * (pulseOneSamples[sampleIndex] + pulseTwoSamples[sampleIndex])) 
+				+ ((0.00851 * triSamples[sampleIndex]) + (noiseSamples[sampleIndex] * .00494) + (dmcSamples[sampleIndex] * .0033f));
 		total *= volumeMultiplier;
+		sampleIndex++;
+		if(sampleIndex >= samplesPerFrame) {
+			sampleIndex = 0;
+		}
 		return (int) total; 
 	}
 	
@@ -292,6 +309,12 @@ public class APU {
 	
 	public byte[] getFrame() {
 		return mixer.getFrame();
+	}
+	
+	public int[][] getSampleBuffers() {
+		return new int[][] {
+			pulseOneSamples, pulseTwoSamples, triSamples, noiseSamples, dmcSamples
+		};
 	}
 	
 	public boolean bufferHasLessThan(int samples) {

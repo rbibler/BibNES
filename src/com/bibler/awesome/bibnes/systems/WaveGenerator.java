@@ -18,7 +18,7 @@ public class WaveGenerator {
 		return lengthCounter;
 	}
 	
-	public double getSample() {
+	public int getSample() {
 		return 0;
 	}
 	

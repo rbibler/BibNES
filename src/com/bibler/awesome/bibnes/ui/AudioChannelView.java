@@ -15,8 +15,14 @@ import com.bibler.awesome.bibnes.systems.APU;
 
 public class AudioChannelView extends JPanel implements Runnable {
 	
-	private byte[] frame;
+	private int[] pulseOneSamples;
+	private int[] pulseTwoSamples;
+	private int[] triSamples;
+	private int[] noiseSamples;
+	private int[] dmcSamples;
 	private boolean paintOnNext;
+	private int xSkip;
+	private int samplesPerFrame;
 	
 	private JPanel mainPanel;
 	private JPanel bufferUsePanel;
@@ -47,8 +53,15 @@ public class AudioChannelView extends JPanel implements Runnable {
 		t.start();
 	}
 	
-	public void setFrame(byte[] frame, APU apu) {
-		this.frame = frame;
+	public void setFrame(APU apu) {
+		int[][] sampleBuffers = apu.getSampleBuffers();
+		pulseOneSamples = sampleBuffers[0];
+		pulseTwoSamples = sampleBuffers[1];
+		triSamples = sampleBuffers[2];
+		noiseSamples = sampleBuffers[3];
+		dmcSamples = sampleBuffers[4];
+		samplesPerFrame = pulseOneSamples.length;
+		xSkip = samplesPerFrame / 512;
 		this.apu = apu;
 	}
 	
@@ -65,19 +78,36 @@ public class AudioChannelView extends JPanel implements Runnable {
 	}
 	
 	private void paintGraph(Graphics g) {
-		if(frame == null) {
+		if(pulseOneSamples == null) {
 			return;
 		}
 		g.setColor(Color.GREEN);
 		int y1;
 		int y2;
 		int x = 0;
-		int xSkip = frame.length / 512;
 		int yStart = (int) (150 * .75f);
-		for(int i = 0; i < frame.length - (xSkip + 1); i += xSkip) {
-			y1 = Math.abs(frame[i]);
-			y2 = Math.abs(frame[i + xSkip]);
+		for(int i = 0; i < samplesPerFrame - (xSkip + 1); i += xSkip) {
+			g.setColor(Color.GREEN);
+			y1 = Math.abs(pulseOneSamples[i]);
+			y2 = Math.abs(pulseOneSamples[i + xSkip]);
 			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
+			g.setColor(Color.BLUE);
+			y1 = Math.abs(pulseTwoSamples[i]);
+			y2 = Math.abs(pulseTwoSamples[i + xSkip]);
+			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
+			g.setColor(Color.YELLOW);
+			y1 = Math.abs(triSamples[i]);
+			y2 = Math.abs(triSamples[i + xSkip]);
+			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
+			g.setColor(Color.RED);
+			y1 = Math.abs(noiseSamples[i]);
+			y2 = Math.abs(noiseSamples[i + xSkip]);
+			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
+			g.setColor(Color.MAGENTA);
+			y1 = Math.abs(dmcSamples[i]);
+			y2 = Math.abs(dmcSamples[i + xSkip]);
+			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
+			
 			x++;
 		}
 	}

@@ -84,7 +84,7 @@ public class DMCWaveGenerator extends WaveGenerator {
 	}
 	
 	@Override
-	public double getSample() {
+	public int getSample() {
 		return directLoad;
 	}
 	
