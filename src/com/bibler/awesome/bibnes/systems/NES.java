@@ -192,9 +192,6 @@ public class NES implements Notifier, Runnable {
 		totalClocks = 0;
 	}
 	
-	
-	
-	
 	public void runEmulator() {
 		if(running) {
 			breakpointEngaged = false;
@@ -231,7 +228,7 @@ public class NES implements Notifier, Runnable {
 			
 		}
 		lastFrameTime = System.currentTimeMillis();
-		printStats();
+		//printStats();
 		
 		if(frameByFrame) {
 			pause();
@@ -392,16 +389,8 @@ public class NES implements Notifier, Runnable {
                     }
                 }
             }
-			/*if(!breakpointEngaged) {
-				cycle();
-			} else {
-				try {
-					Thread.sleep(10);
-				} catch(InterruptedException e) {}
-			}*/
 			runFrame();
 		}
-		
 	}
 
 	public PPU getPPU() {

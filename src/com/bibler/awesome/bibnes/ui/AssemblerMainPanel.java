@@ -78,6 +78,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		middlePane.addPopoutPanel(nametable);
 		nametable.setParent(middlePane);
 		debugPanel.setPoppedStatus(false);
+		middlePane.setSelectedComponent(nesScreen);
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "none");
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "none");
 		middlePane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("UP"), "none");

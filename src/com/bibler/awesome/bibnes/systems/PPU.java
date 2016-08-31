@@ -23,6 +23,9 @@ public class PPU implements Notifier {
 	private boolean spriteOverflow;
 	private boolean oddFrame;
 	
+	private boolean showBG = true;
+	private boolean showObjects = true;
+	
 	// Integer register values
 	private int vRamInc;
 	private int colorEmph;
@@ -104,7 +107,9 @@ public class PPU implements Notifier {
 		
 		clock();
 		spriteEvaluation();
-		renderSprites();
+		if(showObjects) {
+			renderSprites();
+		}
 		cycle++;
 		if(cycle == 339 && oddFrame && scanline == 261) {
 			cycle = 0;
@@ -434,9 +439,13 @@ public class PPU implements Notifier {
 		}
 		if(bgClip && cycle < 8) {
 			bgColorIndex = 0;
-			frameArray[offset] = NESPalette.getPixel(nes.ppuRead(0x3F00));
+			if(showBG) {
+				frameArray[offset] = NESPalette.getPixel(nes.ppuRead(0x3F00));
+			}
 		} else {
-			frameArray[offset] = NESPalette.getPixel(pixelValue);
+			if(showBG) {
+				frameArray[offset] = NESPalette.getPixel(pixelValue);
+			}
 		}
 		shiftRegisters();
 	}
@@ -588,6 +597,12 @@ public class PPU implements Notifier {
 		return OAMData;
 	}
 	
-	
+	public void toggleDisplay(int bgOrObject, boolean display) {
+		if(bgOrObject == 0) {
+			showBG = display;
+		} else {
+			showObjects = display;
+		}
+	}
 	
 }

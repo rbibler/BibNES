@@ -148,5 +148,9 @@ public class MainFrame extends JFrame {
 	public void updateAudioParams(int paramNum) {
 		board.updateAudioParams(paramNum);
 	}
+	
+	public void togglePPUDisplay(int bgOrObjects, boolean display) {
+		board.getPPU().toggleDisplay(bgOrObjects, display);
+	}
 
 }

@@ -23,6 +23,8 @@ public class AudioChannelView extends JPanel implements Runnable {
 	private boolean paintOnNext;
 	private int xSkip;
 	private int samplesPerFrame;
+	private int height;
+	
 	
 	private JPanel mainPanel;
 	private JPanel bufferUsePanel;
@@ -44,6 +46,7 @@ public class AudioChannelView extends JPanel implements Runnable {
 		bufferUsageBar.setPreferredSize(new Dimension(512, 40));
 		bufferUsePanel.add(bufferUsageBar);
 		mainPanel.setPreferredSize(new Dimension(512, 250));
+		height = 250 / 2;
 		mainPanel.setBorder(BorderFactory.createLineBorder(Color.RED));
 		mainPanel.setBackground(Color.BLACK);
 		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
@@ -85,27 +88,27 @@ public class AudioChannelView extends JPanel implements Runnable {
 		int y1;
 		int y2;
 		int x = 0;
-		int yStart = (int) (150 * .75f);
+		int yStart = (int) (250 * .75f);
 		for(int i = 0; i < samplesPerFrame - (xSkip + 1); i += xSkip) {
 			g.setColor(Color.GREEN);
-			y1 = Math.abs(pulseOneSamples[i]);
-			y2 = Math.abs(pulseOneSamples[i + xSkip]);
+			y1 = (int) (height * (Math.abs(pulseOneSamples[i] / 15.0f)));
+			y2 = (int) (height * (Math.abs(pulseOneSamples[i + xSkip] / 15.0f)));
 			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
 			g.setColor(Color.BLUE);
-			y1 = Math.abs(pulseTwoSamples[i]);
-			y2 = Math.abs(pulseTwoSamples[i + xSkip]);
+			y1 = (int) (height * (Math.abs(pulseTwoSamples[i] / 15.0f)));
+			y2 = (int) (height * (Math.abs(pulseTwoSamples[i + xSkip] / 15.0f)));
 			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
 			g.setColor(Color.YELLOW);
-			y1 = Math.abs(triSamples[i]);
-			y2 = Math.abs(triSamples[i + xSkip]);
+			y1 = (int) (height * (Math.abs(triSamples[i] / 15.0f)));
+			y2 = (int) (height * (Math.abs(triSamples[i + xSkip] / 15.0f)));
 			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
 			g.setColor(Color.RED);
-			y1 = Math.abs(noiseSamples[i]);
-			y2 = Math.abs(noiseSamples[i + xSkip]);
+			y1 = (int) (height * (Math.abs(noiseSamples[i] / 15.0f)));
+			y2 = (int) (height * (Math.abs(noiseSamples[i + xSkip] / 15.0f)));
 			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
 			g.setColor(Color.MAGENTA);
-			y1 = Math.abs(dmcSamples[i]);
-			y2 = Math.abs(dmcSamples[i + xSkip]);
+			y1 = (int) (height * (Math.abs(dmcSamples[i] / 15.0f)));
+			y2 = (int) (height * (Math.abs(dmcSamples[i + xSkip] / 15.0f)));
 			g.drawLine(x, (yStart - y1), x + 1, (yStart - y2));
 			
 			x++;

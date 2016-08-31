@@ -21,6 +21,7 @@ import com.bibler.awesome.bibnes.ui.MainFrame;
 public class ConfigMenu extends JMenu implements Notifier {
 
 	private JMenu audioMenu;
+	private JMenu videoMenu;
 	private JCheckBoxMenuItem silenceAudioItem;
 	private JCheckBoxMenuItem pulseOneEnableItem;
 	private JCheckBoxMenuItem pulseTwoEnableItem;
@@ -29,6 +30,8 @@ public class ConfigMenu extends JMenu implements Notifier {
 	private JCheckBoxMenuItem dmcEnableItem;
 	private JRadioButtonMenuItem eightBitAudio;
 	private JRadioButtonMenuItem sixteenBitAudio;
+	private JCheckBoxMenuItem showBGItem;
+	private JCheckBoxMenuItem showObjectsItem;
 	private AudioEnableActionListener actionListener = new AudioEnableActionListener();
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private MainFrame mainFrame;
@@ -99,6 +102,24 @@ public class ConfigMenu extends JMenu implements Notifier {
 		sixteenBitAudio.setSelected(false);
 		audioButtonGroup.add(eightBitAudio);
 		audioButtonGroup.add(sixteenBitAudio);
+		
+		videoMenu = new JMenu("Video Options");
+		
+		VideoMenuActionListener videoListener = new VideoMenuActionListener();
+		showBGItem = new JCheckBoxMenuItem("Render Playfield");
+		showBGItem.addActionListener(videoListener);
+		showBGItem.setActionCommand("BG");
+		showBGItem.setSelected(true);
+		videoMenu.add(showBGItem);
+		
+		showObjectsItem = new JCheckBoxMenuItem("Render Objects");
+		showObjectsItem.addActionListener(videoListener);
+		showObjectsItem.setActionCommand("OBJECTS");
+		showObjectsItem.setSelected(true);
+		videoMenu.add(showObjectsItem);
+		
+		add(videoMenu);
+		
 		add(audioMenu);
 	}
 	
@@ -186,6 +207,25 @@ public class ConfigMenu extends JMenu implements Notifier {
 			}
 			if(arg0.getSource() instanceof JCheckBoxMenuItem) {
 				mainFrame.setAudioChannelEnable(audioChannel, ((JCheckBoxMenuItem) arg0.getSource()).isSelected());
+			}
+		}
+		
+	}
+	
+	private class VideoMenuActionListener implements ActionListener {
+		
+		@Override
+		public void actionPerformed(ActionEvent arg0) {
+			if(mainFrame == null) {
+				mainFrame = getParentFrame();
+			}
+			String command = arg0.getActionCommand();
+			switch(command) {
+			case "BG":
+				mainFrame.togglePPUDisplay(0, showBGItem.isSelected());
+				break;
+			case "OBJECTS":
+				mainFrame.togglePPUDisplay(1, showObjectsItem.isSelected());
 			}
 		}
 		

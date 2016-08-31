@@ -4,7 +4,7 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	
 	private int envelope;
 	private int linearFeedback = 1;
-	private boolean loopEnable;
+	private boolean envelopeLoopFlag;
 	private boolean constantVolume;
 	private boolean loopNoise;
 	private int currentTimer;
@@ -35,6 +35,7 @@ public class NoiseWaveGenerator extends WaveGenerator {
 			4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068
 	};
 	private boolean lengthCounterEnabled;
+	private boolean lengthCounterHaltFlag;
 	private boolean envelopeStartFlag;
 	private int envelopeDividerPeriod;
 	
@@ -42,7 +43,8 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	public void reset() {
 		envelope = 0;
 		linearFeedback = 1;
-		loopEnable = false;
+		envelopeLoopFlag = false;
+		lengthCounterHaltFlag = false;
 		constantVolume = false;
 		loopNoise = false;
 		currentTimer = 0;
@@ -57,12 +59,15 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	
 	@Override
 	public int clock() {
+		if(!lengthCounterEnabled) {
+			lengthCounter = 0;
+		}
 		if(currentTimer == 0) {
 			currentTimer = timer;
 			final int feedback = (linearFeedback & 1) ^ ((modeFlag ? (linearFeedback >> 6 & 1) : (linearFeedback >> 1 & 1)));
 			linearFeedback >>= 1;
-			linearFeedback = (linearFeedback & ~(1 << 14)) | (feedback << 14);
-			
+			//linearFeedback = (linearFeedback & ~(1 << 14)) | (feedback << 14);
+			linearFeedback ^= (-feedback ^ linearFeedback) & 0x4000;
 		} else {
 			currentTimer--;
 		}
@@ -73,7 +78,8 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	public void write(int register, int data) {
 		switch(register) {
 		case 0x0C:
-			loopEnable = (data >> 5 & 1) == 1;
+			envelopeLoopFlag = (data >> 5 & 1) == 1;
+			lengthCounterHaltFlag = envelopeLoopFlag;
 			constantVolume = (data >> 4 & 1) == 1;
 			envelope = data & 0b1111;
 			break;
@@ -99,11 +105,9 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	
 	@Override
 	public void clockLengthCounter() {
-		if(lengthCounterEnabled) {
-			if(lengthCounter > 0 && !loopEnable) {
-				lengthCounter--;
-			}
-		}
+		if(lengthCounter > 0 && !lengthCounterHaltFlag) {
+			lengthCounter--;
+		}		
 	}
 	
 	public void clockEnvelope() {
@@ -127,7 +131,7 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	
 	private void clockEnvelopeDecayCounter() {
 		if(decayLevelCounter == 0) {
-			if(loopEnable) {
+			if(envelopeLoopFlag) {
 				decayLevelCounter = 15;
 			}
 		} else {
@@ -138,7 +142,7 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	@Override
 	public int getSample() {
 		int currentVolume = constantVolume ? envelope : decayLevelCounter;
-		if(lengthCounter == 0 || (linearFeedback & 1) == 1) {
+		if(lengthCounter <= 0 || (linearFeedback & 1) == 1) {
 			currentVolume = 0;
 		}
 		return currentVolume;
