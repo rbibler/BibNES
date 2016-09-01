@@ -328,5 +328,9 @@ public class APU {
 	public void enableAudio(boolean enable) {
 		mixer.enableAudio(enable);
 	}
+	
+	public void kill() {
+		mixer.kill();
+	}
 
 }

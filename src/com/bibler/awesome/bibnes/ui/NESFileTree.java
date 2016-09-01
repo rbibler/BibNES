@@ -1,11 +1,15 @@
 package com.bibler.awesome.bibnes.ui;
 
 import java.awt.Dimension;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.FileFilter;
 
 import javax.swing.JPanel;
 import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -19,18 +23,24 @@ public class NESFileTree extends JPanel {
 	private JTree fileTree;
 	private DefaultTreeModel treeModel;
 	private DefaultMutableTreeNode rootNode;
+	private MainFrame mainFrame;
 	
 	public NESFileTree(File root, int width, int height) {
 		super();
-		//setPreferredSize(new Dimension(width * 2, height));
+		setPreferredSize(new Dimension(width, height));
 		rootNode = new DefaultMutableTreeNode(new NESFileTreeNode(root));
 		treeModel = new DefaultTreeModel(rootNode);
 		fileTree = new JTree(treeModel);
 		fileTree.setShowsRootHandles(true);
 		setupChildren(root, rootNode);
 		fileTree.expandPath(new TreePath(rootNode.getPath()));
+		fileTree.addMouseListener(new NESTreeMouseListener());
 		add(fileTree);
 		
+	}
+	
+	public void setMainFrame(MainFrame mainFrame) {
+		this.mainFrame = mainFrame;
 	}
 	
 	
@@ -63,6 +73,38 @@ public class NESFileTree extends JPanel {
 				setupChildren(file, childNode);
 			}
 		}
+	}
+	
+	private void openFileOnDoubleClick() {
+		DefaultMutableTreeNode selection = (DefaultMutableTreeNode) fileTree.getLastSelectedPathComponent();
+		NESFileTreeNode node = (NESFileTreeNode) selection.getUserObject();
+		mainFrame.runNESFile(node.open());
+	}
+	
+	private class NESTreeMouseListener implements MouseListener {
+
+		@Override
+		public void mouseClicked(MouseEvent arg0) {
+			if(arg0.getClickCount() == 2) {
+				openFileOnDoubleClick();
+			}
+			
+		}
+
+		@Override
+		public void mouseEntered(MouseEvent arg0) {}
+
+		@Override
+		public void mouseExited(MouseEvent arg0) {}
+
+		@Override
+		public void mousePressed(MouseEvent arg0) {}
+
+		@Override
+		public void mouseReleased(MouseEvent arg0) {}
+
+		
+		
 	}
 
 }

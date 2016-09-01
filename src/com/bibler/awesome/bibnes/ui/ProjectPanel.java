@@ -19,10 +19,15 @@ public class ProjectPanel extends JPanel {
 	public ProjectPanel(int width, int height) {
 		super();
 		setPreferredSize(new Dimension(width, height));
-		fileTree = new NESFileTree(new File("C:/users/ryan/desktop/nes/roms/"), width, height);
+		fileTree = new NESFileTree(new File("C:/users/rbibl/documents/repos/bibnes/nesfiles/"), width, height);
 		scrollPane = new JScrollPane(fileTree);
+		scrollPane.setPreferredSize(new Dimension(width, height));
 		add(scrollPane);
 		
+	}
+	
+	public void setMainFrame(MainFrame mainFrame) {
+		fileTree.setMainFrame(mainFrame);
 	}
 
 }

@@ -103,6 +103,10 @@ public class NES implements Notifier, Runnable {
 		apu.reset();
 	}
 	
+	public void kill() {
+		apu.kill();
+	}
+	
 	
 	public void registerObjectToNotify(Notifiable objectToNotify) {
 		cpu.registerObjectToNotify(objectToNotify);

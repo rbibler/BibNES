@@ -131,6 +131,11 @@ public class Mixer  {
 		final float used = size - avail;
 		return used / size;
 	}
+	
+	public void kill() {
+		player.flush();
+		player.close();
+	}
 
 	
 }

@@ -4,6 +4,7 @@ import java.io.File;
 
 public class NESFileTreeNode {
 	
+	
 	private File file;
 	
 	public NESFileTreeNode(File file) {
@@ -19,6 +20,14 @@ public class NESFileTreeNode {
 			return name.substring(0, name.length() - 4);
 		} else {
 			return name;
+		}
+	}
+	
+	public File open() {
+		if(file.isFile()) {
+			return file;
+		} else {
+			return null;
 		}
 	}
 

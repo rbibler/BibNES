@@ -52,7 +52,7 @@ public class MainFrame extends JFrame {
 		} 
 		catch (UnsupportedLookAndFeelException | ClassNotFoundException  | InstantiationException | IllegalAccessException e) {}
 		bpManager = new BreakpointManager();
-		mainPanel = new AssemblerMainPanel(messageHandler, bpManager);
+		mainPanel = new AssemblerMainPanel(messageHandler, bpManager, this);
 		setLayout(new BorderLayout());
 		add(mainPanel, BorderLayout.CENTER);
 		mainFrameMenu = new MainFrameMenu(messageHandler);
@@ -81,11 +81,21 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void loadNesFileAndRun(boolean debug) {
+		File f = FileUtils.loadFile(this);
+		runNESFile(f);
+	}
+	
+	public void runNESFile(File f) {
+		if(f == null) {
+			return;
+		}
+		if(board != null) {
+			board.kill();
+		}
 		KeyboardController gamepad = new KeyboardController();
 		//USBGamepad gamepad = JInputControllerManager.getFirstUSBPad();
 		mainPanel.setController(gamepad);
 		bpManager.clearAllBreakpoints();
-		File f = FileUtils.loadFile(this);
 		NESProducer producer = new NESProducer();
 		if(board != null) {
 			board.pause();
@@ -99,7 +109,6 @@ public class MainFrame extends JFrame {
 		board.setBreakpointManager(bpManager);
 		board.power();
 		board.runSystem();
-
 	}
 	
 	private void setupAudioChannelStates() {
