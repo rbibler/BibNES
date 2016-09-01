@@ -66,8 +66,7 @@ public class NoiseWaveGenerator extends WaveGenerator {
 			currentTimer = timer;
 			final int feedback = (linearFeedback & 1) ^ ((modeFlag ? (linearFeedback >> 6 & 1) : (linearFeedback >> 1 & 1)));
 			linearFeedback >>= 1;
-			//linearFeedback = (linearFeedback & ~(1 << 14)) | (feedback << 14);
-			linearFeedback ^= (-feedback ^ linearFeedback) & 0x4000;
+			linearFeedback |= feedback << 14;
 		} else {
 			currentTimer--;
 		}
@@ -79,17 +78,17 @@ public class NoiseWaveGenerator extends WaveGenerator {
 		switch(register) {
 		case 0x0C:
 			envelopeLoopFlag = (data >> 5 & 1) == 1;
-			lengthCounterHaltFlag = envelopeLoopFlag;
+			lengthCounterHaltFlag = (data >> 5 & 1) == 1;
 			constantVolume = (data >> 4 & 1) == 1;
 			envelope = data & 0b1111;
 			break;
 		case 0x0E:
-			loopNoise = (data >> 7 & 1) == 1;
+			modeFlag = (data >> 7 & 1) == 1;
 			timer = periodLookup[data & 0b1111];
 			break;
 		case 0x0F:
 			lengthCounter = lengthCounterLookup[data >> 4 & 0xF][data >> 3 & 1];
-			modeFlag = (data >> 7 & 1) == 1;
+			
 			envelopeStartFlag = true;
 			break;
 		}
@@ -141,11 +140,16 @@ public class NoiseWaveGenerator extends WaveGenerator {
 	
 	@Override
 	public int getSample() {
-		int currentVolume = constantVolume ? envelope : decayLevelCounter;
-		if(lengthCounter <= 0 || (linearFeedback & 1) == 1) {
-			currentVolume = 0;
+		if(lengthCounter == 0) {
+			return 0;
 		}
-		return currentVolume;
+		if((linearFeedback & 1) == 1) {
+			return 0;
+		}
+		if(constantVolume) {
+			return envelope;
+		}
+		return decayLevelCounter;
 	}
 
 }

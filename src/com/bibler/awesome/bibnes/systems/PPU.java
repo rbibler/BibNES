@@ -439,13 +439,14 @@ public class PPU implements Notifier {
 		}
 		if(bgClip && cycle < 8) {
 			bgColorIndex = 0;
-			if(showBG) {
-				frameArray[offset] = NESPalette.getPixel(nes.ppuRead(0x3F00));
-			}
+			frameArray[offset] = NESPalette.getPixel(nes.ppuRead(0x3F00));
+			
 		} else {
-			if(showBG) {
-				frameArray[offset] = NESPalette.getPixel(pixelValue);
-			}
+			frameArray[offset] = NESPalette.getPixel(pixelValue);
+			
+		}
+		if(!showBG) {
+			frameArray[offset] = 0xFF << 24;
 		}
 		shiftRegisters();
 	}
@@ -556,7 +557,7 @@ public class PPU implements Notifier {
 		
 		final int priority = spriteAttributes[index] >> 5 & 1;
 		if(bgColorIndex == 0) {							// If BG Pixel = 0
-			if((pixelIndex) != 0) {																// If Sprite Pixel is not 0, sprite pixel wins
+			if((pixelIndex) != 0 && cycle < 255) {																// If Sprite Pixel is not 0, sprite pixel wins
 				frameArray[bufferIndex] = spritePixel;
 			}
 		} else {																				// If BG Pixel is not 0
@@ -564,7 +565,7 @@ public class PPU implements Notifier {
 				if(spriteIndices[index] == 0 && cycle < 255) {
 					sprite0Hit = true;
 				}
-				if(priority == 0) {
+				if(priority == 0 || !showBG && cycle < 255) {
 					frameArray[bufferIndex] = spritePixel;
 				}
 			}
