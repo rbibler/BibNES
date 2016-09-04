@@ -56,8 +56,8 @@ public class APU {
 	private AudioChannelView audioChannelView;
 	
 	public APU(NES nes) {
-		pulseOne = new PulseWaveGenerator();
-		pulseTwo = new PulseWaveGenerator();
+		pulseOne = new PulseWaveGenerator(false);
+		pulseTwo = new PulseWaveGenerator(true);
 		triOne = new TriangleWaveGenerator();
 		noiseOne = new NoiseWaveGenerator();
 		DMCOne = new DMCWaveGenerator(nes);

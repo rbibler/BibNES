@@ -4,7 +4,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.HashMap;
 
-public class KeyboardController extends BaseController implements KeyListener {
+public class KeyboardController extends BaseController {
 	
 	private int buttonsByte;
 	private int latch;
@@ -51,28 +51,39 @@ public class KeyboardController extends BaseController implements KeyListener {
 		 output = latch & 1;
 	     latch = ((latch >> 1) | 0x100);
 	}
-
-	@Override
-	public void keyPressed(KeyEvent arg0) {
-		
-		int keyEvent = arg0.getKeyCode();
-		
-		if(!keyMap.containsKey(keyEvent)) {
-			return;
+	
+	public boolean processKey(KeyEvent e) {
+		if(e.getID() == KeyEvent.KEY_PRESSED) {
+			return keyPressed(e);
+		} else if(e.getID() == KeyEvent.KEY_RELEASED) {
+			return keyReleased(e);
+		} else {
+			return false;
 		}
-		buttonsByte |= keyMap.get(keyEvent);
 	}
 
-	@Override
-	public void keyReleased(KeyEvent arg0) {
+	
+	public boolean keyPressed(KeyEvent arg0) {
+		boolean returnVal = false;
 		int keyEvent = arg0.getKeyCode();
-		if(!keyMap.containsKey(keyEvent)) {
-			return;
+		
+		if(keyMap.containsKey(keyEvent)) {
+			returnVal = true;
+			buttonsByte |= keyMap.get(keyEvent);
 		}
-		buttonsByte &= ~keyMap.get(keyEvent);
+		return returnVal;
 	}
 
-	@Override
-	public void keyTyped(KeyEvent arg0) {}
+	
+	public boolean keyReleased(KeyEvent arg0) {
+		boolean returnVal = false;
+		int keyEvent = arg0.getKeyCode();
+		if(keyMap.containsKey(keyEvent)) {
+			returnVal = true;
+			buttonsByte &= ~keyMap.get(keyEvent);
+		}
+		return returnVal;
+		
+	}
 
 }

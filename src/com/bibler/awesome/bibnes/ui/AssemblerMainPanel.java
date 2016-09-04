@@ -125,7 +125,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	}
 	
 	public void setController(KeyboardController controller) {
-		nesScreen.addKeyListener(controller);
+		//nesScreen.addKeyListener(controller);
 	}
 	
 	public void setBoard(NES nes) {

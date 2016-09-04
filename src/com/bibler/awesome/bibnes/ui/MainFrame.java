@@ -1,12 +1,16 @@
 package com.bibler.awesome.bibnes.ui;
 
 import java.awt.BorderLayout;
+import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
+import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 
+import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -93,7 +97,13 @@ public class MainFrame extends JFrame {
 			board.kill();
 		}
 		KeyboardController gamepad = new KeyboardController();
-		//USBGamepad gamepad = JInputControllerManager.getFirstUSBPad();
+		KeyEventDispatcher keyEventDispatcher = new KeyEventDispatcher() {
+			  @Override
+			  public boolean dispatchKeyEvent(final KeyEvent e) {
+				  return gamepad.processKey(e);
+			  }
+			};
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(keyEventDispatcher);
 		mainPanel.setController(gamepad);
 		bpManager.clearAllBreakpoints();
 		NESProducer producer = new NESProducer();

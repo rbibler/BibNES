@@ -112,7 +112,7 @@ public class MMC1 extends Mapper {
 			return;
 		}
 		int newAddress = address;
-		/*switch(chrMode) {
+		switch(chrMode) {
 		case 0:
 			newAddress |= (chrReg1 >> 1) << 13;
 			break;
@@ -123,7 +123,7 @@ public class MMC1 extends Mapper {
 				newAddress |= chrReg2 << 12;
 			}
 			break;
-		}*/
+		}
 		if(chrMem != null) {
 			chrMem[newAddress % chrMemSize] = data;
 		} else if(chrRam != null) {

@@ -7,6 +7,8 @@ public class PulseWaveGenerator extends WaveGenerator {
 	private int sweepPeriod;
 	private boolean sweepNegate;
 	private boolean sweepReloadFlag;
+	private boolean pulseTwo;
+	private boolean silenceFromSweep;
 	private int sweepShift;
 	private int sweepDivider;
 	private int duty;
@@ -21,6 +23,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	private int currentVolume;
 	private int decayLevelCounter;
 	private int envelopeDividerPeriod;
+	
 	private int[][] lengthCounterLookup = new int[][] {
 		{0x0A, 0xFE},
 		{0x14, 0x02},
@@ -39,6 +42,10 @@ public class PulseWaveGenerator extends WaveGenerator {
 		{0x10, 0x1C},
 		{0x20, 0x1E},	
 	};
+	
+	public PulseWaveGenerator(boolean pulseTwo) {
+		this.pulseTwo = pulseTwo;
+	}
 	
 	@Override
 	public void reset() {
@@ -93,33 +100,36 @@ public class PulseWaveGenerator extends WaveGenerator {
 	}
 	
 	public void clockSweepUnit() {
-		if(sweepReloadFlag) {
-			sweepDivider = (sweepPeriod + 1);
-			sweepReloadFlag = false;
-			if(sweepEnabled) {
-				sweepDivider = (sweepPeriod + 1);
-				int result = timer >> sweepShift;
-				if(sweepNegate) {
-					result = ~result;
-				}
-				if(result < 0x7FF && currentTimer > 8) {
-					timer
-					+= result;
-				}
-			}
+		if(sweepDivider > 0) {
+			sweepDivider--;
 		} else {
-			if(sweepDivider > 0) {
-				sweepDivider--;
-			} else if(sweepEnabled) {
-				sweepDivider = (sweepPeriod + 1);
-				int result = timer >> sweepShift;
-				if(sweepNegate) {
-					result = ~result;
-				}
-				if(result < 0x7FF && currentTimer > 8) {
-					timer += result;
-				}
+			shiftSweepUnit();
+			
+		}
+		if(sweepReloadFlag) {
+			sweepReloadFlag = false;
+			shiftSweepUnit();
+		}
+	}
+	
+	private void shiftSweepUnit() {
+		sweepDivider = sweepPeriod / 2;
+		int result = timer  >> sweepShift;
+		if(sweepNegate) {
+			result = -result;
+			if(pulseTwo) {
+				result--;
 			}
+		}
+		result += timer;
+		if(result < 0x7FF && timer > 8) {
+			if(sweepShift != 0 && sweepEnabled) {
+				timer = result;
+			}
+			silenceFromSweep = false;
+		} else {
+			silenceFromSweep = true;
+			sweepEnabled = false;
 		}
 	}
 	
@@ -151,7 +161,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 			break;
 		case 1:
 			sweepEnabled = (data >> 7 & 1) == 1;
-			sweepPeriod = (data >> 4) & 7;
+			sweepPeriod = ((data & 0x70) >> 4) + 1;
 			sweepNegate = (data >> 3 & 1) == 1;
 			sweepShift = data & 7;
 			sweepReloadFlag = true;
@@ -207,7 +217,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	public int getSample() {
 		currentVolume = constantVolume ? envelope : decayLevelCounter;
 		final int dutyLevel = (duty >> currentStep & 1);
-		final int sample = (lengthCounter > 0 && timer >= 8) ? (currentVolume * dutyLevel) : 0;
+		final int sample = (lengthCounter > 0 && timer >= 8 && !silenceFromSweep) ? (currentVolume * dutyLevel) : 0;
 		return sample;
 	}
 
