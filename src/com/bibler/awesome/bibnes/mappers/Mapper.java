@@ -31,6 +31,8 @@ public class Mapper {
 				return new MMC1();
 			case 2:
 				return new Mapper002();
+			case 9:
+				return new Mapper009();
 			default:
 				return new Mapper();
 		}
