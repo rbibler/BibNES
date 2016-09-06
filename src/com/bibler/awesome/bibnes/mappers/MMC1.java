@@ -13,6 +13,10 @@ public class MMC1 extends Mapper {
 	private int prgMode = 3;
 	private int chrMode;
 	private int numBanks;
+	
+	public MMC1() {
+		
+	}
 
 	
 	@Override
