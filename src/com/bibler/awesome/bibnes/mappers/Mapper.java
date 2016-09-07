@@ -9,6 +9,9 @@ public class Mapper {
 	protected int[] prgRam;
 	protected int[] chrRam;
 	
+	protected int[] prgBanks;
+	protected int[] chrBanks;
+	
 	protected int prgMemSize;
 	protected int chrMemSize;
 	
@@ -90,6 +93,10 @@ public class Mapper {
 			}
 		}
 		return ret;
+	}
+	
+	protected void setMirroring(int mirrorType) {
+		nes.setMirror(mirrorType);
 	}
 
 }
