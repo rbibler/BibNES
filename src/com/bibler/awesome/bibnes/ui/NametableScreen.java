@@ -44,10 +44,10 @@ public class NametableScreen extends PopoutPanel implements Runnable {
 	
 	private void update() {
 		if(ppuMem != null) {
-			updateScreen(0x2000, nt1);
-			updateScreen(0x2400, nt2);
-			updateScreen(0x2800, nt3);
-			updateScreen(0x2C00, nt4);
+			//updateScreen(0x2000, nt1);
+			//updateScreen(0x2400, nt2);
+			//updateScreen(0x2800, nt3);
+			//updateScreen(0x2C00, nt4);
 		}
 		repaint();
 	}

@@ -14,6 +14,10 @@ public class Mapper {
 	
 	protected int prgMemSize;
 	protected int chrMemSize;
+	protected int prgBankSize;
+	protected int chrBankSize;
+	protected int numPrgBanks;
+	protected int numChrBanks;
 	
 	protected NES nes;
 	
@@ -29,7 +33,7 @@ public class Mapper {
 	public static Mapper getMapper(int mapperNum) {
 		switch(mapperNum) {
 			case 0:
-				return new Mapper();
+				return new Mapper000();
 			case 1:
 				return new MMC1();
 			case 2:
@@ -37,7 +41,7 @@ public class Mapper {
 			case 9:
 				return new Mapper009();
 			default:
-				return new Mapper();
+				return new Mapper000();
 		}
 	}
 	
@@ -70,11 +74,14 @@ public class Mapper {
 	}
 	
 	public int readPrg(int address) {
-		int ret = 0;
+		/*int ret = 0;
 		if(address >= 0x8000) {
 			ret = prgMem[(address - 0x8000) % prgMemSize];
-		}
-		return ret;
+		}*/
+		final int offset = address - 0x8000;
+		final int bankNum = offset / prgBankSize;
+		return prgMem[prgBanks[bankNum] + (offset - (bankNum * prgBankSize))];
+		//return ret;
 	}
 	
 	public void writeChr(int address, int data) {
@@ -85,11 +92,13 @@ public class Mapper {
 	
 	public int readChr(int address) {
 		int ret = 0;
+		final int offset = address & 0xFFF;
+		final int bankNum = address / chrBankSize;
 		if(address < 0x2000) {
 			if(chrMem != null) {
-				ret = chrMem[address % chrMemSize];
+				ret = chrMem[chrBanks[bankNum] + (offset)];
 			} else if(chrRam != null) {
-				ret = chrRam[address % chrRam.length];
+				ret = chrRam[chrBanks[bankNum] + (offset)];
 			}
 		}
 		return ret;

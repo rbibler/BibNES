@@ -4,53 +4,55 @@ import com.bibler.awesome.bibnes.systems.NES;
 
 public class Mapper009 extends Mapper {
 	
-	private int latch0 = 0xFE;
-	private int latch1 = 0xFE;
+	private int latchLeft = 0xFE;
+	private int latchRight = 0xFE;
 	private int bankSelect;
-	private int numBanks;
-	private int firstFixedBank;
-	private int secondFixedBank;
-	private int thirdFixedBank;
-	private int chrBank0;
-	private int chrBank1;
-	private int chrBank2;
-	private int chrBank3;
+	private int leftBank0;
+	private int leftBank1;
+	private int rightBank0;
+	private int rightBank1;
 	private int numChrBanks;
-	private int oldLatch1;
 	
-	private final int PRG_BANK_SIZE = 0x2000;
-	private final int CHR_BANK_SIZE = 0x1000;
+	public Mapper009() {
+		prgBankSize = 0x2000;
+		chrBankSize = 0x1000;
+	}
 	
 	@Override
 	public void setPrgMemSize(int size) {
 		super.setPrgMemSize(size);
-		numBanks = size / PRG_BANK_SIZE;
+		numPrgBanks = size / prgBankSize;
 		final int nativeBanks = size / 0x8000;
 		prgBanks = new int[nativeBanks];
-		prgBanks[nativeBanks - 1] = size - (PRG_BANK_SIZE * 1);
-		prgBanks[nativeBanks - 2] = size - (PRG_BANK_SIZE * 2);
-		prgBanks[nativeBanks - 3] = size - (PRG_BANK_SIZE * 3);
+		prgBanks[nativeBanks - 1] = size - (prgBankSize * 1);
+		prgBanks[nativeBanks - 2] = size - (prgBankSize * 2);
+		prgBanks[nativeBanks - 3] = size - (prgBankSize * 3);
 	}
 	
 	@Override
 	public void setChrMemSize(int size) {
 		super.setChrMemSize(size);
-		numChrBanks = size / CHR_BANK_SIZE;
-		int nativeBanks = size / 0x2000;
-		chrBanks = new int[nativeBanks];
+		numChrBanks = size / chrBankSize;
+		chrBanks = new int[numChrBanks];
 	}
 	
 	@Override
 	public void writePrg(int address, int data) {
 		if(address >= 0xA000 && address <= 0xAFFF) {
 			bankSelect = data & 0b1111;
-			prgBanks[0] = PRG_BANK_SIZE * bankSelect;
-		} else if(address >= 0xB000 && address <= 0xCFFF) {
-			chrBank0 = data & 0b11111 % numChrBanks;
+			prgBanks[0] = prgBankSize * bankSelect;
+		} else if(address >= 0xB000 && address <= 0xBFFF) {
+			leftBank0 = data & 0x1F;
+			updatePPUBanks();
+		} else if(address >= 0xC000 && address <= 0xCFFF) {
+			leftBank1 = data & 0x1F;
+			updatePPUBanks();
 		} else if(address >= 0xD000 && address <= 0xDFFF) {
-			chrBank2 = data & 0b11111 % numChrBanks;
+			rightBank0 = data & 0x1F;
+			updatePPUBanks();
 		} else if(address >= 0xE000 && address <= 0xEFFF) {
-			chrBank3 = data & 0b11111 % numChrBanks;
+			rightBank1 = data & 0x1F;
+			updatePPUBanks();
 		} else if(address >= 0xF000 && address <= 0xFFFF) {
 			if((data & 1) == 1) {
 				setMirroring(NES.HORIZ);
@@ -60,43 +62,36 @@ public class Mapper009 extends Mapper {
 		}
 	}
 	
-	@Override
-	public int readPrg(int address) {
-		/*if(address >= 0xA000) {
-			if(address < 0xC000) {
-				return prgMem[firstFixedBank * 0x2000 + (address - 0xA000)];
-			} else if(address < 0xE000) {
-				return prgMem[secondFixedBank * 0x2000 + (address - 0xC000)];
-			} else if(address <= 0xFFFF) {
-				return prgMem[thirdFixedBank * 0x2000 + (address - 0xE000)];
-			}
-		} else if(address >= 0x8000) {
-			return prgMem[bankSelect * 0x2000 + (address - 0x8000)];
-		} */
-		final int offset = address - 0x8000;
-		final int bankNum = offset / PRG_BANK_SIZE;
-		return prgMem[prgBanks[bankNum] + (offset - (bankNum * PRG_BANK_SIZE))];
-		//return address >> 8;
+	private void updatePPUBanks() {
+		if(latchLeft == 0xFD) {
+			chrBanks[0] = leftBank0 * chrBankSize;
+		} else {
+			chrBanks[0] = leftBank1 * chrBankSize;
+		}
+		if(latchRight == 0xFD) {
+			chrBanks[1] = rightBank0 * chrBankSize;
+		} else {
+			chrBanks[1] = rightBank1 * chrBankSize;
+		}
 	}
 	
 	
 	@Override
 	public int readChr(int address) {
-		int retvalue = address >> 8;
-		if(address < 0x1000) {
-			retvalue = chrMem[(chrBank0 * 0x1000) + address];
-		} else if(address < 0x2000) {
-			retvalue = chrMem[(latch1 == 0xFD ? (chrBank2 * 0x1000) : (chrBank3 * 0x1000)) + (address - 0x1000)];
+		int retval = super.readChr(address);
+		if(address == 0xFD8) {
+			latchLeft = 0xFD;
+			updatePPUBanks();
+		} else if(address == 0xFE8) {
+			latchLeft = 0xFE;
+			updatePPUBanks();
+		} else if(address >= 0x1FD8 && address <= 0x1FDF) {
+			latchRight = 0xFD;
+			updatePPUBanks();
+		} else if(address >= 0x1FE8 && address <= 0x1FEF) {
+			latchRight = 0xFE;
+			updatePPUBanks();
 		}
-			if((address >= 0xFD0 && address <= 0xFDF)
-					|| (address >= 0x1FD0 && address <= 0x1FDF)) {
-				latch1 = 0xFD;
-			} else if((address >= 0xFE0 && address <= 0x0FEF) 
-					|| (address >= 0x1FE0 && address <= 0x1FEF)) {
-				latch1 = 0xFE;
-			} 
-		
-		
-		return retvalue;
+		return retval;
 	}
 }

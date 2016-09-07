@@ -94,7 +94,7 @@ public class PatternTableScreen extends JPanel implements Runnable {
 	@Override
 	public void run() {
 		while(true) {
-			update();
+			//update();
 			try {
 				Thread.sleep(10);
 			} catch(InterruptedException e) {}

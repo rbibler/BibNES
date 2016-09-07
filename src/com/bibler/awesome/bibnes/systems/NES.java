@@ -167,8 +167,9 @@ public class NES implements Notifier, Runnable {
 	private int totalClocks;
 	public void cycle() {
 		//if(totalClocks % 4 == 0) {
-			ppu.cycle();
+			
 		//}
+		ppu.cycle();
 		if(totalClocks % 3 == 0) {
 			if(!skipCPUCycles) {
 				cpu.cycle();
@@ -184,6 +185,7 @@ public class NES implements Notifier, Runnable {
 			apu.stepFrame();
 			totalClocks = 0;
 		}
+		
 		totalClocks++;
 		cycles++;
 	}
