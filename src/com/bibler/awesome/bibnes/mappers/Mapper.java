@@ -52,6 +52,8 @@ public class Mapper {
 	public void setChrMem(int[] chrMem) {
 		if(chrMem == null) {
 			chrRam = new int[0x2000];
+			chrBanks = new int[2];
+			chrBanks[1] = 0x1000;
 		}
 		this.chrMem = chrMem;
 		

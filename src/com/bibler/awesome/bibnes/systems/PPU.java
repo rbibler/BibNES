@@ -358,7 +358,14 @@ public class PPU implements Notifier {
 				currentSpriteYOffset = ~currentSpriteYOffset & (spriteHeight ? 0xF : 7);
 			}
 			if(spriteHeight) {
-				currentSpriteAddress = ((currentSpriteTile & 1) * 0x1000) + (currentSpriteTile & 0xFE) * 16;
+				final int table = currentSpriteTile & 1;
+				currentSpriteTile &= 0xFE;
+				if(currentSpriteYOffset > 7) {
+					currentSpriteTile++;
+					currentSpriteYOffset -= 8;
+				}
+				currentSpriteAddress = (table * 0x1000) + (currentSpriteTile) * 16;
+				
 			} else {
 				currentSpriteAddress += (currentSpriteTile * 16);
 			}
