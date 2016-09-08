@@ -2,7 +2,7 @@ package com.bibler.awesome.bibnes.mappers;
 
 import com.bibler.awesome.bibnes.systems.NES;
 
-public class MMC1 extends Mapper {
+public class Mapper001 extends Mapper {
 	
 	private int shiftRegister;
 	private int shiftCounter;
@@ -12,9 +12,8 @@ public class MMC1 extends Mapper {
 	private int prgReg;
 	private int prgMode = 3;
 	private int chrMode;
-	private int numBanks;
 	
-	public MMC1() {
+	public Mapper001() {
 		
 	}
 
@@ -22,7 +21,17 @@ public class MMC1 extends Mapper {
 	@Override
 	public void setPrgMemSize(int memSize) {
 		super.setPrgMemSize(memSize);
-		numBanks = memSize / 0x4000;
+		numPrgBanks = memSize / 0x4000;
+		prgBanks = new int[2];
+		updatePrgBanks();
+	}
+	
+	@Override
+	public void setChrMemSize(int memSize) {
+		super.setChrMemSize(memSize);
+		numChrBanks = memSize / 0x1000;
+		chrBanks = new int[2];
+		updateChrBanks();
 	}
 	
 	@Override
@@ -39,22 +48,24 @@ public class MMC1 extends Mapper {
 						controlRegister = shiftRegister;
 						prgMode = controlRegister >> 2 & 3;
 						chrMode = controlRegister >> 3 & 1;
-						
 						int mirrorType = controlRegister & 3;
 						if(mirrorType == 3) {
-							nes.setMirror(NES.HORIZ);
+							setMirroring(NES.HORIZ);
 						} else if(mirrorType == 2) {
-							nes.setMirror(NES.VERT);
+							setMirroring(NES.VERT);
 						} else {
-							nes.setMirror(NES.SINGLE_SCREEN);
+							setMirroring(NES.SINGLE_SCREEN);
 						}
 						
 					} else if(address < 0xC000) {
 						chrReg1 = shiftRegister;
+						updateChrBanks();
 					} else if(address < 0xE000) {
 						chrReg2 = shiftRegister;
+						updateChrBanks();
 					} else {
 						prgReg = shiftRegister;
+						updatePrgBanks();
 					}
 					clearShift();
 				}
@@ -62,7 +73,41 @@ public class MMC1 extends Mapper {
 		}
 	}
 	
-	@Override
+	private void updatePrgBanks() {
+		switch(prgMode) {
+		case 0:
+		case 1:
+			prgBankSize = 0x8000;
+			prgBanks[0] = (prgReg & 0b1110) * 0x4000;
+			break;
+		case 2:
+			prgBankSize = 0x4000;
+			prgBanks[0] = 0x8000;
+			prgBanks[1] = (prgReg & 0xF) * prgBankSize;
+			break;
+		case 3:
+			prgBankSize = 0x4000;
+			prgBanks[0] = (prgReg & 0xF) * prgBankSize;
+			prgBanks[1] = ((numPrgBanks - 1) * prgBankSize);
+			break;
+		}
+	}
+	
+	private void updateChrBanks() {
+		switch(chrMode) {
+		case 0:
+			chrBankSize = 0x2000;
+			chrBanks[0] = (chrReg1 & 0b11110) * 0x1000;
+			break;
+		case 1:
+			chrBankSize = 0x1000;
+			chrBanks[0] = (chrReg1 * 0x1000);
+			chrBanks[1] = (chrReg2 * 0x1000);
+			break;
+		}
+	}
+	
+	/*@Override
 	public int readPrg(int address) {
 		int newAddress = address - 0x8000;
 		switch(prgMode) {
@@ -85,9 +130,9 @@ public class MMC1 extends Mapper {
 			break;
 		}
 		return prgMem[newAddress % prgMemSize];
-	}
+	}*/
 	
-	@Override
+	/*@Override
 	public int readChr(int address) {
 		int newAddress = address;
 		switch(chrMode) {
@@ -108,9 +153,9 @@ public class MMC1 extends Mapper {
 			return chrRam[newAddress % chrRam.length];
 		}
 		return newAddress >> 8;
-	}
+	}*/
 	
-	@Override
+	/*@Override
 	public void writeChr(int address, int data) {
 		if(address > 0x2000) {
 			return;
@@ -133,7 +178,7 @@ public class MMC1 extends Mapper {
 		} else if(chrRam != null) {
 			chrRam[newAddress % chrRam.length] = data;
 		}
-	}
+	}*/
 	
 	private void clearShift() {
 		shiftRegister = 0x10;

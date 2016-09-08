@@ -35,7 +35,7 @@ public class Mapper {
 			case 0:
 				return new Mapper000();
 			case 1:
-				return new MMC1();
+				return new Mapper001();
 			case 2:
 				return new Mapper002();
 			case 9:
