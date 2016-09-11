@@ -22,7 +22,8 @@ public class Mapper004 extends Mapper {
 	private boolean prgRamEnable;
 	private boolean irqReloadNext;
 	private boolean irqDisable;
-	private boolean interrupted;
+	private boolean irqEnable;
+	private boolean irqPending;
 	
 	
 	@Override
@@ -98,13 +99,15 @@ public class Mapper004 extends Mapper {
 			}
 		} else if(address >= 0xE000 && address <= 0xFFFF) {
 			if((address & 1) == 0) {
-				if(interrupted) {
-					cpuInterrupt(-1);
+				if(irqPending) {
+					pullCPUIRQHigh();
 				}
-				interrupted = false;
+				irqPending = false;
 				irqDisable = true;
+				//System.out.println("DISABLED from Mapper");
 			} else {
-				irqDisable = false;
+				irqEnable = true;
+				//System.out.println("Enabled from Mapper");
 			}
 		}
 	} 
@@ -196,10 +199,12 @@ public class Mapper004 extends Mapper {
         } else {
             --irqCounter;
         }
-        if ((irqCounter == 0) && !irqDisable && !interrupted) {
-           cpuInterrupt(1);
-           interrupted = true;
+        if ((irqCounter == 0)) {
+        	if(irqEnable & !irqPending) {
+        		//System.out.println("Requesting interrupt!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1!");
+        		pullCPUIRQLow();
+        		irqPending = true;
+        	}
         }
-
     }
 }

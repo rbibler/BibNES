@@ -127,8 +127,12 @@ public class Mapper {
 		nes.setMirror(mirrorType);
 	}
 	
-	protected void cpuInterrupt(int interruptCycles) {
-		nes.cpuInterrupt(interruptCycles);
+	protected void pullCPUIRQLow() {
+		nes.pullCPUIRQLow();
+	}
+	
+	protected void pullCPUIRQHigh() {
+		nes.pullCPUIRQHigh();
 	}
 
 }

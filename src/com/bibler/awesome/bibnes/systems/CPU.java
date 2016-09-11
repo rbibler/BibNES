@@ -19,6 +19,7 @@ public class CPU implements Notifier {
 	final int OVERFLOW_FLAG = 6;
 	final int SIGN_FLAG = 7;
 	final int NMI = 0x4E4D49;
+	final int IRQ = 0x4F4E4A;
 	
 	
 	//Registers
@@ -31,7 +32,6 @@ public class CPU implements Notifier {
 	private int programCounter;
 	private int stackPointer;
 	private int statusRegister;
-	private int interrupts;
 
 	private NES board;
 	
@@ -42,6 +42,8 @@ public class CPU implements Notifier {
 	private boolean NMIFlag;
 	private boolean NMINext;
 	private boolean NMIPrev;
+	private boolean IRQLow;
+	private boolean interruptsEnabled;
 	
 	//Debug
 	private int totalCycles;
@@ -79,18 +81,27 @@ public class CPU implements Notifier {
 		});
 		t.start();
 	}
+	
+	private boolean fetch;
 
 	public void cycle() {
 		if(cyclesRemaining == 0) {
-			if(interrupts > 0 && statusRegister >> INTERRUPT_FLAG == 0){
-				cyclesRemaining = 7;
-				interrupt();
-			} 
+			fetch = true;
+			if(IRQLow && interruptsEnabled) {
+				//System.out.println("Interrupt Routine");
+				//if((statusRegister >> INTERRUPT_FLAG & 1) == 0) {
+					cyclesRemaining = 7;
+					instruction = IRQ;
+					fetch = false;
+			//	}
+			}
 			if(NMINext) {
 				NMINext = false;
 				cyclesRemaining = 6;
 				instruction = NMI;
-			} else {
+				fetch = false;
+			} 
+			if(fetch){
 				fetch();
 			}
 			
@@ -109,16 +120,22 @@ public class CPU implements Notifier {
 	
 	private void interrupt() {
 		if(cyclesRemaining == 1) {
+			//System.out.println("Inside the Interrupt Routine");
 			push(programCounter >> 8);
 	    	push(programCounter & 0xFF);
 	    	push(statusRegister & ~0x10);
 	    	programCounter = readMemory(0xFFFE) + (readMemory(0xFFFF) << 8);
-	    	updateInterruptFlag(false);
+	    	statusRegister |= (1 << INTERRUPT_FLAG);
+	    	interruptsEnabled = false;
 		}
 	}
 	
-	public void requestInterrupt(int interruptCycles) {
-		interrupts += interruptCycles;
+	public void pullIRQLow() {
+		IRQLow = true;
+	}
+	
+	public void pullIRQHigh() {
+		IRQLow = false;
 	}
 	
 	 public void powerOn(Integer initialPC) {// different than reset
@@ -520,6 +537,7 @@ public class CPU implements Notifier {
 				break;
 			case 0x78:
 				SEI();
+				//System.out.println("Set interrupt flag");
 				break;
 			case 0x79:
 				absoluteIndexedY(true);
@@ -837,7 +855,9 @@ public class CPU implements Notifier {
 				break;
 			case NMI:
 				NMI();
-				
+				break;
+			case IRQ:
+				interrupt();
 				break;
 		}	
 		
@@ -1106,12 +1126,15 @@ public class CPU implements Notifier {
 	
 	private void CLI() {
 		if(cyclesRemaining == 1) {
+			interruptsEnabled = true;
 			statusRegister &= ~(1 << INTERRUPT_FLAG);
 		}
+		
 	}
 	
 	private void SEI() {
 		if(cyclesRemaining == 1) {
+			interruptsEnabled = false;
 			statusRegister |= (1 << INTERRUPT_FLAG);
 		}
 		
