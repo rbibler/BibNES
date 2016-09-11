@@ -25,6 +25,7 @@ public class NESProducer {
 	private int inesChrSize;
 	private int inesMapper;
 	private int inesMirror;
+	private boolean inesPrgRam;
 	
 	final int PRG_BANK_SIZE = 0x4000;
 	final int CHR_BANK_SIZE = 0x2000;
@@ -129,6 +130,7 @@ public class NESProducer {
 		inesChrSize = headerBytes[5];
 		inesMapper = headerBytes[6] >> 4 & 0xF | headerBytes[7] & 0xF0;
 		inesMirror = headerBytes[6] & 1;		
+		inesPrgRam = (headerBytes[6] >> 1 & 1) == 1;;
 	}
 	
 	private Mapper processRom(BufferedInputStream input, NES nes) {
@@ -139,6 +141,9 @@ public class NESProducer {
 		final Mapper mapper = Mapper.getMapper(inesMapper);
 		mapper.setPrgMemSize(prgSize);
 		mapper.setChrMemSize(chrSize > 0 ? chrSize : 0x2000);
+		if(inesPrgRam) {
+			mapper.setPrgRamSize(0x2000);
+		}
 		final int[] prgMem = new int[(inesMapper == 0) ? 0x8000 : prgSize];
 		int[] chrMem = null;
 		if(chrSize > 0) {

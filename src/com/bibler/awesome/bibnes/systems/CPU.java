@@ -95,9 +95,6 @@ public class CPU implements Notifier {
 			NMIPrev = NMIFlag;
 		} else {
 			execute();
-			if(cyclesRemaining == 1 && dataCounter != 0x8053 && dataCounter != 0x8050) {
-				//System.out.println(AssemblyUtils.getInstruction(instruction) + " $" + Integer.toHexString(dataCounter).toUpperCase());
-			}
 		}
 		statusRegister |= 1 << 5;
 		cyclesRemaining--;
@@ -830,9 +827,16 @@ public class CPU implements Notifier {
 	
 	
 	private void fetch() {
+		final int address = programCounter;
 		instruction = readMemory(programCounter++);
 		instructionCycles = instructionTimes[instruction];
 		cyclesRemaining += instructionCycles;
+		/*if(address != 0x8255 && address != 0x8258) {
+			System.out.println("Address: " + Integer.toHexString(address) + " " + AssemblyUtils.getInstruction(instruction) + " $" + Integer.toHexString(dataCounter).toUpperCase());
+		}
+		if(address == 0xE76E) {
+			System.out.println("NOW");
+		}*/
 	}
 	
 	//Instructions

@@ -300,7 +300,7 @@ public class NES implements Notifier, Runnable {
 			writeToPPU(address, data);
 		} else if(address < 0x4020) {
 			writeToAPU(address, data);
-		} else if(address >= 0x8000) {
+		} else if(address >= 0x6000) {
 			mapper.writePrg(address, data);
 		}
 	}
@@ -313,7 +313,7 @@ public class NES implements Notifier, Runnable {
 			readData = readFromPPU(address);
 		} else if(address < 0x4020) {
 			readData = readFromAPU(address);
-		} else if(address >= 0x8000){
+		} else if(address >= 0x6000){
 			readData = mapper.readPrg(address % 0x10000);
 		}
 		return readData;

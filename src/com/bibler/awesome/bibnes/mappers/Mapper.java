@@ -7,7 +7,6 @@ public class Mapper {
 	protected int[] prgMem;
 	protected int[] chrMem;
 	protected int[] prgRam;
-	protected int[] chrRam;
 	
 	protected int[] prgBanks;
 	protected int[] chrBanks;
@@ -18,6 +17,8 @@ public class Mapper {
 	protected int chrBankSize;
 	protected int numPrgBanks;
 	protected int numChrBanks;
+	
+	protected boolean hasPrgRam;
 	
 	protected NES nes;
 	
@@ -49,13 +50,19 @@ public class Mapper {
 		this.prgMem = prgMem;
 	}
 	
+	public void setPrgRamSize(int ramSize) {
+		this.prgRam = new int[ramSize];
+		hasPrgRam = true;
+	}
+	
 	public void setChrMem(int[] chrMem) {
 		if(chrMem == null) {
-			chrRam = new int[0x2000];
+			chrMem= new int[0x2000];
 			chrBanks = new int[2];
 			chrBanks[1] = 0x1000;
+		} else {
+			this.chrMem = chrMem;
 		}
-		this.chrMem = chrMem;
 		
 	}
 	
@@ -70,8 +77,11 @@ public class Mapper {
 	}
 	
 	public void writePrg(int address, int data) {
-		if(address >= 0x8000) {
-			prgMem[(address - 0x8000) % prgMemSize] = data;
+		//if(address >= 0x8000) {
+		//	prgMem[(address - 0x8000) % prgMemSize] = data;
+		//} else 
+		if(address >= 0x6000 && hasPrgRam && address <= 0x8000) {
+			prgRam[address - 0x6000] = data;
 		}
 	}
 	
@@ -80,15 +90,22 @@ public class Mapper {
 		if(address >= 0x8000) {
 			ret = prgMem[(address - 0x8000) % prgMemSize];
 		}*/
-		final int offset = address - 0x8000;
-		final int bankNum = offset / prgBankSize;
-		return prgMem[prgBanks[bankNum] + (offset - (bankNum * prgBankSize))];
-		//return ret;
+		if(address >= 0x6000 && address < 0x8000 && hasPrgRam) {
+			return prgRam[address - 0x6000];
+		} else if(address >= 0x8000){
+			final int offset = address - 0x8000;
+			final int bankNum = offset / prgBankSize;
+			return prgMem[prgBanks[bankNum] + (offset - (bankNum * prgBankSize))];
+		} else {
+			return address >> 8;
+		}
 	}
 	
 	public void writeChr(int address, int data) {
-		if(address < 0x2000 && chrRam != null) {
-			chrRam[address % chrRam.length] = data;
+		if(address < 0x2000 && chrMem != null) {
+			final int offset = address & 0xFFF;
+			final int bankNum = address / chrBankSize;
+			chrMem[(chrBanks[bankNum] + offset) % chrMem.length] = data;
 		}
 	}
 	
@@ -98,10 +115,8 @@ public class Mapper {
 		final int bankNum = address / chrBankSize;
 		if(address < 0x2000) {
 			if(chrMem != null) {
-				ret = chrMem[chrBanks[bankNum] + (offset)];
-			} else if(chrRam != null) {
-				ret = chrRam[chrBanks[bankNum] + (offset)];
-			}
+				ret = chrMem[(chrBanks[bankNum] + (offset)) % chrMem.length];
+			} 
 		}
 		return ret;
 	}
