@@ -428,4 +428,8 @@ public class NES implements Notifier, Runnable {
 		apu.updateAudioParams(paramNum);
 	}
 	
+	public void cpuInterrupt(int interruptCycles) {
+		cpu.requestInterrupt(interruptCycles);
+	}
+	
 }

@@ -39,6 +39,8 @@ public class Mapper {
 				return new Mapper001();
 			case 2:
 				return new Mapper002();
+			case 4:
+				return new Mapper004();
 			case 9:
 				return new Mapper009();
 			default:
@@ -111,7 +113,7 @@ public class Mapper {
 	
 	public int readChr(int address) {
 		int ret = 0;
-		final int offset = address & 0xFFF;
+		final int offset = address & 0x3fF;
 		final int bankNum = address / chrBankSize;
 		if(address < 0x2000) {
 			if(chrMem != null) {
@@ -123,6 +125,10 @@ public class Mapper {
 	
 	protected void setMirroring(int mirrorType) {
 		nes.setMirror(mirrorType);
+	}
+	
+	protected void cpuInterrupt(int interruptCycles) {
+		nes.cpuInterrupt(interruptCycles);
 	}
 
 }

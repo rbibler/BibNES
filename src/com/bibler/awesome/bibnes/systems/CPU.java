@@ -31,6 +31,7 @@ public class CPU implements Notifier {
 	private int programCounter;
 	private int stackPointer;
 	private int statusRegister;
+	private int interrupts;
 
 	private NES board;
 	
@@ -81,7 +82,10 @@ public class CPU implements Notifier {
 
 	public void cycle() {
 		if(cyclesRemaining == 0) {
-			
+			if(interrupts > 0 && statusRegister >> INTERRUPT_FLAG == 0){
+				cyclesRemaining = 7;
+				interrupt();
+			} 
 			if(NMINext) {
 				NMINext = false;
 				cyclesRemaining = 6;
@@ -89,6 +93,7 @@ public class CPU implements Notifier {
 			} else {
 				fetch();
 			}
+			
 			if(NMIFlag && !NMIPrev) {
 				NMINext = true;
 			}
@@ -102,6 +107,19 @@ public class CPU implements Notifier {
 		notify("STEP");
 	}
 	
+	private void interrupt() {
+		if(cyclesRemaining == 1) {
+			push(programCounter >> 8);
+	    	push(programCounter & 0xFF);
+	    	push(statusRegister & ~0x10);
+	    	programCounter = readMemory(0xFFFE) + (readMemory(0xFFFF) << 8);
+	    	updateInterruptFlag(false);
+		}
+	}
+	
+	public void requestInterrupt(int interruptCycles) {
+		interrupts += interruptCycles;
+	}
 	
 	 public void powerOn(Integer initialPC) {// different than reset
 	        // puts RAM in NES poweron state
@@ -831,12 +849,7 @@ public class CPU implements Notifier {
 		instruction = readMemory(programCounter++);
 		instructionCycles = instructionTimes[instruction];
 		cyclesRemaining += instructionCycles;
-		/*if(address != 0x8255 && address != 0x8258) {
-			System.out.println("Address: " + Integer.toHexString(address) + " " + AssemblyUtils.getInstruction(instruction) + " $" + Integer.toHexString(dataCounter).toUpperCase());
-		}
-		if(address == 0xE76E) {
-			System.out.println("NOW");
-		}*/
+		
 	}
 	
 	//Instructions
@@ -1458,7 +1471,9 @@ public class CPU implements Notifier {
 			push(statusRegister);
 			int lowByte = readMemory(0xFFFA);
 			programCounter = lowByte | readMemory(0xFFFB) << 8;
+			
 		}
+		updateInterruptFlag(false);
 	}
 	/* 
 	 * To Do:
@@ -1672,6 +1687,10 @@ public class CPU implements Notifier {
 				}
 			}
 		}
+	}
+	
+	private void updateInterruptFlag(boolean interruptEnable) {
+		statusRegister ^= (-(interruptEnable ? 0 : 1) ^ statusRegister) & (1 << INTERRUPT_FLAG);
 	}
 	
 	private int[] instructionTimes = new int[] {
