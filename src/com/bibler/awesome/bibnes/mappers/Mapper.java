@@ -105,7 +105,7 @@ public class Mapper {
 	
 	public void writeChr(int address, int data) {
 		if(address < 0x2000 && chrMem != null) {
-			final int offset = address & 0xFFF;
+			final int offset = address % chrBankSize;
 			final int bankNum = address / chrBankSize;
 			chrMem[(chrBanks[bankNum] + offset) % chrMem.length] = data;
 		}
@@ -113,7 +113,7 @@ public class Mapper {
 	
 	public int readChr(int address) {
 		int ret = 0;
-		final int offset = address & 0x3fF;
+		final int offset = address % chrBankSize;
 		final int bankNum = address / chrBankSize;
 		if(address < 0x2000) {
 			if(chrMem != null) {
