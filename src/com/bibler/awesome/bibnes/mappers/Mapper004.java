@@ -132,10 +132,10 @@ public class Mapper004 extends Mapper {
 	private void setupChrBanks() {
 		switch(chrBankMode) {
 		case 0:
-			chrBanks[0] = ((chrBank0 >> 1) << 1) * chrBankSize;
-			chrBanks[1] = chrBanks[0] + chrBankSize;
-			chrBanks[2] = ((chrBank1 >> 1) << 1) * chrBankSize;
-			chrBanks[3] = chrBanks[2] + chrBankSize;
+			chrBanks[0] = (chrBank0 & 0xFE) * chrBankSize;
+			chrBanks[1] = (chrBank0 | 1) * chrBankSize;
+			chrBanks[2] = (chrBank1 & 0xFE) * chrBankSize;
+			chrBanks[3] = (chrBank1 | 1) * chrBankSize;
 			chrBanks[4] = chrBank2 * chrBankSize;
 			chrBanks[5] = chrBank3 * chrBankSize;
 			chrBanks[6] = chrBank4 * chrBankSize;
@@ -146,10 +146,10 @@ public class Mapper004 extends Mapper {
 			chrBanks[1] = chrBank3 * chrBankSize;
 			chrBanks[2] = chrBank4 * chrBankSize;
 			chrBanks[3] = chrBank5 * chrBankSize;
-			chrBanks[4] = ((chrBank0 >> 1) << 1) * chrBankSize;
-			chrBanks[5] = chrBanks[4] + chrBankSize;
-			chrBanks[6] = ((chrBank1 >> 1) << 1) * chrBankSize;
-			chrBanks[7] = chrBanks[6] +  chrBankSize;
+			chrBanks[4] = (chrBank0 & 0xFE) * chrBankSize;
+			chrBanks[5] = (chrBank0 | 1) * chrBankSize;
+			chrBanks[6] = (chrBank1 & 0xFE) * chrBankSize;
+			chrBanks[7] = (chrBank1 | 1) *  chrBankSize;
 			break;
 		}
 	}
