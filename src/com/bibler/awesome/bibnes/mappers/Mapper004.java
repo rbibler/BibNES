@@ -104,7 +104,6 @@ public class Mapper004 extends Mapper {
 				}
 				irqPending = false;
 				irqDisable = true;
-				//System.out.println("DISABLED from Mapper");
 			} else {
 				irqEnable = true;
 				//System.out.println("Enabled from Mapper");
@@ -201,7 +200,6 @@ public class Mapper004 extends Mapper {
         }
         if ((irqCounter == 0)) {
         	if(irqEnable & !irqPending) {
-        		//System.out.println("Requesting interrupt!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1!");
         		pullCPUIRQLow();
         		irqPending = true;
         	}

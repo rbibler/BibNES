@@ -134,5 +134,9 @@ public class Mapper {
 	protected void pullCPUIRQHigh() {
 		nes.pullCPUIRQHigh();
 	}
+	
+	protected int getPPUScanline() {
+		return nes.getPPUScanline();
+	}
 
 }

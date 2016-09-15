@@ -181,6 +181,7 @@ public class NES implements Notifier, Runnable {
 			}
 			apu.clock();
 		}
+		
 		if(totalClocks == 89490 / 4) {
 			apu.stepFrame();
 			totalClocks = 0;
@@ -434,5 +435,13 @@ public class NES implements Notifier, Runnable {
 	
 	public void pullCPUIRQHigh() {
 		cpu.pullIRQHigh();
+	}
+	
+	public int getPPUScanline() {
+		return ppu.getScanline();
+	}
+	
+	public int getPPUCycle() {
+		return ppu.getCycle();
 	}
 }

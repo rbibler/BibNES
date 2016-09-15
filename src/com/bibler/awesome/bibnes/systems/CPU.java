@@ -44,6 +44,11 @@ public class CPU implements Notifier {
 	private boolean NMIPrev;
 	private boolean IRQLow;
 	private boolean interruptsEnabled;
+	private boolean interruptStatusPreInterrupt;
+	
+	private boolean interrupted;
+	
+	private String addressAtFetch;
 	
 	//Debug
 	private int totalCycles;
@@ -88,12 +93,11 @@ public class CPU implements Notifier {
 		if(cyclesRemaining == 0) {
 			fetch = true;
 			if(IRQLow && interruptsEnabled) {
-				//System.out.println("Interrupt Routine");
-				//if((statusRegister >> INTERRUPT_FLAG & 1) == 0) {
+				
 					cyclesRemaining = 7;
 					instruction = IRQ;
 					fetch = false;
-			//	}
+			
 			}
 			if(NMINext) {
 				NMINext = false;
@@ -102,6 +106,7 @@ public class CPU implements Notifier {
 				fetch = false;
 			} 
 			if(fetch){
+				addressAtFetch = Integer.toHexString(programCounter).toUpperCase();
 				fetch();
 			}
 			
@@ -120,7 +125,8 @@ public class CPU implements Notifier {
 	
 	private void interrupt() {
 		if(cyclesRemaining == 1) {
-			//System.out.println("Inside the Interrupt Routine");
+			interruptStatusPreInterrupt = interruptsEnabled;
+			interrupted = true;
 			push(programCounter >> 8);
 	    	push(programCounter & 0xFF);
 	    	push(statusRegister & ~0x10);
@@ -181,6 +187,30 @@ public class CPU implements Notifier {
 		//programCounter = board.cpuRead(0xFFFC) |board.cpuRead(0xFFFD) << 8;
 		//resetCPU();
 	//}
+	public void printLog() {
+		/*String logString = ("" + addressAtFetch + " " + Integer.toHexString(instruction).toUpperCase() +
+				" " + getCurrentInstruction() + " " + Integer.toHexString(dataCounter).toUpperCase() + 
+				" " + "PC:" + Integer.toHexString(programCounter).toUpperCase() + " A:" + Integer.toHexString(accumulator).toUpperCase() +
+				" " + "X:" + Integer.toHexString(indexX).toUpperCase() + " Y:" + Integer.toHexString(indexY).toUpperCase() +
+				" " + "P:" + Integer.toHexString(statusRegister).toUpperCase());
+		System.out.println(logString);
+		*/
+		String op = String.format(getCurrentInstruction(),
+                readMemory(programCounter),
+                readMemory(programCounter + 1),
+                programCounter + (byte) (readMemory(programCounter)) + 1);
+        System.out.println(Integer.toHexString(programCounter - 1).toUpperCase() + " " + Integer.toHexString(instruction).toUpperCase()
+                + String.format(" %-14s ", op)
+                + status() + " CYC:" + board.getPPUCycle() + " SL:" + board.getPPUScanline() + "\n");
+				
+	}
+	
+	 public String status() {
+	        //TODO: convert to format string. lots of wasted strings
+	        return " PC:" + Integer.toHexString(programCounter).toUpperCase() + " A:" + Integer.toHexString(accumulator).toUpperCase() + " X:"
+	                + Integer.toHexString(indexX).toUpperCase() + " Y:" + Integer.toHexString(indexY).toUpperCase() + " P:"
+	                + Integer.toHexString(statusRegister).toUpperCase() + " SP:" + Integer.toHexString(stackPointer).toUpperCase();
+	    }
 	
 	public void resetCPU() {
 		statusRegister = 0;
@@ -1134,7 +1164,7 @@ public class CPU implements Notifier {
 	
 	private void SEI() {
 		if(cyclesRemaining == 1) {
-			interruptsEnabled = false;
+			//interruptsEnabled = false;
 			statusRegister |= (1 << INTERRUPT_FLAG);
 		}
 		
@@ -1480,7 +1510,9 @@ public class CPU implements Notifier {
 	
 	private void RTI() {
 		if(cyclesRemaining == 1) {
+			interrupted = false;
 			statusRegister = pop();
+			interruptsEnabled = interruptStatusPreInterrupt;
 			int newAddress = pop() & 0xFF;
 			newAddress |= pop() << 8;
 			programCounter = newAddress;

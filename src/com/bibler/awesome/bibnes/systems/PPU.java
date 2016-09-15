@@ -166,6 +166,7 @@ public class PPU implements Notifier {
 		case 5:
 			if(writeToggle == 0) {
 				fineX = data & 7;
+				System.out.println("Set scroll to: " + (data >> 3) + " at " + scanline);
 				tempVRamAddress = (tempVRamAddress & ~(0x1F)) | (data >> 3) & 0x1F;
 				writeToggle = 1;
 			} else {
@@ -611,6 +612,14 @@ public class PPU implements Notifier {
 		} else {
 			showObjects = display;
 		}
+	}
+	
+	public int getScanline() {
+		return scanline;
+	}
+	
+	public int getCycle() {
+		return cycle;
 	}
 	
 }
