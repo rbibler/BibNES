@@ -69,6 +69,8 @@ public class PPU implements Notifier {
 	private int[] spriteLowBytes = new int[8];
 	private int[] spriteIndices = new int[8];
 	
+	private int currentXScroll;
+	
 	// PPU Parameters
 	//private int linesPerFrame;
 	//private int visibleScanlines;
@@ -166,6 +168,7 @@ public class PPU implements Notifier {
 		case 5:
 			if(writeToggle == 0) {
 				fineX = data & 7;
+				currentXScroll = data >> 3; 
 				System.out.println("Set scroll to: " + (data >> 3) + " at " + scanline);
 				tempVRamAddress = (tempVRamAddress & ~(0x1F)) | (data >> 3) & 0x1F;
 				writeToggle = 1;
@@ -238,6 +241,7 @@ public class PPU implements Notifier {
 			if(rendering()) {
 				if(cycle > 0 && cycle <= 257 ) {
 					handleMemoryAccess();
+					
 					if(cycle == 257) {
 						vRamAddress = (vRamAddress & ~0x41F) | (tempVRamAddress & 0x41F);
 					}
@@ -455,6 +459,9 @@ public class PPU implements Notifier {
 		}
 		if(!showBG) {
 			frameArray[offset] = 0xFF << 24;
+		}
+		if(cycle == (currentXScroll * 8) + fineX) {
+			frameArray[offset] = NESPalette.getPixel(0x22);
 		}
 		shiftRegisters();
 	}

@@ -200,6 +200,7 @@ public class Mapper004 extends Mapper {
         }
         if ((irqCounter == 0)) {
         	if(irqEnable & !irqPending) {
+        		System.out.println("Interrupt requested at scanline: " + getPPUScanline() + " reload value: " + irqReload);
         		pullCPUIRQLow();
         		irqPending = true;
         	}
