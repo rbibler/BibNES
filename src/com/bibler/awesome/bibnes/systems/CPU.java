@@ -1164,7 +1164,7 @@ public class CPU implements Notifier {
 	
 	private void SEI() {
 		if(cyclesRemaining == 1) {
-			//interruptsEnabled = false;
+			interruptsEnabled = false;
 			statusRegister |= (1 << INTERRUPT_FLAG);
 		}
 		
@@ -1521,6 +1521,7 @@ public class CPU implements Notifier {
 	
 	private void NMI() {
 		if(cyclesRemaining == 1) {
+			interruptStatusPreInterrupt = interruptsEnabled;
 			push(programCounter >> 8 & 0xFF);
 			push(programCounter & 0xFF);
 			push(statusRegister);

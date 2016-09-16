@@ -117,7 +117,7 @@ public class PPU implements Notifier {
 			cycle = 0;
 			frame++;
 			scanline = 0;
-			//nes.frame();
+			nes.ppuFrame();
 			oddFrame = !oddFrame;
 			//notify("FRAME");
 			return;
@@ -127,7 +127,7 @@ public class PPU implements Notifier {
 			if(scanline > 261) {
 				frame++;
 				scanline = 0;
-				//nes.frame();
+				nes.ppuFrame();
 				//notify("FRAME");
 			}
 		}

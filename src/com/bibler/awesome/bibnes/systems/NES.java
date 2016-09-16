@@ -51,6 +51,7 @@ public class NES implements Notifier, Runnable {
 	
 	private int cpuCyclesToSkip;
 	private boolean skipCPUCycles;
+	private int cyclesSinceLastFrame;
 	
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private LogWriter log = new LogWriter("C:/users/ryan/desktop/logs/log.txt");
@@ -189,6 +190,7 @@ public class NES implements Notifier, Runnable {
 		
 		totalClocks++;
 		cycles++;
+		cyclesSinceLastFrame++;
 	}
 	
 	private void runFrame() {
@@ -217,6 +219,11 @@ public class NES implements Notifier, Runnable {
 		}
 	}
 	
+	public void ppuFrame() {
+		//System.out.println("PPU Frame took: " + cyclesSinceLastFrame);
+		cyclesSinceLastFrame = 0;
+	}
+	
 	public void frame() {
 		apu.finishFrame();
 		notify("FRAME");
@@ -231,6 +238,7 @@ public class NES implements Notifier, Runnable {
 			frameTimeAfterSleep = System.currentTimeMillis() - lastFrameTime;
 			totalFrameTime += frameTimeAfterSleep;
 			frameCount++;
+			System.out.println("- - - - - - - - - - - - - - FRAME " + frameCount + " - - - - - - - - - - - - - -");
 			averageFrameRate = 1000.0 / (totalFrameTime / frameCount);
 			
 		}

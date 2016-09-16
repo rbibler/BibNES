@@ -21,7 +21,6 @@ public class Mapper004 extends Mapper {
 	private boolean prgRamProtect;
 	private boolean prgRamEnable;
 	private boolean irqReloadNext;
-	private boolean irqDisable;
 	private boolean irqEnable;
 	private boolean irqPending;
 	
@@ -94,6 +93,7 @@ public class Mapper004 extends Mapper {
 		} else if(address >= 0xC000 && address <= 0xDFFF) {
 			if((address & 1) == 0) {
 				irqReload = data;
+				System.out.println("Reload set to: " + irqReload);
 			} else {
 				irqReloadNext = true;
 			}
@@ -103,10 +103,11 @@ public class Mapper004 extends Mapper {
 					pullCPUIRQHigh();
 				}
 				irqPending = false;
-				irqDisable = true;
+				irqEnable = false;
+				System.out.println("Disabled IRQ");
 			} else {
 				irqEnable = true;
-				//System.out.println("Enabled from Mapper");
+				System.out.println("Enabled IRQ");
 			}
 		}
 	} 
@@ -199,7 +200,10 @@ public class Mapper004 extends Mapper {
             --irqCounter;
         }
         if ((irqCounter == 0)) {
-        	if(irqEnable & !irqPending) {
+        	if(irqEnable && irqPending) {
+        		System.out.println("Counter has reached 0. IrqEnabled? " + irqEnable + " IrqPending? " + irqPending);
+        	}
+        	if(irqEnable && !irqPending) {
         		System.out.println("Interrupt requested at scanline: " + getPPUScanline() + " reload value: " + irqReload);
         		pullCPUIRQLow();
         		irqPending = true;
