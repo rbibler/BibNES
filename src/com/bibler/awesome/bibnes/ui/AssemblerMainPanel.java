@@ -43,14 +43,14 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 	private JSplitPane inputOutputPane;
 	private AudioChannelView audioView;
 	
-	public AssemblerMainPanel(MessageHandler handler, BreakpointManager bpManager, MainFrame mainFrame) {
+	public AssemblerMainPanel(MessageHandler handler, BreakpointManager bpManager, MainFrame mainFrame, String romRootPath) {
 		super(JSplitPane.HORIZONTAL_SPLIT);
 		handler.registerObjectToNotify(this);
-		initialize(bpManager, mainFrame);
+		initialize(bpManager, mainFrame, romRootPath);
 		
 	}
 	
-	private void initialize(BreakpointManager bpManager, MainFrame mainFrame) {
+	private void initialize(BreakpointManager bpManager, MainFrame mainFrame, String romRootPath) {
 		inputStatusPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		inputOutputPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		
@@ -101,7 +101,7 @@ public class AssemblerMainPanel extends JSplitPane implements Notifiable {
 		//inputPanel.applyLookAndFeel(currentLF);
 		outputPanel = new AssemblerOutputPanel("", 0, 900,200, bpManager);
 		emulatorPanel = new EmulatorPanel(200, 600);
-		projectPanel = new ProjectPanel(200, 600);
+		projectPanel = new ProjectPanel(200, 600, romRootPath);
 		projectPanel.setMainFrame(mainFrame);
 		inputStatusPane.add(middlePane);
 		inputStatusPane.add(emulatorPanel);

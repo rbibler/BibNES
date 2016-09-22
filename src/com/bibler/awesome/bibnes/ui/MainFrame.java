@@ -7,6 +7,8 @@ import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -40,6 +42,7 @@ public class MainFrame extends JFrame {
 	private NES board;
 	private BreakpointManager bpManager;
 	private MainFrameMenu mainFrameMenu;
+	private Preferences prefs;
 	
 	public MainFrame() {
 		super();
@@ -55,8 +58,10 @@ public class MainFrame extends JFrame {
             UIManager.getSystemLookAndFeelClassName());
 		} 
 		catch (UnsupportedLookAndFeelException | ClassNotFoundException  | InstantiationException | IllegalAccessException e) {}
+		prefs = Preferences.userNodeForPackage(MainFrame.class);
+		String defaultRomRootPath = prefs.get("ROM_ROOT_PATH", "C:/users/ryan/desktop/nes/roms");
 		bpManager = new BreakpointManager();
-		mainPanel = new AssemblerMainPanel(messageHandler, bpManager, this);
+		mainPanel = new AssemblerMainPanel(messageHandler, bpManager, this, defaultRomRootPath);
 		setLayout(new BorderLayout());
 		add(mainPanel, BorderLayout.CENTER);
 		mainFrameMenu = new MainFrameMenu(messageHandler);
@@ -85,7 +90,7 @@ public class MainFrame extends JFrame {
 	}
 	
 	public void loadNesFileAndRun(boolean debug) {
-		File f = FileUtils.loadFile(this);
+		File f = FileUtils.loadFile(this, false);
 		runNESFile(f);
 	}
 	
@@ -170,6 +175,22 @@ public class MainFrame extends JFrame {
 	
 	public void togglePPUDisplay(int bgOrObjects, boolean display) {
 		board.getPPU().toggleDisplay(bgOrObjects, display);
+	}
+	
+	public void setRomRootPath() {
+		File f = FileUtils.loadFile(this, true);
+		if(f != null && f.isDirectory()) {
+			prefs.put("ROM_ROOT_PATH", f.getAbsolutePath());
+			System.out.println("Set rom path to: " + prefs.get("ROM_ROOT_PATH", "NOT FOUND!"));
+			try {
+				prefs.flush();
+			} catch (BackingStoreException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else {
+			
+		}
 	}
 
 }

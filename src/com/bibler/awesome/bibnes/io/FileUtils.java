@@ -39,10 +39,13 @@ public class FileUtils {
 		return f;
 	}
 
-	public static File loadFile(JFrame frame) {
-		if(fileChooser == null) {
-			initiateFileChooser();
+	private static boolean chooserMode = false;
+	
+	public static File loadFile(JFrame frame, boolean directoriesOnly) {
+		if(fileChooser == null || (directoriesOnly != chooserMode)) {
+			initiateFileChooser(directoriesOnly);
 		}
+		chooserMode = directoriesOnly;
 		int retval = fileChooser.showOpenDialog(frame);
 		if(retval == JFileChooser.APPROVE_OPTION) {
 			return fileChooser.getSelectedFile();
@@ -51,8 +54,11 @@ public class FileUtils {
 		}
 	}
 	
-	private static void initiateFileChooser() {
+	private static void initiateFileChooser(boolean chooserMode) {
 		fileChooser = new JFileChooser(new File("C:/users/ryan/desktop/nes/roms"));
+		if(chooserMode) {
+			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		}
 	}
 
 }

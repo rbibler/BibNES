@@ -16,10 +16,10 @@ public class ProjectPanel extends JPanel {
 	private JScrollPane scrollPane;
 	private NESFileTree fileTree;
 	
-	public ProjectPanel(int width, int height) {
+	public ProjectPanel(int width, int height, String romRootPath) {
 		super();
 		setPreferredSize(new Dimension(width, height));
-		fileTree = new NESFileTree(new File("C:/users/ryan/desktop/nes/roms"), width, height);
+		fileTree = new NESFileTree(new File(romRootPath), width, height);
 		scrollPane = new JScrollPane(fileTree);
 		scrollPane.setPreferredSize(new Dimension(width, height));
 		add(scrollPane);

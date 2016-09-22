@@ -17,6 +17,7 @@ public class FileMenu extends JMenu {
 	private static final long serialVersionUID = -901728829221367902L;
 	
 	JMenuItem loadRom;
+	JMenuItem setRomRootPath;
 	MainFrame mainFrame;
 
 	public FileMenu(String menuName) {
@@ -25,10 +26,16 @@ public class FileMenu extends JMenu {
 	}
 	
 	private void initialize() {
+		FileMenuActionListener listener = new FileMenuActionListener();
 		loadRom = new JMenuItem("Load ROM");
-		loadRom.addActionListener(new FileMenuActionListener());
+		loadRom.addActionListener(listener);
 		loadRom.setActionCommand("LOAD");
 		add(loadRom);
+		
+		setRomRootPath = new JMenuItem("Set Rom Folder");
+		setRomRootPath.addActionListener(listener);
+		setRomRootPath.setActionCommand("SET_PATH");
+		add(setRomRootPath);
 	}
 	
 	private MainFrame getParentFrame() {
@@ -51,6 +58,8 @@ public class FileMenu extends JMenu {
 			case "LOAD":
 				mainFrame.loadNesFileAndRun(true);
 				break;
+			case "SET_PATH":
+				mainFrame.setRomRootPath();
 			}
 		}
 		
