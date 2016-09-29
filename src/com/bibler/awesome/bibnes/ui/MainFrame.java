@@ -43,6 +43,7 @@ public class MainFrame extends JFrame {
 	private BreakpointManager bpManager;
 	private MainFrameMenu mainFrameMenu;
 	private Preferences prefs;
+	private AudioConfigPanel audioConfigPanel;
 	
 	public MainFrame() {
 		super();
@@ -167,6 +168,14 @@ public class MainFrame extends JFrame {
 	
 	public void enableAudio(boolean enable) {
 		board.enableAudio(enable);
+	}
+	
+	public void showAudioConfigPanel() {
+		if(audioConfigPanel == null) {
+			audioConfigPanel = new AudioConfigPanel();
+		}
+		audioConfigPanel.showPanel();
+		
 	}
 	
 	public void updateAudioParams(int paramNum) {

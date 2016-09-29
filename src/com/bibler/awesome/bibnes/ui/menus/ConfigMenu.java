@@ -32,6 +32,7 @@ public class ConfigMenu extends JMenu implements Notifier {
 	private JRadioButtonMenuItem sixteenBitAudio;
 	private JCheckBoxMenuItem showBGItem;
 	private JCheckBoxMenuItem showObjectsItem;
+	private JMenuItem showAudioMenu;
 	private AudioEnableActionListener actionListener = new AudioEnableActionListener();
 	private ArrayList<Notifiable> objectsToNotify = new ArrayList<Notifiable>();
 	private MainFrame mainFrame;
@@ -118,7 +119,13 @@ public class ConfigMenu extends JMenu implements Notifier {
 		showObjectsItem.setSelected(true);
 		videoMenu.add(showObjectsItem);
 		
+		showAudioMenu = new JMenuItem("Audio Options");
+		showAudioMenu.addActionListener(actionListener);
+		showAudioMenu.setActionCommand("SHOW_AUDIO_MENU");
+		audioMenu.add(showAudioMenu);
+		
 		add(videoMenu);
+		
 		
 		add(audioMenu);
 	}
@@ -203,7 +210,10 @@ public class ConfigMenu extends JMenu implements Notifier {
 			case "16":
 				
 				mainFrame.updateAudioParams(16);
-				
+				break;
+			case "SHOW_AUDIO_MENU":
+				mainFrame.showAudioConfigPanel();
+				break;
 			}
 			if(arg0.getSource() instanceof JCheckBoxMenuItem) {
 				mainFrame.setAudioChannelEnable(audioChannel, ((JCheckBoxMenuItem) arg0.getSource()).isSelected());
