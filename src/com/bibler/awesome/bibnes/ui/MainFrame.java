@@ -14,6 +14,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -59,6 +60,9 @@ public class MainFrame extends JFrame {
             UIManager.getSystemLookAndFeelClassName());
 		} 
 		catch (UnsupportedLookAndFeelException | ClassNotFoundException  | InstantiationException | IllegalAccessException e) {}
+		UIDefaults defaults = UIManager.getDefaults();
+		Object icon = defaults.get("Slider.horizontalThumbIcon");
+        defaults.put("Slider.verticalThumbIcon", icon);
 		prefs = Preferences.userNodeForPackage(MainFrame.class);
 		String defaultRomRootPath = prefs.get("ROM_ROOT_PATH", "C:/users/ryan/desktop/nes/roms");
 		bpManager = new BreakpointManager();
@@ -173,6 +177,7 @@ public class MainFrame extends JFrame {
 	public void showAudioConfigPanel() {
 		if(audioConfigPanel == null) {
 			audioConfigPanel = new AudioConfigPanel();
+			audioConfigPanel.setAPU(board.getAPU());
 		}
 		audioConfigPanel.showPanel();
 		

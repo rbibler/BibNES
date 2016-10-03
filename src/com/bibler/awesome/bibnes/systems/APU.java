@@ -10,6 +10,8 @@ public class APU {
 	private NoiseWaveGenerator noiseOne;
 	private DMCWaveGenerator DMCOne;
 	
+	private float[] channelVolumes = new float[] {.5f, .5f, .5f, .5f, .5f};
+	
 	private boolean pulseOneEnabled = true;
 	private boolean pulseTwoEnabled = true;
 	private boolean triEnabled = true;
@@ -156,6 +158,10 @@ public class APU {
 		cycles++;
 	}
 	
+	public void updateChannelVolume(int channel, float volume) {
+		channelVolumes[channel] = volume;
+	}
+	
 	public void finishFrame() {
 		mixer.flushSamples();
 		cycles = 0;
@@ -214,11 +220,11 @@ public class APU {
 	
 	
 	private int getSamples() {
-		pulseOneSamples[sampleIndex] = pulseOneEnabled ? pulseOne.getSample() : 0;
-		pulseTwoSamples[sampleIndex] = pulseTwoEnabled ? pulseTwo.getSample() : 0;
-		triSamples[sampleIndex] = triEnabled ? triOne.getSample() : 0;
-		noiseSamples[sampleIndex] = noiseEnabled ? noiseOne.getSample() : 0;
-		dmcSamples[sampleIndex] = dmcEnabled ? DMCOne.getSample() : 0;
+		pulseOneSamples[sampleIndex] = (int) ((pulseOneEnabled ? pulseOne.getSample() : 0) * channelVolumes[0]);
+		pulseTwoSamples[sampleIndex] = (int) ((pulseTwoEnabled ? pulseTwo.getSample() : 0) * channelVolumes[1]);
+		triSamples[sampleIndex] = (int) ((triEnabled ? triOne.getSample() : 0) * channelVolumes[2]);
+		noiseSamples[sampleIndex] = (int) ((noiseEnabled ? noiseOne.getSample() : 0) * channelVolumes[3]);
+		dmcSamples[sampleIndex] = (int) ((dmcEnabled ? DMCOne.getSample() : 0) * channelVolumes[4]);
 		double total = (.00752 * (pulseOneSamples[sampleIndex] + pulseTwoSamples[sampleIndex])) 
 				+ ((0.00851 * triSamples[sampleIndex]) + (noiseSamples[sampleIndex] * .00494) + (dmcSamples[sampleIndex] * .0033f));
 		total *= volumeMultiplier;
