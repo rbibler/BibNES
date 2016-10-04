@@ -1,6 +1,7 @@
 package com.bibler.awesome.bibnes.ui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 
 import javax.swing.BorderFactory;
@@ -30,6 +31,11 @@ public class AudioConfigPanel extends JPanel {
 	private APU apu;
 	JFrame frame;
 	
+	private final int width = 500;
+	private final int height = 300;
+	private final Color eqColor = new Color(150, 15, 200, 78);
+	private final Color transparentColor = new Color(255, 255, 255, 0);
+	
 	public AudioConfigPanel() {
 		initializeView();
 		initializeThread();
@@ -52,7 +58,7 @@ public class AudioConfigPanel extends JPanel {
 	}
 	
 	private void initializeView() {
-		
+		setPreferredSize(new Dimension(width, height));
 		pulseOneControl = new AudioChannelControlPanel("Pulse One", 0);
 		pulseTwoControl = new AudioChannelControlPanel("Pulse Two", 1);
 		triControl = new AudioChannelControlPanel("Triangle", 2);
@@ -113,6 +119,7 @@ public class AudioConfigPanel extends JPanel {
 		JProgressBar channelEQView;
 		WaveGenerator channelGenerator;
 		private int channelNumber;
+		private int valueForZero;
 		
 		protected AudioChannelControlPanel(String name, int channelNumber) {
 			super();
@@ -121,6 +128,7 @@ public class AudioConfigPanel extends JPanel {
 		}
 		
 		private void initializeView(String name) {
+			setPreferredSize(new Dimension(width / 6, height));
 			setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 			channelName = new JLabel(name);
 			enableChannel = new JCheckBox();
@@ -141,6 +149,9 @@ public class AudioConfigPanel extends JPanel {
 				}
 			};
 			sliderPanel.add(channelVolumeSlider);
+			if(channelNumber != 5) {
+				channelVolumeSlider.setBackground(transparentColor);
+			}
 			channelVolumeSlider.addChangeListener(new ChangeListener() {
 
 				@Override
@@ -169,10 +180,15 @@ public class AudioConfigPanel extends JPanel {
 		} 
 		
 		private void paintSlider(Graphics g) {
-			g.setColor(Color.BLUE);
+			g.setColor(eqColor);
 			final int vol = channelGenerator.getLastSample();
-			final int value = (int) ((vol / (float) 16) * channelVolumeSlider.getHeight());
-			g.fillRect(0, 0, channelVolumeSlider.getWidth(), value);
+			int value = (int) ((vol / (float) 16) * channelVolumeSlider.getHeight());
+			if(vol == 0) {
+				value = valueForZero += (channelVolumeSlider.getHeight() * .05);
+			} else {
+				valueForZero = value;
+			}
+			g.fillRect( (int) (((width / 6) * .25f) / 2), value, (int) ((width / 6) * .75f), channelVolumeSlider.getHeight() - value);
 		}
 		
 		protected void updateEQ() {
