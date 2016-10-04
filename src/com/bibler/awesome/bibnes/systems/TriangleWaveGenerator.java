@@ -122,6 +122,8 @@ public class TriangleWaveGenerator extends WaveGenerator {
 		if(timer < 2) {
 			currentVolume = 0;
 		}
+		totalSamples += currentVolume;
+		sampleCountSinceLastAverage++;
 		return currentVolume;
 	}
 	

@@ -149,6 +149,8 @@ public class NoiseWaveGenerator extends WaveGenerator {
 		if(constantVolume) {
 			return envelope;
 		}
+		totalSamples += decayLevelCounter;
+		sampleCountSinceLastAverage++;
 		return decayLevelCounter;
 	}
 

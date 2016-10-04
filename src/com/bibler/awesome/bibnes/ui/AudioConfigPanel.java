@@ -1,5 +1,9 @@
 package com.bibler.awesome.bibnes.ui;
 
+import java.awt.Color;
+import java.awt.Graphics;
+
+import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
@@ -28,11 +32,16 @@ public class AudioConfigPanel extends JPanel {
 	
 	public AudioConfigPanel() {
 		initializeView();
-		
+		initializeThread();
 	}
 	
 	public void setAPU(APU apu) {
 		this.apu = apu;
+		pulseOneControl.setChannel(apu.getChannel(0));
+		pulseTwoControl.setChannel(apu.getChannel(1));
+		triControl.setChannel(apu.getChannel(2));
+		noiseControl.setChannel(apu.getChannel(3));
+		dmcControl.setChannel(apu.getChannel(4));
 	}
 	
 	public void showPanel() {
@@ -59,6 +68,25 @@ public class AudioConfigPanel extends JPanel {
 		add(master);
 	}
 	
+	private void initializeThread() {
+		Thread t = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while(!Thread.interrupted()) {
+					pulseOneControl.updateEQ();
+					pulseTwoControl.updateEQ();
+					triControl.updateEQ();
+					noiseControl.updateEQ();
+					dmcControl.updateEQ();
+					try {
+						Thread.sleep(30);
+					} catch(InterruptedException e) {}
+				}
+			}
+		});
+		t.start();
+	}
+	
 	protected void updateMaster(int value) {
 		this.pulseOneControl.setSliderValue(value);
 		this.pulseTwoControl.setSliderValue(value);
@@ -74,9 +102,14 @@ public class AudioConfigPanel extends JPanel {
 
 	private class AudioChannelControlPanel extends JPanel {
 		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -1810956641147127719L;
 		JLabel channelName;
 		JCheckBox enableChannel;
 		JSlider channelVolumeSlider;
+		JPanel sliderPanel;
 		JProgressBar channelEQView;
 		WaveGenerator channelGenerator;
 		private int channelNumber;
@@ -92,6 +125,22 @@ public class AudioConfigPanel extends JPanel {
 			channelName = new JLabel(name);
 			enableChannel = new JCheckBox();
 			channelVolumeSlider = new JSlider(JSlider.VERTICAL);
+			sliderPanel = new JPanel() {
+				/**
+				 * 
+				 */
+				private static final long serialVersionUID = -2884877153076768492L;
+
+				@Override
+				public void paintComponent(Graphics g) {
+					super.paintComponent(g);
+					if(channelGenerator != null) {
+						paintSlider(g);
+					}
+					
+				}
+			};
+			sliderPanel.add(channelVolumeSlider);
 			channelVolumeSlider.addChangeListener(new ChangeListener() {
 
 				@Override
@@ -108,11 +157,26 @@ public class AudioConfigPanel extends JPanel {
 			channelEQView = new JProgressBar();
 			add(channelName);
 			add(enableChannel);
-			add(channelVolumeSlider);
+			add(sliderPanel);
 		}
 		
 		protected void setSliderValue(int value) {
 			channelVolumeSlider.setValue(value);
+		}
+		
+		protected void setChannel(WaveGenerator channelGenerator) {
+			this.channelGenerator = channelGenerator;
+		} 
+		
+		private void paintSlider(Graphics g) {
+			g.setColor(Color.BLUE);
+			final int vol = channelGenerator.getLastSample();
+			final int value = (int) ((vol / (float) 16) * channelVolumeSlider.getHeight());
+			g.fillRect(0, 0, channelVolumeSlider.getWidth(), value);
+		}
+		
+		protected void updateEQ() {
+			sliderPanel.repaint();
 		}
 	}
 }

@@ -24,6 +24,7 @@ public class PulseWaveGenerator extends WaveGenerator {
 	private int decayLevelCounter;
 	private int envelopeDividerPeriod;
 	
+	
 	private int[][] lengthCounterLookup = new int[][] {
 		{0x0A, 0xFE},
 		{0x14, 0x02},
@@ -218,6 +219,8 @@ public class PulseWaveGenerator extends WaveGenerator {
 		currentVolume = constantVolume ? envelope : decayLevelCounter;
 		final int dutyLevel = (duty >> currentStep & 1);
 		final int sample = (lengthCounter > 0 && timer >= 8 && !silenceFromSweep) ? (currentVolume * dutyLevel) : 0;
+		totalSamples += sample;
+		sampleCountSinceLastAverage++;
 		return sample;
 	}
 

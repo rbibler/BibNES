@@ -338,5 +338,21 @@ public class APU {
 	public void kill() {
 		mixer.kill();
 	}
+	
+	public WaveGenerator getChannel(int channelToGet) {
+		switch(channelToGet) {
+		case 0:
+			return pulseOne;
+		case 1:
+			return pulseTwo;
+		case 2:
+			return triOne;
+		case 3:
+			return noiseOne;
+		case 4:
+			return DMCOne;
+		}
+		return null;
+	}
 
 }
